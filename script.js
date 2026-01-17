@@ -1,42 +1,42 @@
-const Storage = {
-    save: (user, pass) => {
-        const data = JSON.parse(localStorage.getItem('user_db') || '{}');
-        if (data[user]) return false;
-        data[user] = { pass: pass, id: Date.now() };
-        localStorage.setItem('user_db', JSON.stringify(data));
+const UserSystem = {
+    handleRegister: (user, pass) => {
+        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
+        if (db[user]) return false;
+        db[user] = { password: pass, created: Date.now() };
+        localStorage.setItem('app_users', JSON.stringify(db));
         return true;
     },
-    check: (user, pass) => {
-        const data = JSON.parse(localStorage.getItem('user_db') || '{}');
-        return data[user] && data[user].pass === pass;
+    handleLogin: (user, pass) => {
+        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
+        return db[user] && db[user].password === pass;
     }
 };
 
-document.getElementById('auth-btn').addEventListener('click', () => {
-    const user = document.getElementById('u-name').value.trim();
-    const pass = document.getElementById('u-pass').value.trim();
+document.getElementById('create-acc-btn').addEventListener('click', () => {
+    const u = document.getElementById('user-field').value.trim();
+    const p = document.getElementById('pass-field').value.trim();
 
-    if (!user || !pass) return alert("Fill in the boxes");
+    if (!u || !p) return alert("Please fill in both fields.");
 
-    const data = JSON.parse(localStorage.getItem('user_db') || '{}');
-    if (data[user]) {
-        if (Storage.check(user, pass)) {
-            sessionStorage.setItem('current_user', user);
+    const db = JSON.parse(localStorage.getItem('app_users') || '{}');
+    if (db[u]) {
+        if (UserSystem.handleLogin(u, p)) {
+            sessionStorage.setItem('active_session', u);
             window.location.href = "/aigame";
         } else {
-            alert("Wrong details or user exists");
+            alert("Username is taken. If this is you, check your password.");
         }
     } else {
-        if (Storage.save(user, pass)) {
-            sessionStorage.setItem('current_user', user);
+        if (UserSystem.handleRegister(u, p)) {
+            sessionStorage.setItem('active_session', u);
             window.location.href = "/aigame";
         }
     }
 });
 
-document.getElementById('p-login').addEventListener('click', async () => {
+document.getElementById('puter-btn').addEventListener('click', async () => {
     try {
         const res = await puter.auth.signIn();
         if (res) window.location.href = "/aigame";
-    } catch (e) {}
+    } catch (err) {}
 });
