@@ -8,47 +8,50 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <header class="top-bar">
-        <div class="logo">Lemonade <span>beta</span></div>
-        <div class="top-right">
-            <button class="store-btn">Store Purchases</button>
-            <div class="profile-icon"></div>
+    <div class="top-nav">
+        <div class="nav-left">
+            <span class="logo-text">Lemonade <small>beta</small></span>
         </div>
-    </header>
+        <div class="nav-right">
+            <button class="store-btn">Store Purchases</button>
+            <div class="time-icon">🕒</div>
+            <div class="user-avatar"></div>
+        </div>
+    </div>
 
-    <aside class="sidebar">
-        <button class="new-proj">+ New Project</button>
-        <div class="side-label">Projects</div>
-        <div class="discord-tag">
-            <span>Discord</span>
+    <div class="side-nav">
+        <button class="new-proj-btn">+ New Project</button>
+        <div class="nav-label">Projects</div>
+        <div class="discord-card">
+            <strong>Discord</strong>
             <p>Join for gifts</p>
         </div>
-    </aside>
+    </div>
 
-    <main class="chat-container" id="chat-stage">
-        <div class="chat-area" id="chat-log"></div>
+    <main class="main-workspace" id="workspace">
+        <div id="chat-scroller" class="chat-display"></div>
 
-        <div class="input-hub" id="input-hub">
+        <div class="center-hub" id="hub-container">
             <h2 id="hub-title">Describe a game mechanic...</h2>
             
-            <div class="options-grid">
-                <button class="opt-btn" data-text="build me a parkour game that does ">
-                    <span>Obby</span>
+            <div class="suggestion-row" id="suggestions">
+                <button class="suggest-btn" data-prompt="build me a parkour game that does ">
+                    <b>Obby</b>
                     <p>Parkour game</p>
                 </button>
-                <button class="opt-btn" data-text="make me a horror scene animation that does ">
-                    <span>Horror</span>
+                <button class="suggest-btn" data-prompt="make me a horror scene animation that does ">
+                    <b>Horror</b>
                     <p>Scary scene</p>
                 </button>
-                <button class="opt-btn" data-text="create me a map of ">
-                    <span>World</span>
+                <button class="suggest-btn" data-prompt="create me a map of ">
+                    <b>World</b>
                     <p>Map build</p>
                 </button>
             </div>
 
-            <div class="type-box">
-                <textarea id="ai-input" placeholder="codeit copilot imagine anything."></textarea>
-                <button id="send-trigger">↗</button>
+            <div class="input-container">
+                <textarea id="ai-text-box" placeholder="codeit copilot imagine anything."></textarea>
+                <button id="submit-prompt">↗</button>
             </div>
         </div>
     </main>
