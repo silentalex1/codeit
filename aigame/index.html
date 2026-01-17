@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace | BloxAI</title>
+    <link rel="stylesheet" href="aigame.css">
+    <script src="https://js.puter.com/v2/"></script>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo">Lemonade <span>beta</span></div>
+        <div class="top-right">
+            <button class="store-btn">Store Purchases</button>
+            <div class="profile-icon"></div>
+        </div>
+    </header>
+
+    <aside class="sidebar">
+        <button class="new-proj">+ New Project</button>
+        <div class="side-label">Projects</div>
+        <div class="discord-tag">
+            <span>Discord</span>
+            <p>Join for gifts</p>
+        </div>
+    </aside>
+
+    <main class="chat-container" id="chat-stage">
+        <div class="chat-area" id="chat-log"></div>
+
+        <div class="input-hub" id="input-hub">
+            <h2 id="hub-title">Describe a game mechanic...</h2>
+            
+            <div class="options-grid">
+                <button class="opt-btn" data-text="build me a parkour game that does ">
+                    <span>Obby</span>
+                    <p>Parkour game</p>
+                </button>
+                <button class="opt-btn" data-text="make me a horror scene animation that does ">
+                    <span>Horror</span>
+                    <p>Scary scene</p>
+                </button>
+                <button class="opt-btn" data-text="create me a map of ">
+                    <span>World</span>
+                    <p>Map build</p>
+                </button>
+            </div>
+
+            <div class="type-box">
+                <textarea id="ai-input" placeholder="codeit copilot imagine anything."></textarea>
+                <button id="send-trigger">↗</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="aigame.js"></script>
+</body>
+</html>
