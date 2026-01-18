@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const settingsModal = document.getElementById('settings-modal');
     const searchModal = document.getElementById('search-modal');
     const pluginModal = document.getElementById('plugin-modal');
-    const fileInp = document.getElementById('file-pfp');
+    const fileInp = document.getElementById('pfp-file');
     const preview = document.getElementById('pfp-preview-img');
-    const emptyBox = document.getElementById('pfp-prompt');
+    const pfpPrompt = document.getElementById('pfp-prompt');
 
     let history = [];
     let state = { nickname: session.username, pfp: '', workMode: false, hideSidebar: false };
 
-    const loadCloud = async () => {
+    const loadData = async () => {
         const raw = await puter.kv.get('copilot_accounts');
         const db = JSON.parse(raw || '{}');
         if (db[session.username]) {
@@ -36,12 +36,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = 'url(' + state.pfp + ')';
         document.getElementById('display-name-val').value = state.nickname;
         document.getElementById('pfp-url-val').value = state.pfp;
-        if (state.pfp) { preview.src = state.pfp; preview.style.display = 'block'; emptyBox.style.display = 'none'; }
-        if (state.workMode) { submitBtn.innerText = "Ask"; submitBtn.classList.add('ask-mode'); document.getElementById('work-lever').classList.add('on'); }
+        if (state.pfp) {
+            preview.src = state.pfp;
+            preview.style.display = 'block';
+            pfpPrompt.style.display = 'none';
+        }
+        if (state.workMode) {
+            submitBtn.innerText = "Ask";
+            submitBtn.classList.add('ask-mode');
+            document.getElementById('work-lever').classList.add('on');
+        } else {
+            submitBtn.innerText = "Generate";
+            submitBtn.classList.remove('ask-mode');
+            document.getElementById('work-lever').classList.remove('on');
+        }
         if (state.hideSidebar) document.getElementById('side-lever').classList.add('on');
     };
 
-    const saveCloud = async () => {
+    const saveData = async () => {
         const raw = await puter.kv.get('copilot_accounts');
         const db = JSON.parse(raw || '{}');
         db[session.username].settings = state;
@@ -49,20 +61,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         await puter.kv.set('copilot_accounts', JSON.stringify(db));
     };
 
-    const addMessage = (txt, isU = false) => {
+    const writeMsg = (txt, isU = false, isErr = false) => {
         hub.classList.add('minimized');
         scroller.style.display = 'block';
         const d = document.createElement('div');
         d.className = isU ? 'msg-u' : 'msg-ai';
+        if (isErr) d.classList.add('error');
         d.innerHTML = isU ? txt : txt.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
         scroller.appendChild(d);
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const callAI = async () => {
+    const runAI = async () => {
         const val = input.value.trim();
         if (!val) return;
-        addMessage(val, true);
+        writeMsg(val, true);
         input.value = '';
         input.style.height = '26px';
         const aiT = document.createElement('div');
@@ -74,30 +87,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             aiT.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
             history.push({ q: val, a: res });
             refreshHistory();
-            saveCloud();
+            saveData();
         } catch (e) { aiT.innerText = "Connection lost. Try logging in again."; }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
     const refreshHistory = () => {
-        const container = document.getElementById('chat-history-list');
-        container.innerHTML = '';
+        const list = document.getElementById('chat-history-list');
+        list.innerHTML = "";
         history.forEach((h, i) => {
-            const item = document.createElement('button');
-            item.className = 'hist-item';
-            item.innerText = h.q;
-            item.onclick = () => {
+            const div = document.createElement('div');
+            div.className = 'hist-item';
+            div.innerText = h.q;
+            div.onclick = () => {
                 scroller.innerHTML = '';
-                addMessage(h.q, true);
-                addMessage(h.a);
+                writeMsg(h.q, true);
+                writeMsg(h.a);
             };
-            container.appendChild(item);
+            list.appendChild(div);
         });
     };
 
-    submitBtn.onclick = callAI;
+    submitBtn.onclick = runAI;
     input.onkeydown = (e) => { 
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); callAI(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
     };
@@ -113,39 +126,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
     document.getElementById('pfp-dropzone').onclick = () => fileInp.click();
     fileInp.onchange = (e) => { const r = new FileReader(); r.onload = (x) => { state.pfp = x.target.result; syncUI(); }; r.readAsDataURL(e.target.files[0]); };
-    document.getElementById('save-all').onclick = async () => { state.nickname = document.getElementById('display-name-val').value; state.pfp = document.getElementById('pfp-url-val').value || state.pfp; state.workMode = document.getElementById('work-lever').classList.contains('on'); state.hideSidebar = document.getElementById('side-lever').classList.contains('on'); await saveCloud(); location.reload(); };
-    document.getElementById('btn-clear-hist').onclick = async () => { if (confirm("Clear chat?")) { history = []; refreshHistory(); scroller.innerHTML = ''; hub.classList.remove('active'); settingsModal.style.display = 'none'; await saveCloud(); } };
-    
-    const toggleS = () => { 
-        const isShow = searchModal.style.display === 'flex'; 
-        searchModal.style.display = isShow ? 'none' : 'flex'; 
-        if (!isShow) document.getElementById('search-q').focus(); 
+
+    document.getElementById('save-all').onclick = async () => {
+        state.nickname = document.getElementById('display-name-val').value;
+        state.pfp = document.getElementById('pfp-url-val').value || state.pfp;
+        state.workMode = document.getElementById('work-lever').classList.contains('on');
+        state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
+        await saveData();
+        location.reload();
     };
-    window.onkeydown = (e) => { 
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleS(); } 
-        if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
+
+    document.getElementById('clear-hist').onclick = async () => {
+        if (confirm("Clear history?")) {
+            history = [];
+            refreshHistory();
+            scroller.innerHTML = '';
+            hub.classList.remove('minimized');
+            settingsModal.style.display = 'none';
+            await saveData();
+        }
     };
-    document.getElementById('search-q').oninput = (e) => { 
-        const q = e.target.value.toLowerCase(); 
-        const matches = history.filter(h => h.q.toLowerCase().includes(q)); 
+
+    window.onkeydown = (e) => {
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            const show = searchModal.style.display === 'flex';
+            searchModal.style.display = show ? 'none' : 'flex';
+            if (!show) document.getElementById('search-q').focus();
+        }
+        if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+    };
+
+    document.getElementById('search-q').oninput = (e) => {
+        const q = e.target.value.toLowerCase();
+        const matches = history.filter(h => h.q.toLowerCase().includes(q));
         const resList = document.getElementById('search-results');
-        resList.innerHTML = '';
+        resList.innerHTML = "";
         matches.forEach(m => {
-            const btn = document.createElement('button');
-            btn.className = 'hist-item';
-            btn.innerText = m.q;
-            btn.onclick = () => { searchModal.style.display = 'none'; scroller.innerHTML = ''; addMessage(m.q, true); addMessage(m.a); };
-            resList.appendChild(btn);
+            const div = document.createElement('div');
+            div.className = 'hist-item';
+            div.innerText = m.q;
+            div.onclick = () => {
+                searchModal.style.display = 'none';
+                scroller.innerHTML = '';
+                writeMsg(m.q, true);
+                writeMsg(m.a);
+            };
+            resList.appendChild(div);
         });
     };
+
     document.querySelectorAll('.sq-btn').forEach(b => b.onclick = () => { input.value = b.dataset.p; input.focus(); });
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat-trigger').onclick = () => location.reload();
     document.getElementById('logout-trigger').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
     document.getElementById('plugin-connect').onclick = () => pluginModal.style.display = 'flex';
     document.getElementById('plug-yes').onclick = () => window.open('https://example.com');
-    document.getElementById('plug-no').onclick = () => { pluginModal.style.display = 'none'; addMessage("you need to install the plugin for the website to connect and work."); };
+    document.getElementById('plug-no').onclick = () => { pluginModal.style.display = 'none'; writeMsg("you need to install the plugin for the website to connect and work.", false, true); };
     document.getElementById('btn-puter-login').onclick = () => puter.auth.signIn().then(() => location.reload());
 
-    await loadCloud();
+    await loadData();
 });
