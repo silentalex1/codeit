@@ -6,19 +6,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const session = JSON.parse(rawSession);
 
-    const inputArea = document.getElementById('ai-text-input');
-    const submitBtn = document.getElementById('send-ai-request');
-    const hubUi = document.getElementById('hub-ui-container');
-    const msgContainer = document.getElementById('chat-messages-container');
-    const sidebar = document.getElementById('app-sidebar');
-    const restoreSidebar = document.getElementById('sidebar-restore-btn');
-    const navAvatar = document.getElementById('nav-user-avatar');
-    const userDropdown = document.getElementById('user-context-menu');
-    const settingsModal = document.getElementById('settings-overlay');
-    const searchModal = document.getElementById('search-overlay');
-    const pluginModal = document.getElementById('plugin-overlay');
+    const input = document.getElementById('ai-input');
+    const genBtn = document.getElementById('btn-gen');
+    const hub = document.getElementById('hub-ui');
+    const scroller = document.getElementById('chat-scroller');
+    const sidebar = document.getElementById('sidebar');
+    const restoreBtn = document.getElementById('sidebar-restore');
+    const avatar = document.getElementById('user-avatar');
+    const dropMenu = document.getElementById('avatar-drop');
+    const settingsModal = document.getElementById('settings-modal');
+    const searchModal = document.getElementById('search-modal');
+    const pluginModal = document.getElementById('plugin-modal');
+    const pfpFile = document.getElementById('pfp-file');
+    const pfpPreview = document.getElementById('pfp-preview');
+    const dropHint = document.getElementById('drop-hint');
 
-    let historyArr = [];
+    let history = [];
     let state = {
         nickname: session.username,
         pfp: '',
@@ -26,240 +29,235 @@ document.addEventListener('DOMContentLoaded', async () => {
         hideSidebar: false
     };
 
-    const loadUserData = async () => {
-        try {
-            const dbRaw = await puter.kv.get('codeit_copilot_users');
-            const database = JSON.parse(dbRaw || '{}');
-            if (database[session.username]) {
-                state = database[session.username].settings || state;
-                historyArr = database[session.username].history || [];
-                refreshUI();
-                renderHistoryList();
-            }
-        } catch (err) {
-            console.error(err);
+    const loadCloud = async () => {
+        const raw = await puter.kv.get('codeit_copilot_users');
+        const db = JSON.parse(raw || '{}');
+        if (db[session.username]) {
+            state = db[session.username].settings || state;
+            history = db[session.username].history || [];
+            syncUI();
+            renderHistory();
         }
     };
 
-    const refreshUI = () => {
-        if (navAvatar) navAvatar.style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
-        document.getElementById('set-name').value = state.nickname;
-        document.getElementById('set-pfp').value = state.pfp;
+    const syncUI = () => {
+        if (avatar) avatar.style.backgroundImage = state.pfp ? 'url(' + state.pfp + ')' : '';
+        const nameInp = document.getElementById('set-name');
+        const pfpInp = document.getElementById('set-pfp');
+        if (nameInp) nameInp.value = state.nickname;
+        if (pfpInp) pfpInp.value = state.pfp;
+        
         if (state.pfp) {
-            const preview = document.getElementById('pfp-preview-element');
-            preview.src = state.pfp;
-            preview.style.display = 'block';
-            document.getElementById('pfp-prompt-text').style.display = 'none';
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropHint.style.display = 'none';
         }
+
         if (state.workMode) {
-            submitBtn.innerText = 'Ask';
-            submitBtn.classList.add('work-mode');
-            document.getElementById('ai-work-mode-lever').classList.add('on');
+            genBtn.innerText = 'Ask';
+            genBtn.classList.add('mode-work');
+            document.getElementById('work-lever').classList.add('on');
         } else {
-            submitBtn.innerText = 'Generate';
-            submitBtn.classList.remove('work-mode');
-            document.getElementById('ai-work-mode-lever').classList.remove('on');
+            genBtn.innerText = 'Generate';
+            genBtn.classList.remove('mode-work');
+            document.getElementById('work-lever').classList.remove('on');
         }
+
         if (state.hideSidebar) {
-            document.getElementById('side-lever-toggle').classList.add('on');
+            document.getElementById('side-lever').classList.add('on');
         }
     };
 
-    const saveUserData = async () => {
-        try {
-            const dbRaw = await puter.kv.get('codeit_copilot_users');
-            const database = JSON.parse(dbRaw || '{}');
-            database[session.username] = { settings: state, history: historyArr, password: database[session.username].password };
-            await puter.kv.set('codeit_copilot_users', JSON.stringify(database));
-        } catch (err) {
-            console.error(err);
-        }
+    const saveCloud = async () => {
+        const raw = await puter.kv.get('codeit_copilot_users');
+        const db = JSON.parse(raw || '{}');
+        db[session.username] = {
+            password: db[session.username]?.password || '',
+            settings: state,
+            history: history
+        };
+        await puter.kv.set('codeit_copilot_users', JSON.stringify(db));
     };
 
-    const addMessageBubble = (content, isUser = false, isError = false) => {
-        hubUi.classList.add('minimized');
-        msgContainer.style.display = 'block';
-        const bubble = document.createElement('div');
-        bubble.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) bubble.classList.add('error');
+    const pushMessage = (text, isUser = false, isError = false) => {
+        hub.classList.add('active');
+        scroller.style.display = 'block';
+        const div = document.createElement('div');
+        div.className = isUser ? 'msg-u' : 'msg-ai';
+        if (isError) div.style.borderColor = '#ef4444';
         
         if (isUser) {
-            bubble.innerText = content;
+            div.innerText = text;
         } else {
-            bubble.innerHTML = content.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+            div.innerHTML = text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
         }
-        
-        msgContainer.appendChild(bubble);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
+        scroller.appendChild(div);
+        scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const handleAIPrompt = async () => {
-        const query = inputArea.value.trim();
-        if (!query) return;
-        addMessageBubble(query, true);
-        inputArea.value = '';
-        inputArea.style.height = '26px';
+    const startAI = async () => {
+        const val = input.value.trim();
+        if (!val) return;
+        pushMessage(val, true);
+        input.value = '';
+        input.style.height = '26px';
 
-        const thinkingDiv = document.createElement('div');
-        thinkingDiv.className = 'msg-ai';
-        thinkingDiv.innerText = 'Thinking...';
-        msgContainer.appendChild(thinkingDiv);
+        const thinking = document.createElement('div');
+        thinking.className = 'msg-ai';
+        thinking.innerText = 'Analyzing...';
+        scroller.appendChild(thinking);
 
         try {
-            const response = await puter.ai.chat(query);
-            thinkingDiv.innerHTML = response.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-            historyArr.push({ q: query, a: response });
-            renderHistoryList();
-            saveUserData();
-        } catch (err) {
-            thinkingDiv.innerText = 'Error: AI connection failed. Check Puter Session.';
-            thinkingDiv.classList.add('error');
+            const res = await puter.ai.chat(val);
+            thinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+            history.push({ q: val, a: res });
+            renderHistory();
+            saveCloud();
+        } catch (e) {
+            thinking.innerText = 'Connection Error: Puter session timeout.';
         }
-        msgContainer.scrollTop = msgContainer.scrollHeight;
+        scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const renderHistoryList = () => {
-        const container = document.getElementById('chat-history-list');
-        container.innerHTML = historyArr.map((h, i) => `<div class="hist-item-ui" onclick="loadSelectedHistory(${i})">${h.q}</div>`).join('');
+    const renderHistory = () => {
+        const box = document.getElementById('history-box');
+        box.innerHTML = history.map((h, i) => '<div class="hist-item" onclick="loadHistory(' + i + ')">' + h.q + '</div>').join('');
     };
 
-    window.loadSelectedHistory = (index) => {
-        msgContainer.innerHTML = '';
-        addMessageBubble(historyArr[index].q, true);
-        addMessageBubble(historyArr[index].a);
+    window.loadHistory = (i) => {
+        scroller.innerHTML = '';
+        pushMessage(history[i].q, true);
+        pushMessage(history[i].a);
     };
 
-    submitBtn.addEventListener('click', handleAIPrompt);
-    inputArea.addEventListener('keydown', (e) => {
+    const handleFile = (file) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            state.pfp = e.target.result;
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropHint.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    document.getElementById('pfp-zone').onclick = () => pfpFile.click();
+    pfpFile.onchange = (e) => handleFile(e.target.files[0]);
+    document.getElementById('pfp-zone').ondragover = (e) => e.preventDefault();
+    document.getElementById('pfp-zone').ondrop = (e) => {
+        e.preventDefault();
+        handleFile(e.dataTransfer.files[0]);
+    };
+
+    genBtn.addEventListener('click', startAI);
+    input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleAIPrompt();
+            startAI();
         }
-        inputArea.style.height = 'auto';
-        inputArea.style.height = inputArea.scrollHeight + 'px';
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
     });
 
     sidebar.addEventListener('dblclick', () => {
         if (state.hideSidebar || window.innerWidth < 1024) {
             sidebar.classList.add('hidden');
-            restoreSidebar.style.display = 'block';
+            restoreBtn.style.display = 'block';
         }
     });
 
-    restoreSidebar.addEventListener('click', () => {
+    restoreBtn.addEventListener('click', () => {
         sidebar.classList.remove('hidden');
-        restoreSidebar.style.display = 'none';
+        restoreBtn.style.display = 'none';
     });
 
-    navAvatar.addEventListener('click', (e) => {
+    avatar.addEventListener('click', (e) => {
         e.stopPropagation();
-        userDropdown.classList.toggle('active');
+        dropMenu.classList.toggle('active');
     });
 
-    document.addEventListener('click', () => userDropdown.classList.remove('active'));
+    document.addEventListener('click', () => dropMenu.classList.remove('active'));
 
-    document.getElementById('open-settings-trigger').addEventListener('click', () => settingsModal.style.display = 'flex');
+    document.getElementById('settings-trigger').onclick = () => settingsModal.style.display = 'flex';
 
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.style.display = 'none';
-        });
+    document.querySelectorAll('.modal').forEach(m => {
+        m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
     });
 
-    document.querySelectorAll('.s-tab-link').forEach(link => {
-        link.addEventListener('click', () => {
-            document.querySelectorAll('.s-tab-link, .settings-pane').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(link.dataset.target).classList.add('active');
-        });
+    document.querySelectorAll('.s-nav').forEach(nav => {
+        nav.onclick = () => {
+            document.querySelectorAll('.s-nav, .tab-pane').forEach(el => el.classList.remove('active'));
+            nav.classList.add('active');
+            document.getElementById(nav.dataset.tab).classList.add('active');
+        };
     });
 
-    document.getElementById('pfp-drop-zone').onclick = () => document.getElementById('pfp-hidden-input').click();
-    document.getElementById('pfp-hidden-input').onchange = (e) => {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                state.pfp = ev.target.result;
-                const prev = document.getElementById('pfp-preview-element');
-                prev.src = state.pfp;
-                prev.style.display = 'block';
-                document.getElementById('pfp-prompt-text').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
+
+    document.getElementById('save-settings').onclick = async () => {
+        state.nickname = document.getElementById('set-name').value;
+        state.pfp = document.getElementById('set-pfp').value || state.pfp;
+        state.workMode = document.getElementById('work-lever').classList.contains('on');
+        state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
+        await saveCloud();
+        location.reload();
+    };
+
+    document.getElementById('clear-history').onclick = async () => {
+        if (confirm('Clear all chat history?')) {
+            history = [];
+            renderHistory();
+            scroller.innerHTML = '';
+            hub.classList.remove('active');
+            settingsModal.style.display = 'none';
+            await saveCloud();
         }
     };
 
-    document.getElementById('ai-work-mode-lever').addEventListener('click', function() { this.classList.toggle('on'); });
-    document.getElementById('side-toggle-lever').addEventListener('click', function() { this.classList.toggle('on'); });
-
-    document.getElementById('save-all-settings').addEventListener('click', async () => {
-        state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        state.workMode = document.getElementById('ai-work-mode-lever').classList.contains('on');
-        state.hideSidebar = document.getElementById('side-toggle-lever').classList.contains('on');
-        await saveUserData();
-        location.reload();
-    });
-
-    document.getElementById('clear-all-history').addEventListener('click', async () => {
-        if (confirm('Are you sure you want to clear chat history?')) {
-            historyArr = [];
-            renderHistoryList();
-            msgContainer.innerHTML = '';
-            hubUi.classList.remove('minimized');
-            settingsModal.style.display = 'none';
-            await saveUserData();
-        }
-    });
-
-    document.getElementById('nav-connect-plugin').addEventListener('click', () => pluginModal.style.display = 'flex');
-    document.getElementById('plugin-answer-yes').addEventListener('click', () => {
-        window.open('https://example.com');
+    document.getElementById('connect-btn').onclick = () => pluginModal.style.display = 'flex';
+    document.getElementById('plug-yes').onclick = () => window.open('https://example.com');
+    document.getElementById('plug-no').onclick = () => {
         pluginModal.style.display = 'none';
-    });
-    document.getElementById('plugin-answer-no').addEventListener('click', () => {
-        pluginModal.style.display = 'none';
-        addMessageBubble('you need to install the plugin for the website to connect and work.', false, true);
-    });
+        pushMessage('you need to install the plugin for the website to connect and work.', false, true);
+    };
 
     const toggleSearch = () => {
-        const showing = searchModal.style.display === 'flex';
-        searchModal.style.display = showing ? 'none' : 'flex';
-        if (!showing) document.getElementById('search-field').focus();
+        const isOn = searchModal.style.display === 'flex';
+        searchModal.style.display = isOn ? 'none' : 'flex';
+        if (!isOn) document.getElementById('search-q').focus();
     };
 
     window.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleSearch(); }
-        if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     });
 
-    document.getElementById('search-field').addEventListener('input', (e) => {
-        const val = e.target.value.toLowerCase();
-        const matches = historyArr.filter(h => h.q.toLowerCase().includes(val));
-        document.getElementById('search-list-results').innerHTML = matches.map(m => `<div class="hist-item-ui" onclick="pickSearchMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>`).join('');
-    });
+    document.getElementById('search-q').oninput = (e) => {
+        const query = e.target.value.toLowerCase();
+        const results = history.filter(h => h.q.toLowerCase().includes(query));
+        document.getElementById('search-results').innerHTML = results.map(r => '<div class="hist-item" onclick="loadMatch(\'' + r.q.replace(/'/g, "\\'") + '\')">' + r.q + '</div>').join('');
+    };
 
-    window.pickSearchMatch = (query) => {
-        const found = historyArr.find(h => h.q === query);
-        if (found) {
+    window.loadMatch = (q) => {
+        const item = history.find(h => h.q === q);
+        if (item) {
             searchModal.style.display = 'none';
-            msgContainer.innerHTML = '';
-            addMessageBubble(found.q, true);
-            addMessageBubble(found.a);
+            scroller.innerHTML = '';
+            pushMessage(item.q, true);
+            pushMessage(item.a);
         }
     };
 
-    document.querySelectorAll('.premade-card').forEach(btn => {
-        btn.addEventListener('click', () => {
-            inputArea.value = btn.dataset.prompt;
-            inputArea.focus();
-        });
+    document.querySelectorAll('.sq-option').forEach(btn => {
+        btn.onclick = () => { input.value = btn.dataset.p; input.focus(); };
     });
 
-    document.getElementById('mobile-sidebar-toggle').addEventListener('click', () => sidebar.classList.toggle('open'));
-    document.getElementById('btn-reset-chat').addEventListener('click', () => location.reload());
-    document.getElementById('nav-logout').addEventListener('click', () => { sessionStorage.clear(); window.location.href = '../'; });
+    document.getElementById('mob-menu').onclick = () => sidebar.classList.toggle('open');
+    document.getElementById('new-chat-btn').onclick = () => location.reload();
+    document.getElementById('logout-trigger').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
+    document.getElementById('puter-reauth').onclick = () => puter.auth.signIn().then(() => location.reload());
 
-    await loadUserData();
+    await loadCloud();
 });
