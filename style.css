@@ -1,80 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
 body {
-    background: #030303;
-    color: white;
+    background: #020204;
+    color: #fff;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
-.light-blobs {
+.glow-layer {
     position: fixed;
-    width: 100%; height: 100%;
-    background: radial-gradient(circle at 10% 10%, #1e3a8a33 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, #1e1b4b33 0%, transparent 40%);
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, #1e3a8a 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, #1e1b4b 0%, transparent 40%);
+    filter: blur(80px);
     z-index: -1;
 }
 
 .container {
     display: flex;
-    width: 1200px;
-    max-width: 90%;
-    gap: 80px;
+    max-width: 1200px;
+    width: 90%;
+    gap: 100px;
     align-items: center;
 }
 
 .hero { flex: 1; }
-.rank-tag { color: #3b82f6; font-size: 14px; font-weight: 800; margin-bottom: 20px; }
-h1 { font-size: 50px; line-height: 1.1; margin-bottom: 20px; font-weight: 800; }
+.status { color: #3b82f6; font-size: 14px; font-weight: 800; margin-bottom: 20px; }
+h1 { font-size: 52px; line-height: 1.1; font-weight: 800; margin-bottom: 25px; }
 h1 span { color: #3b82f6; }
-p { color: #94a3b8; font-size: 18px; line-height: 1.6; }
+p { color: #64748b; font-size: 18px; }
 
-.auth-section { flex: 0.8; }
-.auth-card {
-    background: #0a0a0a;
-    padding: 40px;
-    border-radius: 24px;
-    border: 1px solid #1a1a1a;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-h2 { font-size: 22px; text-align: center; margin-bottom: 30px; }
-.input-box { margin-bottom: 20px; }
-.input-box label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 8px; text-transform: uppercase; }
+.auth-panel { flex: 0.8; background: #0a0a0c; border: 1px solid #1e1e24; border-radius: 24px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+h2 { text-align: center; margin-bottom: 30px; }
+.field { margin-bottom: 20px; }
+.field label { font-size: 11px; color: #475569; display: block; margin-bottom: 8px; text-transform: uppercase; }
 
 input {
-    width: 100%;
-    background: #050505;
-    border: 1px solid #1a1a1a;
-    padding: 14px;
-    border-radius: 12px;
-    color: white;
-    outline: none;
+    width: 100%; padding: 14px; background: #020204; border: 1px solid #1e1e24; border-radius: 12px; color: #fff; outline: none;
 }
 input:focus { border-color: #3b82f6; }
 
-.primary-btn {
-    width: 100%; padding: 16px; background: white; color: black;
-    border: none; border-radius: 12px; font-weight: 800; cursor: pointer;
-}
+.primary { width: 100%; padding: 16px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+.primary:hover { transform: scale(1.02); }
 
-.spacer { text-align: center; margin: 20px 0; color: #1a1a1a; position: relative; }
-.spacer span { background: #0a0a0a; padding: 0 10px; position: relative; z-index: 2; font-size: 12px; color: #4b5563; }
-.spacer::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #1a1a1a; }
+.sep { text-align: center; margin: 25px 0; position: relative; }
+.sep::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #1e1e24; }
+.sep span { background: #0a0a0c; padding: 0 10px; position: relative; z-index: 2; color: #475569; font-size: 12px; }
 
-.puter-btn {
-    width: 100%; padding: 14px; background: transparent; border: 1px solid #1a1a1a;
-    color: white; border-radius: 12px; cursor: pointer;
-}
-
-.docs-link { display: block; text-align: center; margin-top: 20px; color: #334155; text-decoration: none; font-size: 11px; }
+.secondary { width: 100%; padding: 14px; background: transparent; border: 1px solid #1e1e24; color: #fff; border-radius: 12px; cursor: pointer; }
+.docs { display: block; text-align: center; margin-top: 25px; color: #334155; text-decoration: none; font-size: 10px; }
 
 @media (max-width: 900px) {
     .container { flex-direction: column; text-align: center; padding: 40px 0; }
-    h1 { font-size: 32px; }
+    h1 { font-size: 36px; }
 }
