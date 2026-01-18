@@ -8,46 +8,112 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div id="overlay" class="overlay">
-        <div class="modal">
-            <input type="text" id="s-input" placeholder="Search your chats...">
-            <div id="s-results"></div>
+    <div class="grid-bg"></div>
+
+    <div id="search-modal" class="modal-wrap">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search chats...">
+            <div id="search-res-list"></div>
         </div>
     </div>
 
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-inner">
-            <div class="search-box" id="open-s">press ctrl+k to search</div>
-            <div class="history" id="hist"></div>
-            <button class="new-btn" id="reset">+ New Chat</button>
-        </div>
-    </aside>
-
-    <div class="main">
-        <nav class="nav">
-            <div class="nav-left">
-                <button id="menu-toggle" class="mobile-only">=</button>
-                <div class="logo">codeit copilot</div>
+    <div id="settings-modal" class="modal-wrap">
+        <div class="settings-ui">
+            <div class="settings-nav">
+                <div class="s-link active" data-tab="user-tab">User Settings</div>
+                <div class="s-link" data-tab="ai-tab">AI Settings</div>
+                <div class="s-actions">
+                    <button id="save-all">Save Settings</button>
+                    <button id="clear-all" class="danger">Clear Chat History</button>
+                </div>
             </div>
-            <div class="nav-right">
-                <button class="link">donate here</button>
-                <button class="link">our community</button>
-                <div class="pfp"></div>
-            </div>
-        </nav>
-
-        <div class="chat-container">
-            <div id="messages"></div>
-            
-            <div class="hub" id="hub">
-                <h1>codeit copilot imagine anything.</h1>
-                <div class="input-wrap">
-                    <textarea id="ai-in" placeholder="Write your imagination..."></textarea>
-                    <button id="run">Generate</button>
+            <div class="settings-body">
+                <div id="user-tab" class="tab-pane active">
+                    <h3>User Profile</h3>
+                    <div class="field-grp">
+                        <label>AI Display Name</label>
+                        <input type="text" id="set-nick">
+                    </div>
+                    <div class="field-grp">
+                        <label>PFP URL</label>
+                        <input type="text" id="set-pfp">
+                    </div>
+                    <div class="toggle-box">
+                        <span>Double click to hide sidebar</span>
+                        <div class="lever" id="side-toggle-lever"><div class="lever-dot"></div></div>
+                    </div>
+                </div>
+                <div id="ai-tab" class="tab-pane">
+                    <h3>AI Intelligence</h3>
+                    <div class="toggle-box">
+                        <span>Turn AI to work mode</span>
+                        <div class="lever" id="work-mode-lever"><div class="lever-dot"></div></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div id="plugin-modal" class="modal-wrap">
+        <div class="plugin-card">
+            <h3>do you got the plugin installed?</h3>
+            <div class="p-choices">
+                <button id="plug-yes">Yes</button>
+                <button id="plug-no">No</button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="side-panel" class="sidebar">
+        <div class="side-header">
+            <div class="search-bar-trigger" id="open-search">press ctrl+k to search</div>
+        </div>
+        <div id="chat-list" class="history-scroll"></div>
+        <div class="side-footer">
+            <button id="start-new">+ New Chat</button>
+        </div>
+    </aside>
+
+    <div id="side-restore" class="blue-restore-btn"></div>
+
+    <main class="content-frame">
+        <nav class="navbar">
+            <div class="nav-left">
+                <button id="menu-burger" class="burger-btn">=</button>
+                <div class="logo-name">codeit copilot</div>
+            </div>
+            <div class="nav-right">
+                <button id="btn-plugin" class="plug-btn">connect plugin</button>
+                <button class="nav-btn">donate here</button>
+                <button class="nav-btn">our community</button>
+                <div class="pfp-container">
+                    <div id="top-pfp" class="avatar"></div>
+                    <div id="user-dropdown" class="pfp-drop">
+                        <button id="open-settings-ui">settings</button>
+                        <button id="logout-trigger">logout</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div id="chat-scroller" class="messages-area"></div>
+
+        <div id="hub-container" class="hub-view">
+            <div class="hub-center">
+                <h2>codeit copilot imagine anything.</h2>
+                <div class="pre-options">
+                    <button class="opt-btn" data-p="build me a parkour game that does ">Obby</button>
+                    <button class="opt-btn" data-p="make me a horror scene animation that does ">Horror</button>
+                    <button class="opt-btn" data-p="create me a map of ">Map Build</button>
+                </div>
+                <div class="chat-input-row">
+                    <textarea id="main-prompt" placeholder="Write your imagination..."></textarea>
+                    <button id="submit-gen">Generate</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script src="aigame.js"></script>
 </body>
 </html>
