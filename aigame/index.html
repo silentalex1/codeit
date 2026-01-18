@@ -8,47 +8,46 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div class="mesh-visuals"></div>
-    <div class="grid-layer"></div>
+    <div class="grid-overlay"></div>
 
     <div id="search-modal" class="modal">
         <div class="search-container">
-            <input type="text" id="search-input" placeholder="Search your chats...">
-            <div id="search-results" class="search-list"></div>
+            <input type="text" id="search-q" placeholder="Search your chats...">
+            <div id="search-results"></div>
         </div>
     </div>
 
     <div id="settings-modal" class="modal">
-        <div class="settings-card">
-            <div class="settings-nav">
-                <div class="s-link active" data-tab="profile-tab">User Settings</div>
-                <div class="s-link" data-tab="ai-tab">AI Settings</div>
-                <div class="s-actions">
-                    <button id="save-settings" class="btn-save">Save Settings</button>
-                    <button id="clear-history" class="btn-clear">Clear Chat History</button>
+        <div class="settings-ui">
+            <div class="s-sidebar">
+                <div class="s-nav active" data-tab="u-set">User Settings</div>
+                <div class="s-nav" data-tab="a-set">AI Settings</div>
+                <div class="s-footer">
+                    <button id="save-all">Save Settings</button>
+                    <button id="clear-history" class="danger">Clear Chat History</button>
                 </div>
             </div>
-            <div class="settings-body">
-                <div id="profile-tab" class="tab-content active">
-                    <h3>Profile</h3>
-                    <div class="input-group">
-                        <label>AI Display Name</label>
-                        <input type="text" id="set-nickname">
+            <div class="s-content">
+                <div id="u-set" class="tab active">
+                    <h3>User Settings</h3>
+                    <div class="f-group">
+                        <label>Display Name</label>
+                        <input type="text" id="set-name">
                     </div>
-                    <div class="input-group">
+                    <div class="f-group">
                         <label>Profile Image URL</label>
                         <input type="text" id="set-pfp">
                     </div>
-                    <div class="lever-item">
+                    <div class="lever-row">
                         <span>Double click to hide sidebar</span>
-                        <div class="lever" id="side-toggle-lever"><div class="dot"></div></div>
+                        <div class="lever" id="side-lever"><div class="dot"></div></div>
                     </div>
                 </div>
-                <div id="ai-tab" class="tab-content">
-                    <h3>Intelligence</h3>
-                    <div class="lever-item">
+                <div id="a-set" class="tab">
+                    <h3>AI Preferences</h3>
+                    <div class="lever-row">
                         <span>Turn AI to work mode</span>
-                        <div class="lever" id="work-mode-lever"><div class="dot"></div></div>
+                        <div class="lever" id="work-lever"><div class="dot"></div></div>
                     </div>
                 </div>
             </div>
@@ -56,74 +55,70 @@
     </div>
 
     <div id="plugin-modal" class="modal">
-        <div class="plugin-card">
+        <div class="plugin-ui">
             <h3>do you got the plugin installed?</h3>
-            <div class="choice-row">
-                <button id="plugin-yes" class="btn-y">Yes</button>
-                <button id="plugin-no" class="btn-n">No</button>
+            <div class="plug-btns">
+                <button id="plug-yes">Yes</button>
+                <button id="plug-no">No</button>
             </div>
         </div>
     </div>
 
     <aside id="sidebar" class="sidebar">
-        <div class="side-top">
-            <div class="search-box-btn" id="trigger-search">press ctrl+k to search</div>
-            <div id="history-container" class="history-list"></div>
+        <div class="sidebar-header">
+            <div class="search-btn" id="search-open">press ctrl+k to search</div>
         </div>
-        <div class="side-bottom">
-            <button id="btn-new-chat" class="btn-new">+ New Chat</button>
+        <div id="chat-list" class="history-list"></div>
+        <div class="sidebar-bottom">
+            <button id="new-chat-btn" class="btn-new">+ New Chat</button>
         </div>
     </aside>
 
-    <div id="sidebar-restore" class="restore-bar"></div>
+    <div id="restore-sidebar" class="restore-tab"></div>
 
     <main class="main">
         <nav class="navbar">
-            <div class="nav-l">
-                <button id="mob-burger" class="burger-btn">=</button>
+            <div class="n-left">
+                <button id="mob-menu" class="mob-btn">=</button>
                 <div class="logo">codeit copilot</div>
             </div>
-            <div class="nav-r">
-                <button id="btn-plugin" class="plugin-btn">connect plugin</button>
-                <button class="nav-link">donate here</button>
-                <button class="nav-link">our community</button>
-                <div class="user-control">
-                    <div id="user-avatar" class="avatar-circle"></div>
-                    <div id="pfp-dropdown" class="pfp-drop">
-                        <button id="btn-settings">settings</button>
-                        <button id="btn-logout">logout</button>
+            <div class="n-right">
+                <button id="conn-btn" class="plug-btn">connect plugin</button>
+                <button class="nav-item">donate here</button>
+                <div class="pfp-wrap">
+                    <div id="user-avatar" class="avatar"></div>
+                    <div id="user-drop" class="dropdown">
+                        <button id="open-settings">settings</button>
+                        <button id="logout">logout</button>
                     </div>
                 </div>
+                <button class="nav-item">our community</button>
             </div>
         </nav>
 
-        <div id="chat-scroller" class="chat-viewport"></div>
+        <div id="chat-view" class="chat-area"></div>
 
-        <div id="hub-ui" class="hub-container">
+        <div id="hub" class="center-hub">
             <div class="hub-box">
                 <h2>codeit copilot imagine anything.</h2>
-                <div class="premade-sq-grid">
-                    <button class="sq-opt" data-p="build me a parkour game that does ">
-                        <div class="sq-ico">🏃</div>
-                        <span>Obby</span>
+                <div class="premade-grid">
+                    <button class="sq-btn" data-p="create me a obby that ">
+                        <span>create me a obby that ___</span>
                     </button>
-                    <button class="sq-opt" data-p="make me a horror scene animation that does ">
-                        <div class="sq-ico">💀</div>
-                        <span>Horror</span>
+                    <button class="sq-btn" data-p="make me a horror scene that does ">
+                        <span>make me a horror scene that does ___</span>
                     </button>
-                    <button class="sq-opt" data-p="create me a map of ">
-                        <div class="sq-ico">🌍</div>
-                        <span>Map Build</span>
+                    <button class="sq-btn" data-p="create me a map that looks like ">
+                        <span>create me a map that looks like ___</span>
                     </button>
                 </div>
-                <div class="typing-area">
-                    <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
-                    <button id="btn-submit">Generate</button>
+                <div class="input-wrap">
+                    <textarea id="ai-query" placeholder="Write your imagination..."></textarea>
+                    <button id="gen-action">Generate</button>
                 </div>
             </div>
         </div>
     </main>
-
     <script src="aigame.js"></script>
 </body>
 </html>
