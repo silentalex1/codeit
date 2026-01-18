@@ -24,8 +24,8 @@ document.getElementById('btn-create').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-puter').addEventListener('click', () => {
-    puter.auth.signIn().then(() => {
-        sessionStorage.setItem('copilot_session', JSON.stringify({ name: 'PuterUser', isPuter: true }));
+    puter.auth.signIn().then((u) => {
+        sessionStorage.setItem('copilot_session', JSON.stringify({ name: u.username, isPuter: true }));
         window.location.href = "aigame/";
     });
 });
