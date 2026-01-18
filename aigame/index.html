@@ -8,122 +8,114 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div class="grid-bg"></div>
-
+    <div class="grid-overlay"></div>
     <div id="search-modal" class="modal">
-        <div class="modal-box search-box-container">
-            <input type="text" id="search-q" placeholder="Search your chats...">
-            <div id="search-results" class="results-list"></div>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search your chats...">
+            <div id="search-results" class="search-list"></div>
         </div>
     </div>
-
     <div id="settings-modal" class="modal">
         <div class="settings-card">
-            <aside class="s-nav-sidebar">
-                <div class="s-link active" data-tab="u-tab">User Settings</div>
-                <div class="s-link" data-tab="a-tab">AI Settings</div>
-                <div class="s-footer-actions">
-                    <button id="save-all">Save Settings</button>
-                    <button id="clear-hist" class="danger">Clear Chat History</button>
-                    <button id="p-reauth" class="btn-p-s">login with puterjs</button>
+            <div class="settings-nav">
+                <div class="s-link active" data-tab="profile-tab">User Settings</div>
+                <div class="s-link" data-tab="ai-tab">AI Settings</div>
+                <div class="s-actions">
+                    <button id="save-settings" class="btn-save">Save Settings</button>
+                    <button id="clear-history" class="btn-clear">Clear Chat History</button>
+                    <button id="puter-reauth" class="btn-reauth">login with puterjs</button>
                 </div>
-            </aside>
-            <main class="s-main-body">
-                <div id="u-tab" class="tab-pane active">
-                    <div class="t-section">
+            </div>
+            <div class="settings-body">
+                <div id="profile-tab" class="tab-content active">
+                    <div class="tab-header">
                         <h3>Profile</h3>
-                        <div class="v-divider"></div>
+                        <div class="header-line"></div>
                     </div>
-                    <div class="f-group">
-                        <label>Display Name</label>
-                        <input type="text" id="set-name">
+                    <div class="input-group">
+                        <label>AI Display Name</label>
+                        <input type="text" id="set-nickname">
                     </div>
-                    <div class="f-group">
+                    <div class="input-group">
                         <label>Profile Image URL</label>
-                        <input type="text" id="set-pfp-url">
+                        <input type="text" id="set-pfp">
                     </div>
-                    <div class="pfp-drop" id="pfp-zone">
-                        <input type="file" id="pfp-file-hidden" hidden accept="image/*">
-                        <div id="drop-ui-content">
-                            <button class="btn-select-pfp">select pfp</button>
+                    <div class="pfp-drop-area" id="pfp-zone">
+                        <input type="file" id="pfp-file" hidden accept="image/*">
+                        <div id="drop-hint">
+                            <button type="button" id="btn-pick" class="btn-pick">select pfp</button>
                             <p class="pc-only">drop image here</p>
                         </div>
-                        <img id="pfp-pre" src="" style="display:none;">
+                        <img id="pfp-preview" src="">
                     </div>
-                    <div class="toggle-item">
+                    <div class="lever-item">
                         <span>Double click to hide sidebar</span>
-                        <div class="lever" id="side-toggle"><div class="dot"></div></div>
+                        <div class="lever" id="side-toggle-lever"><div class="dot"></div></div>
                     </div>
                 </div>
-                <div id="a-tab" class="tab-pane">
-                    <div class="t-section">
+                <div id="ai-tab" class="tab-content">
+                    <div class="tab-header">
                         <h3>AI Settings</h3>
-                        <div class="v-divider"></div>
+                        <div class="header-line"></div>
                     </div>
-                    <div class="toggle-item">
+                    <div class="lever-item">
                         <span>Turn AI to work mode</span>
-                        <div class="lever" id="work-toggle"><div class="dot"></div></div>
+                        <div class="lever" id="work-mode-lever"><div class="dot"></div></div>
                     </div>
                 </div>
-            </main>
-        </div>
-    </div>
-
-    <div id="plugin-modal" class="modal">
-        <div class="plugin-alert-ui">
-            <h3>do you got the plugin installed?</h3>
-            <div class="p-choices">
-                <button id="p-yes">Yes</button>
-                <button id="p-no">No</button>
             </div>
         </div>
     </div>
-
-    <aside id="side-panel" class="sidebar">
-        <div class="s-top">
-            <div class="search-trigger" id="open-search">press ctrl+k to search</div>
-            <div id="history-box" class="hist-container"></div>
+    <div id="plugin-modal" class="modal">
+        <div class="plugin-card">
+            <h3>do you got the plugin installed?</h3>
+            <div class="choice-row">
+                <button id="plugin-yes">Yes</button>
+                <button id="plugin-no">No</button>
+            </div>
         </div>
-        <div class="s-bottom">
-            <button id="reset-chat-btn" class="btn-new-chat">+ New Chat</button>
+    </div>
+    <aside id="sidebar" class="sidebar">
+        <div class="side-top">
+            <div class="search-box-btn" id="trigger-search">press ctrl+k to search</div>
+            <div id="history-container" class="history-list"></div>
+        </div>
+        <div class="side-bottom">
+            <button id="btn-new-chat" class="btn-new">+ New Chat</button>
         </div>
     </aside>
-
-    <div id="restore-sidebar" class="sidebar-restore"></div>
-
-    <main class="viewport">
+    <div id="sidebar-restore" class="restore-bar"></div>
+    <main class="main">
         <nav class="navbar">
             <div class="nav-l">
                 <button id="mob-burger" class="burger-btn">=</button>
                 <div class="logo">codeit copilot</div>
             </div>
             <div class="nav-r">
-                <button id="plugin-trigger" class="btn-plugin">connect plugin</button>
-                <button class="nav-btn">donate here</button>
-                <div class="pfp-anchor">
-                    <div id="u-avatar" class="avatar-circle"></div>
-                    <div id="u-drop" class="drop-menu">
-                        <button id="trigger-settings">settings</button>
-                        <button id="trigger-logout">logout</button>
+                <button id="btn-plugin" class="plugin-btn">connect plugin</button>
+                <button class="nav-link">donate here</button>
+                <button class="nav-link">our community</button>
+                <div class="user-control">
+                    <div id="user-avatar" class="avatar-circle"></div>
+                    <div id="pfp-dropdown" class="pfp-drop">
+                        <button id="btn-settings">settings</button>
+                        <button id="btn-logout">logout</button>
                     </div>
                 </div>
-                <button class="nav-btn">our community</button>
             </div>
         </nav>
-
-        <div id="chat-scroller" class="chat-log"></div>
-
-        <div id="hub-ui" class="hub-center">
-            <div class="hub-wrap">
+        <div id="chat-scroller" class="chat-viewport"></div>
+        <div id="hub-ui" class="hub-container">
+            <div class="hub-box">
                 <h2>codeit copilot imagine anything.</h2>
-                <div class="option-grid">
-                    <button class="sq-option" data-p="create me a obby that ">create me a obby that ___</button>
-                    <button class="sq-option" data-p="make me a horror scene that does ">make me a horror scene that does ___</button>
-                    <button class="sq-option" data-p="create me a map that looks like ">create me a map that looks like ___</button>
+                <div class="premade-sq-grid">
+                    <button class="sq-opt" data-p="create me a obby that "><span>create me a obby that ___</span></button>
+                    <button class="sq-opt" data-p="make me a horror scene that does "><span>make me a horror scene that does ___</span></button>
+                    <button class="sq-opt" data-p="create me a map that looks like "><span>create me a map that looks like ___</span></button>
                 </div>
-                <div class="input-hub">
-                    <textarea id="ai-query" placeholder="Write your imagination..."></textarea>
-                    <button id="submit-gen">Generate</button>
+                <div class="typing-area">
+                    <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
+                    <button id="btn-submit">Generate</button>
                 </div>
             </div>
         </div>
