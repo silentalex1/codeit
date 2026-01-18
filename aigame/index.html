@@ -8,52 +8,46 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div id="search-modal" class="modal-overlay">
-        <div class="modal-content">
-            <input type="text" id="search-input" placeholder="Search history...">
-            <div id="search-list"></div>
+    <div id="overlay" class="overlay">
+        <div class="modal">
+            <input type="text" id="s-input" placeholder="Search your chats...">
+            <div id="s-results"></div>
         </div>
     </div>
 
-    <aside id="sidebar" class="sidebar">
-        <div class="side-top">
-            <div class="search-trigger" id="search-box-btn">press ctrl+k to search</div>
-        </div>
-        <div class="chat-history" id="history-box"></div>
-        <div class="side-bottom">
-            <button id="new-chat-btn" class="add-chat-btn">+ New Chat</button>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-inner">
+            <div class="search-box" id="open-s">press ctrl+k to search</div>
+            <div class="history" id="hist"></div>
+            <button class="new-btn" id="reset">+ New Chat</button>
         </div>
     </aside>
 
-    <nav class="nav">
-        <div class="nav-left">
-            <button id="menu-toggle" class="mobile-only">=</button>
-            <div class="brand">codeit copilot</div>
-        </div>
-        <div class="nav-right">
-            <span>donate here</span>
-            <span>our community</span>
-            <div class="pfp" id="logout"></div>
-        </div>
-    </nav>
-
-    <main class="content">
-        <div id="chat-output" class="output"></div>
-
-        <div class="center-ui" id="hub-container">
-            <h1 id="main-title">codeit copilot imagine anything.</h1>
-            <div class="suggestions">
-                <button class="pill" data-p="build me a parkour game that does ">Parkour</button>
-                <button class="pill" data-p="make me a horror scene animation that does ">Horror</button>
-                <button class="pill" data-p="create me a map of ">Map Build</button>
+    <div class="main">
+        <nav class="nav">
+            <div class="nav-left">
+                <button id="menu-toggle" class="mobile-only">=</button>
+                <div class="logo">codeit copilot</div>
             </div>
-            <div class="input-wrap">
-                <textarea id="prompt-input" placeholder="Write your imagination..."></textarea>
-                <button id="send-btn">Generate</button>
+            <div class="nav-right">
+                <button class="link">donate here</button>
+                <button class="link">our community</button>
+                <div class="pfp"></div>
+            </div>
+        </nav>
+
+        <div class="chat-container">
+            <div id="messages"></div>
+            
+            <div class="hub" id="hub">
+                <h1>codeit copilot imagine anything.</h1>
+                <div class="input-wrap">
+                    <textarea id="ai-in" placeholder="Write your imagination..."></textarea>
+                    <button id="run">Generate</button>
+                </div>
             </div>
         </div>
-    </main>
-
+    </div>
     <script src="aigame.js"></script>
 </body>
 </html>
