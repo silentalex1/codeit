@@ -18,7 +18,7 @@
     </div>
 
     <div id="settings-modal" class="modal-overlay">
-        <div class="settings-card">
+        <div class="settings-box">
             <div class="set-side">
                 <div class="set-link active" data-tab="profile-area">User Settings</div>
                 <div class="set-link" data-tab="ai-area">AI Settings</div>
@@ -69,6 +69,16 @@
         </div>
     </div>
 
+    <div id="plugin-modal" class="modal-overlay">
+        <div class="plug-card">
+            <h3>do you got the plugin installed?</h3>
+            <div class="plug-row">
+                <button id="plug-yes">Yes</button>
+                <button id="plug-no">No</button>
+            </div>
+        </div>
+    </div>
+
     <aside id="sidebar" class="side-panel">
         <div class="side-top">
             <div class="search-entry" id="open-search">press ctrl+k to search</div>
@@ -107,9 +117,9 @@
             <div class="hub-content">
                 <h2>codeit copilot imagine anything.</h2>
                 <div class="sq-grid">
-                    <button class="sq-btn" data-p="create me a obby that "><span>create me a obby that ___</span></button>
-                    <button class="sq-btn" data-p="make me a horror scene that does "><span>make me a horror scene that does ___</span></button>
-                    <button class="sq-btn" data-p="create me a map that looks like "><span>create me a map that looks like ___</span></button>
+                    <button class="sq-btn" data-p="create me a obby that ">create me a obby that ___</button>
+                    <button class="sq-btn" data-p="make me a horror scene that does ">make me a horror scene that does ___</button>
+                    <button class="sq-btn" data-p="create me a map that looks like ">create me a map that looks like ___</button>
                 </div>
                 <div class="input-bar">
                     <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
@@ -118,16 +128,6 @@
             </div>
         </div>
     </main>
-
-    <div id="plugin-modal" class="modal-overlay">
-        <div class="plug-card">
-            <h3>do you got the plugin installed?</h3>
-            <div class="plug-row">
-                <button id="plug-yes">Yes</button>
-                <button id="plug-no">No</button>
-            </div>
-        </div>
-    </div>
 
     <script src="aigame.js"></script>
 </body>
