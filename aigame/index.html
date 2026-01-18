@@ -8,7 +8,7 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div class="grid-overlay"></div>
+    <div class="grid-bg"></div>
 
     <div id="search-modal" class="modal-overlay">
         <div class="search-wrap">
@@ -99,7 +99,7 @@
             </div>
             <div class="nav-right">
                 <button id="plugin-connect" class="green-btn">connect plugin</button>
-                <button class="text-btn">donate here</button>
+                <button class="text-btn" id="donate-btn">donate here</button>
                 <div class="user-anchor">
                     <div id="user-pfp" class="avatar"></div>
                     <div id="user-menu" class="pfp-dropdown">
@@ -107,7 +107,7 @@
                         <button id="logout-trigger">logout</button>
                     </div>
                 </div>
-                <button class="text-btn">our community</button>
+                <button class="text-btn" id="community-btn">our community</button>
             </div>
         </nav>
 
@@ -115,7 +115,7 @@
 
         <div id="hub-ui" class="hub">
             <div class="hub-content">
-                <h2 class="hub-title">codeit copilot imagine anything.</h2>
+                <h2 id="hub-title">codeit copilot imagine anything.</h2>
                 <div class="sq-grid">
                     <button class="sq-btn" data-p="create me a obby that "><span>create me a obby that ___</span></button>
                     <button class="sq-btn" data-p="make me a horror scene that does "><span>make me a horror scene that does ___</span></button>
