@@ -1,30 +1,45 @@
-document.getElementById('reg').addEventListener('click', async () => {
-    const user = document.getElementById('u').value.trim();
-    const pass = document.getElementById('p').value.trim();
-    if (!user || !pass) return;
+const API_URL = "http://localhost:3000/api";
+
+const registerUser = async () => {
+    const username = document.getElementById('user-field').value.trim();
+    const password = document.getElementById('pass-field').value.trim();
+    if (!username || !password) return;
 
     try {
-        let users = await puter.kv.get('app_users');
-        users = users ? JSON.parse(users) : {};
-
-        if (users[user]) {
-            if (users[user] === pass) {
-                sessionStorage.setItem('copilot_session', user);
+        const response = await fetch(`${API_URL}/auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, type: 'register' })
+        });
+        const data = await response.json();
+        if (data.success) {
+            sessionStorage.setItem('copilot_auth', JSON.stringify({ username }));
+            window.location.href = "/aigame";
+        } else {
+            const loginRes = await fetch(`${API_URL}/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, type: 'login' })
+            });
+            const loginData = await loginRes.json();
+            if (loginData.success) {
+                sessionStorage.setItem('copilot_auth', JSON.stringify({ username }));
                 window.location.href = "/aigame";
             } else {
-                alert("Username taken");
+                alert("Login failed or user exists.");
             }
-        } else {
-            users[user] = pass;
-            await puter.kv.set('app_users', JSON.stringify(users));
-            sessionStorage.setItem('copilot_session', user);
-            window.location.href = "/aigame";
         }
     } catch (e) {
-        puter.auth.signIn().then(() => window.location.href = "/aigame");
+        alert("Server error. Check server.js");
     }
-});
+};
 
-document.getElementById('p-log').addEventListener('click', () => {
-    puter.auth.signIn().then(() => window.location.href = "/aigame");
+document.getElementById('reg-trigger').addEventListener('click', registerUser);
+
+document.getElementById('puter-trigger').addEventListener('click', async () => {
+    const user = await puter.auth.signIn();
+    if (user) {
+        sessionStorage.setItem('copilot_auth', JSON.stringify({ username: user.username, isPuter: true }));
+        window.location.href = "/aigame";
+    }
 });
