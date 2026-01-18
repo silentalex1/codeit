@@ -3,85 +3,78 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
 body {
-    background: #020203;
+    background: #030303;
     color: white;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
-.blob-bg {
+.light-blobs {
     position: fixed;
-    width: 100vw; height: 100vh;
-    background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, transparent 60%);
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 10% 10%, #1e3a8a33 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, #1e1b4b33 0%, transparent 40%);
     z-index: -1;
-    filter: blur(100px);
 }
 
-.main-wrap {
+.container {
     display: flex;
-    max-width: 1200px;
-    width: 90%;
-    gap: 120px;
+    width: 1200px;
+    max-width: 90%;
+    gap: 80px;
     align-items: center;
-    z-index: 10;
 }
 
-.info-box { flex: 1.2; }
-.tag { color: #60a5fa; font-size: 14px; font-weight: 800; margin-bottom: 20px; letter-spacing: 1px; }
-h1 { font-size: 54px; line-height: 1.1; margin-bottom: 25px; }
+.hero { flex: 1; }
+.rank-tag { color: #3b82f6; font-size: 14px; font-weight: 800; margin-bottom: 20px; }
+h1 { font-size: 50px; line-height: 1.1; margin-bottom: 20px; font-weight: 800; }
 h1 span { color: #3b82f6; }
-p { color: #94a3b8; font-size: 18px; max-width: 500px; }
+p { color: #94a3b8; font-size: 18px; line-height: 1.6; }
 
-.auth-ui {
-    flex: 0.8;
-    position: relative;
-    padding: 2px;
-    border-radius: 30px;
+.auth-section { flex: 0.8; }
+.auth-card {
+    background: #0a0a0a;
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid #1a1a1a;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
-.auth-content {
-    background: #0a0a0c;
-    padding: 45px;
-    border-radius: 28px;
-    border: 1px solid #1e1e24;
-    position: relative;
-    z-index: 2;
-}
-
-h2 { text-align: center; margin-bottom: 35px; font-weight: 800; }
-.input-set { margin-bottom: 20px; }
-.input-set label { font-size: 11px; color: #4b5563; display: block; margin-bottom: 8px; text-transform: uppercase; }
+h2 { font-size: 22px; text-align: center; margin-bottom: 30px; }
+.input-box { margin-bottom: 20px; }
+.input-box label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 8px; text-transform: uppercase; }
 
 input {
     width: 100%;
-    padding: 15px;
-    background: #020203;
-    border: 1px solid #1e1e24;
+    background: #050505;
+    border: 1px solid #1a1a1a;
+    padding: 14px;
     border-radius: 12px;
     color: white;
     outline: none;
 }
-
 input:focus { border-color: #3b82f6; }
 
-.main-btn {
+.primary-btn {
     width: 100%; padding: 16px; background: white; color: black;
     border: none; border-radius: 12px; font-weight: 800; cursor: pointer;
-    transition: 0.2s;
 }
 
-.main-btn:hover { transform: scale(1.02); }
+.spacer { text-align: center; margin: 20px 0; color: #1a1a1a; position: relative; }
+.spacer span { background: #0a0a0a; padding: 0 10px; position: relative; z-index: 2; font-size: 12px; color: #4b5563; }
+.spacer::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #1a1a1a; }
 
-.line { text-align: center; margin: 25px 0; color: #1e1e24; position: relative; }
-.line span { background: #0a0a0c; padding: 0 10px; position: relative; z-index: 5; font-size: 12px; color: #4b5563; }
-.line::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #1e1e24; }
-
-.p-btn {
-    width: 100%; padding: 14px; background: transparent; border: 1px solid #1e1e24;
+.puter-btn {
+    width: 100%; padding: 14px; background: transparent; border: 1px solid #1a1a1a;
     color: white; border-radius: 12px; cursor: pointer;
 }
 
-.d-link { display: block; text-align: center; margin-top: 25px; color: #334155; text-decoration: none; font-size: 10px; }
+.docs-link { display: block; text-align: center; margin-top: 20px; color: #334155; text-decoration: none; font-size: 11px; }
+
+@media (max-width: 900px) {
+    .container { flex-direction: column; text-align: center; padding: 40px 0; }
+    h1 { font-size: 32px; }
+}
