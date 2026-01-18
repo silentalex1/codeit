@@ -3,55 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workspace | BloxAI</title>
+    <title>codeit copilot | Workspace</title>
     <link rel="stylesheet" href="aigame.css">
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div class="top-nav">
-        <div class="nav-left">
-            <span class="logo-text">Lemonade <small>beta</small></span>
-        </div>
-        <div class="nav-right">
-            <button class="store-btn">Store Purchases</button>
-            <div class="time-icon">🕒</div>
-            <div class="user-avatar"></div>
+    <div id="search-overlay" class="search-overlay">
+        <div class="search-modal">
+            <input type="text" id="search-input" placeholder="Search your chat history...">
+            <div id="search-results"></div>
         </div>
     </div>
 
-    <div class="side-nav">
-        <button class="new-proj-btn">+ New Project</button>
-        <div class="nav-label">Projects</div>
-        <div class="discord-card">
-            <strong>Discord</strong>
-            <p>Join for gifts</p>
+    <aside class="sidebar">
+        <div class="side-top">
+            <div class="ctrl-k" id="open-search">press ctrl+k to search</div>
         </div>
-    </div>
+        <div class="history-list" id="history"></div>
+        <div class="side-bottom">
+            <button class="new-chat" id="reset-ui">+ New Chat</button>
+        </div>
+    </aside>
 
-    <main class="main-workspace" id="workspace">
-        <div id="chat-scroller" class="chat-display"></div>
+    <nav class="navbar">
+        <div class="nav-brand">codeit copilot</div>
+        <div class="nav-actions">
+            <button class="nav-link">donate here</button>
+            <button class="nav-link">our community</button>
+            <div class="user-pfp" id="user-display"></div>
+        </div>
+    </nav>
 
-        <div class="center-hub" id="hub-container">
-            <h2 id="hub-title">Describe a game mechanic...</h2>
-            
-            <div class="suggestion-row" id="suggestions">
-                <button class="suggest-btn" data-prompt="build me a parkour game that does ">
-                    <b>Obby</b>
-                    <p>Parkour game</p>
-                </button>
-                <button class="suggest-btn" data-prompt="make me a horror scene animation that does ">
-                    <b>Horror</b>
-                    <p>Scary scene</p>
-                </button>
-                <button class="suggest-btn" data-prompt="create me a map of ">
-                    <b>World</b>
-                    <p>Map build</p>
-                </button>
+    <main class="workspace" id="main-ws">
+        <div id="chat-stream"></div>
+        
+        <div class="center-hub" id="hub">
+            <h1 id="hub-text">codeit copilot imagine anything.</h1>
+            <div class="pills">
+                <button class="pill" data-prompt="build me a parkour game that does ">Parkour</button>
+                <button class="pill" data-prompt="make me a horror scene animation that does ">Horror</button>
+                <button class="pill" data-prompt="create me a map of ">Map Build</button>
             </div>
-
             <div class="input-container">
-                <textarea id="ai-text-box" placeholder="codeit copilot imagine anything."></textarea>
-                <button id="submit-prompt">↗</button>
+                <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
+                <button id="send-trigger">Generate</button>
             </div>
         </div>
     </main>
