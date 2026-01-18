@@ -1,25 +1,27 @@
-document.getElementById('btn-auth').addEventListener('click', async () => {
-    const user = document.getElementById('username-in').value.trim();
-    const pass = document.getElementById('password-in').value.trim();
+document.getElementById('submit-auth').addEventListener('click', async () => {
+    const user = document.getElementById('reg-user').value.trim();
+    const pass = document.getElementById('reg-pass').value.trim();
     if (!user || !pass) return;
-    let data = await puter.kv.get('codeit_copilot_users');
-    let db = data ? JSON.parse(data) : {};
+    let raw = await puter.kv.get('copilot_accounts');
+    let db = raw ? JSON.parse(raw) : {};
     if (db[user]) {
         if (db[user].password === pass) {
             sessionStorage.setItem('copilot_session', JSON.stringify({ username: user }));
             window.location.href = "aigame/";
-        } else { alert("User already exists."); }
+        } else {
+            alert("Username taken");
+        }
     } else {
         db[user] = { password: pass, settings: { nickname: user, pfp: '', workMode: false, hideSidebar: false }, history: [] };
-        await puter.kv.set('codeit_copilot_users', JSON.stringify(db));
+        await puter.kv.set('copilot_accounts', JSON.stringify(db));
         sessionStorage.setItem('copilot_session', JSON.stringify({ username: user }));
         window.location.href = "aigame/";
     }
 });
-document.getElementById('btn-puter-auth').addEventListener('click', async () => {
+document.getElementById('puter-auth').addEventListener('click', async () => {
     const user = await puter.auth.signIn();
     if (user) {
-        sessionStorage.setItem('copilot_session', JSON.stringify({ username: user.username, isPuter: true }));
+        sessionStorage.setItem('copilot_session', JSON.stringify({ username: user.username }));
         window.location.href = "aigame/";
     }
 });
