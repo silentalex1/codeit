@@ -1,104 +1,82 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const rawSession = sessionStorage.getItem('copilot_session');
-    if (!rawSession) {
-        window.location.href = "../";
-        return;
-    }
-    const session = JSON.parse(rawSession);
+    let sessionRaw = sessionStorage.getItem('copilot_session');
+    if (!sessionRaw) { window.location.href = "../"; return; }
+    let session = JSON.parse(sessionRaw);
 
-    const input = document.getElementById('ai-input');
-    const genBtn = document.getElementById('btn-gen');
+    const input = document.getElementById('ai-query');
+    const submitBtn = document.getElementById('submit-gen');
     const hub = document.getElementById('hub-ui');
     const scroller = document.getElementById('chat-scroller');
-    const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('sidebar-restore');
-    const avatar = document.getElementById('user-avatar');
-    const dropMenu = document.getElementById('avatar-drop');
+    const sidebar = document.getElementById('side-panel');
+    const restoreBtn = document.getElementById('restore-sidebar');
+    const avatar = document.getElementById('u-avatar');
+    const dropdown = document.getElementById('u-drop');
     const settingsModal = document.getElementById('settings-modal');
     const searchModal = document.getElementById('search-modal');
     const pluginModal = document.getElementById('plugin-modal');
-    const pfpFile = document.getElementById('pfp-file');
-    const pfpPreview = document.getElementById('pfp-preview');
-    const dropHint = document.getElementById('drop-hint');
+    const pfpFile = document.getElementById('pfp-file-hidden');
+    const pfpPreview = document.getElementById('pfp-pre');
+    const dropContent = document.getElementById('drop-ui-content');
 
     let history = [];
-    let state = {
-        nickname: session.username,
-        pfp: '',
-        workMode: false,
-        hideSidebar: false
-    };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
     const loadCloud = async () => {
-        const raw = await puter.kv.get('codeit_copilot_users');
-        const db = JSON.parse(raw || '{}');
-        if (db[session.username]) {
-            state = db[session.username].settings || state;
-            history = db[session.username].history || [];
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        if (db[session.name]) {
+            state = db[session.name].settings || state;
+            history = db[session.name].history || [];
             syncUI();
-            renderHistory();
+            updateHistoryUI();
         }
     };
 
     const syncUI = () => {
         if (avatar) avatar.style.backgroundImage = state.pfp ? 'url(' + state.pfp + ')' : '';
-        const nameInp = document.getElementById('set-name');
-        const pfpInp = document.getElementById('set-pfp');
-        if (nameInp) nameInp.value = state.nickname;
-        if (pfpInp) pfpInp.value = state.pfp;
+        document.getElementById('set-name').value = state.nickname;
+        document.getElementById('set-pfp-url').value = state.pfp;
         
         if (state.pfp) {
             pfpPreview.src = state.pfp;
             pfpPreview.style.display = 'block';
-            dropHint.style.display = 'none';
+            dropContent.style.display = 'none';
         }
 
         if (state.workMode) {
-            genBtn.innerText = 'Ask';
-            genBtn.classList.add('mode-work');
-            document.getElementById('work-lever').classList.add('on');
+            submitBtn.innerText = "Ask";
+            document.getElementById('work-toggle').classList.add('on');
         } else {
-            genBtn.innerText = 'Generate';
-            genBtn.classList.remove('mode-work');
-            document.getElementById('work-lever').classList.remove('on');
+            submitBtn.innerText = "Generate";
+            document.getElementById('work-toggle').classList.remove('on');
         }
-
-        if (state.hideSidebar) {
-            document.getElementById('side-lever').classList.add('on');
-        }
+        
+        if (state.hideSidebar) document.getElementById('side-lever').classList.add('on');
     };
 
     const saveCloud = async () => {
-        const raw = await puter.kv.get('codeit_copilot_users');
-        const db = JSON.parse(raw || '{}');
-        db[session.username] = {
-            password: db[session.username]?.password || '',
-            settings: state,
-            history: history
-        };
-        await puter.kv.set('codeit_copilot_users', JSON.stringify(db));
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        if (db[session.name]) {
+            db[session.name].settings = state;
+            db[session.name].history = history;
+            await puter.kv.set('copilot_db', JSON.stringify(db));
+        }
     };
 
-    const pushMessage = (text, isUser = false, isError = false) => {
+    const writeMessage = (text, isUser = false, isError = false) => {
         hub.classList.add('active');
         scroller.style.display = 'block';
         const div = document.createElement('div');
         div.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) div.style.borderColor = '#ef4444';
-        
-        if (isUser) {
-            div.innerText = text;
-        } else {
-            div.innerHTML = text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-        }
+        if (isError) div.style.color = '#ef4444';
+        div.innerHTML = isUser ? text : text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
         scroller.appendChild(div);
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const startAI = async () => {
+    const handleAI = async () => {
         const val = input.value.trim();
         if (!val) return;
-        pushMessage(val, true);
+        writeMessage(val, true);
         input.value = '';
         input.style.height = '26px';
 
@@ -111,51 +89,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             const res = await puter.ai.chat(val);
             thinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
             history.push({ q: val, a: res });
-            renderHistory();
+            updateHistoryUI();
             saveCloud();
         } catch (e) {
-            thinking.innerText = 'Connection Error: Puter session timeout.';
+            thinking.innerText = "Error: Check Puter session.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const renderHistory = () => {
-        const box = document.getElementById('history-box');
-        box.innerHTML = history.map((h, i) => '<div class="hist-item" onclick="loadHistory(' + i + ')">' + h.q + '</div>').join('');
+    const updateHistoryUI = () => {
+        document.getElementById('history-box').innerHTML = history.map((h, i) => `
+            <div class="hist-item" onclick="loadHist(${i})">${h.q}</div>
+        `).join('');
     };
 
-    window.loadHistory = (i) => {
+    window.loadHist = (i) => {
         scroller.innerHTML = '';
-        pushMessage(history[i].q, true);
-        pushMessage(history[i].a);
+        writeMessage(history[i].q, true);
+        writeMessage(history[i].a);
     };
 
-    const handleFile = (file) => {
+    const fileHandler = (file) => {
         if (!file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        const r = new FileReader();
+        r.onload = (e) => {
             state.pfp = e.target.result;
             pfpPreview.src = state.pfp;
             pfpPreview.style.display = 'block';
-            dropHint.style.display = 'none';
+            dropContent.style.display = 'none';
         };
-        reader.readAsDataURL(file);
+        r.readAsDataURL(file);
     };
 
     document.getElementById('pfp-zone').onclick = () => pfpFile.click();
-    pfpFile.onchange = (e) => handleFile(e.target.files[0]);
+    pfpFile.onchange = (e) => fileHandler(e.target.files[0]);
     document.getElementById('pfp-zone').ondragover = (e) => e.preventDefault();
-    document.getElementById('pfp-zone').ondrop = (e) => {
-        e.preventDefault();
-        handleFile(e.dataTransfer.files[0]);
-    };
+    document.getElementById('pfp-zone').ondrop = (e) => { e.preventDefault(); fileHandler(e.dataTransfer.files[0]); };
 
-    genBtn.addEventListener('click', startAI);
+    submitBtn.addEventListener('click', handleAI);
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            startAI();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAI(); }
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
     });
@@ -172,17 +145,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         restoreBtn.style.display = 'none';
     });
 
-    avatar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropMenu.classList.toggle('active');
-    });
-
-    document.addEventListener('click', () => dropMenu.classList.remove('active'));
-
-    document.getElementById('settings-trigger').onclick = () => settingsModal.style.display = 'flex';
-
+    avatar.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); });
+    document.addEventListener('click', () => dropdown.classList.remove('active'));
+    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
+    
     document.querySelectorAll('.modal').forEach(m => {
-        m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
+        m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; };
     });
 
     document.querySelectorAll('.s-nav').forEach(nav => {
@@ -193,60 +161,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
+    document.getElementById('work-toggle').onclick = function() { this.classList.toggle('on'); };
     document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
 
-    document.getElementById('save-settings').onclick = async () => {
+    document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        state.workMode = document.getElementById('work-lever').classList.contains('on');
+        state.pfp = document.getElementById('set-pfp-url').value || state.pfp;
+        state.workMode = document.getElementById('work-toggle').classList.contains('on');
         state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
         await saveCloud();
         location.reload();
     };
 
-    document.getElementById('clear-history').onclick = async () => {
-        if (confirm('Clear all chat history?')) {
+    document.getElementById('clear-hist').onclick = async () => {
+        if (confirm("Clear history?")) {
             history = [];
-            renderHistory();
-            scroller.innerHTML = '';
-            hub.classList.remove('active');
-            settingsModal.style.display = 'none';
             await saveCloud();
+            location.reload();
         }
     };
 
-    document.getElementById('connect-btn').onclick = () => pluginModal.style.display = 'flex';
-    document.getElementById('plug-yes').onclick = () => window.open('https://example.com');
-    document.getElementById('plug-no').onclick = () => {
-        pluginModal.style.display = 'none';
-        pushMessage('you need to install the plugin for the website to connect and work.', false, true);
-    };
-
-    const toggleSearch = () => {
-        const isOn = searchModal.style.display === 'flex';
-        searchModal.style.display = isOn ? 'none' : 'flex';
-        if (!isOn) document.getElementById('search-q').focus();
+    const toggleS = () => {
+        const on = searchModal.style.display === 'flex';
+        searchModal.style.display = on ? 'none' : 'flex';
+        if (!on) document.getElementById('search-q').focus();
     };
 
     window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleSearch(); }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleS(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     });
 
     document.getElementById('search-q').oninput = (e) => {
-        const query = e.target.value.toLowerCase();
-        const results = history.filter(h => h.q.toLowerCase().includes(query));
-        document.getElementById('search-results').innerHTML = results.map(r => '<div class="hist-item" onclick="loadMatch(\'' + r.q.replace(/'/g, "\\'") + '\')">' + r.q + '</div>').join('');
+        const q = e.target.value.toLowerCase();
+        const m = history.filter(h => h.q.toLowerCase().includes(q));
+        document.getElementById('search-results').innerHTML = m.map(r => `<div class="hist-item" onclick="pick('${r.q}')">${r.q}</div>`).join('');
     };
 
-    window.loadMatch = (q) => {
-        const item = history.find(h => h.q === q);
-        if (item) {
+    window.pick = (q) => {
+        const i = history.find(h => h.q === q);
+        if (i) {
             searchModal.style.display = 'none';
             scroller.innerHTML = '';
-            pushMessage(item.q, true);
-            pushMessage(item.a);
+            writeMessage(i.q, true);
+            writeMessage(i.a);
         }
     };
 
@@ -256,8 +214,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('mob-menu').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat-btn').onclick = () => location.reload();
-    document.getElementById('logout-trigger').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
-    document.getElementById('puter-reauth').onclick = () => puter.auth.signIn().then(() => location.reload());
+    document.getElementById('trigger-logout').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
+    
+    const pr = document.getElementById('p-reauth');
+    if(pr) pr.onclick = () => puter.auth.signIn().then(() => location.reload());
+
+    document.getElementById('conn-btn').onclick = () => pluginModal.style.display = 'flex';
+    document.getElementById('p-yes').onclick = () => { window.open('https://example.com'); pluginModal.style.display = 'none'; };
+    document.getElementById('p-no').onclick = () => { pluginModal.style.display = 'none'; writeMessage('Install plugin for website to work.', false, true); };
 
     await loadCloud();
 });
