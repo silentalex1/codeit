@@ -9,32 +9,34 @@
     <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-    <div class="glow-layer"></div>
-    <div class="container">
-        <div class="hero">
-            <div class="status">#2 Best Free Generator</div>
+    <div class="grid-bg"></div>
+    <main class="landing-flex">
+        <section class="hero-area">
+            <span class="badge">#2 Best Free Generator</span>
             <h1>imagine what you want, then type your imagination. <span>You imagine we create.</span></h1>
-            <p>The most powerful AI tool for Roblox developers. No server required, just pure creation.</p>
-        </div>
+            <p>the most accurate, efficent, powerful, roblox ai game generator.</p>
+        </section>
 
-        <div class="auth-panel">
-            <div class="auth-inner">
+        <section class="auth-card">
+            <div class="auth-form">
                 <h2>Create account here</h2>
-                <div class="field">
+                <div class="input-box">
                     <label>enter your username here</label>
-                    <input type="text" id="u" placeholder="Username">
+                    <input type="text" id="user-field" placeholder="Username">
                 </div>
-                <div class="field">
+                <div class="input-box">
                     <label>enter your password here</label>
-                    <input type="password" id="p" placeholder="Password">
+                    <input type="password" id="pass-field" placeholder="Password">
                 </div>
-                <button id="reg" class="primary">create account</button>
-                <div class="sep"><span>or</span></div>
-                <button id="p-log" class="secondary">login with puterjs</button>
-                <a href="https://docs.puter.com/Auth/" target="_blank" class="docs">https://docs.puter.com/Auth/</a>
+                <button id="reg-trigger" class="btn-main">create account</button>
+                <div class="divider"><span>or</span></div>
+                <button id="puter-trigger" class="btn-sec">login with puterjs</button>
+                <div class="auth-footer">
+                    powered by using <a href="https://docs.puter.com/Auth/" target="_blank">https://docs.puter.com/Auth/</a>
+                </div>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
     <script src="script.js"></script>
 </body>
 </html>
