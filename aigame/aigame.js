@@ -1,42 +1,62 @@
-const UserSystem = {
-    handleRegister: (user, pass) => {
-        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-        if (db[user]) return false;
-        db[user] = { password: pass, created: Date.now() };
-        localStorage.setItem('app_users', JSON.stringify(db));
-        return true;
-    },
-    handleLogin: (user, pass) => {
-        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-        return db[user] && db[user].password === pass;
-    }
-};
+document.addEventListener('DOMContentLoaded', async () => {
+    const input = document.getElementById('ai-input');
+    const trigger = document.getElementById('send-trigger');
+    const hub = document.getElementById('hub');
+    const stream = document.getElementById('chat-stream');
+    const searchOverlay = document.getElementById('search-overlay');
+    const historyBox = document.getElementById('history');
 
-document.getElementById('create-acc-btn').addEventListener('click', () => {
-    const u = document.getElementById('user-field').value.trim();
-    const p = document.getElementById('pass-field').value.trim();
+    let chatHistory = [];
 
-    if (!u || !p) return alert("Please fill in both fields.");
+    const startChat = async () => {
+        const val = input.value.trim();
+        if(!val) return;
 
-    const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-    if (db[u]) {
-        if (UserSystem.handleLogin(u, p)) {
-            sessionStorage.setItem('active_session', u);
-            window.location.href = "/aigame";
-        } else {
-            alert("Username is taken. If this is you, check your password.");
+        hub.classList.add('active');
+        stream.innerHTML += `<div class="user-msg">${val}</div>`;
+        
+        const aiBox = document.createElement('div');
+        aiBox.className = 'ai-msg';
+        aiBox.innerText = 'Creating your imagination...';
+        stream.appendChild(aiBox);
+        
+        input.value = '';
+        chatHistory.push(val);
+        updateHistory();
+
+        try {
+            const res = await puter.ai.chat(val, { model: 'gemini-1.5-pro-latest' });
+            aiBox.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+        } catch(e) { aiBox.innerText = "Error loading Gemini 3."; }
+        
+        stream.scrollTop = stream.scrollHeight;
+    };
+
+    const updateHistory = () => {
+        historyBox.innerHTML = chatHistory.map(h => `<div class="hist-item">${h.substring(0, 30)}...</div>`).join('');
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if(e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            searchOverlay.style.display = 'flex';
+            document.getElementById('search-input').focus();
         }
-    } else {
-        if (UserSystem.handleRegister(u, p)) {
-            sessionStorage.setItem('active_session', u);
-            window.location.href = "/aigame";
-        }
-    }
-});
+        if(e.key === 'Escape') searchOverlay.style.display = 'none';
+    });
 
-document.getElementById('puter-btn').addEventListener('click', async () => {
-    try {
-        const res = await puter.auth.signIn();
-        if (res) window.location.href = "/aigame";
-    } catch (err) {}
+    document.querySelectorAll('.pill').forEach(p => {
+        p.addEventListener('click', () => {
+            input.value = p.dataset.prompt;
+            input.focus();
+        });
+    });
+
+    trigger.addEventListener('click', startChat);
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startChat(); } });
+
+    document.getElementById('reset-ui').addEventListener('click', () => {
+        hub.classList.remove('active');
+        stream.innerHTML = '';
+    });
 });
