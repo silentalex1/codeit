@@ -1,26 +1,40 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    let session = JSON.parse(sessionStorage.getItem('active_session'));
-    if (!session) { window.location.href = "../"; return; }
+    let sessionRaw = sessionStorage.getItem('copilot_session');
+    if (!sessionRaw) { window.location.href = "../"; return; }
+    let session = JSON.parse(sessionRaw);
 
     const input = document.getElementById('ai-query');
     const genBtn = document.getElementById('gen-action');
     const hub = document.getElementById('hub');
-    const scroller = document.getElementById('chat-view');
+    const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('restore-sidebar');
-    const avatar = document.getElementById('user-avatar');
-    const dropdown = document.getElementById('user-drop');
+    const restoreBtn = document.getElementById('restore-btn');
+    const avatar = document.getElementById('u-avatar');
+    const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
     const searchModal = document.getElementById('search-modal');
     const pluginModal = document.getElementById('plugin-modal');
 
-    let chatHistory = [];
-    let state = session.settings || { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
+    let history = [];
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
-    const syncUI = () => {
-        avatar.style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
-        document.getElementById('set-name').value = state.nickname;
-        document.getElementById('set-pfp').value = state.pfp;
+    const loadCloudData = async () => {
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        if (db[session.name]) {
+            state = db[session.name].settings || state;
+            history = db[session.name].history || [];
+            syncState();
+            renderHistory();
+        }
+    };
+
+    const syncState = () => {
+        if (avatar) avatar.style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
+        const setNickname = document.getElementById('set-name');
+        const setPfp = document.getElementById('set-pfp');
+        
+        if (setNickname) setNickname.value = state.nickname;
+        if (setPfp) setPfp.value = state.pfp;
         
         if (state.workMode) {
             genBtn.innerText = "Ask";
@@ -28,23 +42,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (state.hideSidebar) document.getElementById('side-lever').classList.add('on');
     };
-    syncUI();
 
-    const writeMsg = (text, isUser = false, isError = false) => {
-        hub.classList.add('up');
+    const saveCloud = async () => {
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        if (db[session.name]) {
+            db[session.name].settings = state;
+            db[session.name].history = history;
+            await puter.kv.set('copilot_db', JSON.stringify(db));
+        }
+    };
+
+    const addMessage = (text, isUser = false, isError = false) => {
+        hub.classList.add('active');
         scroller.style.display = 'block';
         const div = document.createElement('div');
-        div.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) div.classList.add('red-error');
+        div.className = isUser ? 'msg-user' : 'msg-ai';
+        if (isError) div.classList.add('error');
         div.innerHTML = isUser ? text : text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
         scroller.appendChild(div);
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const runAI = async () => {
+    const runAction = async () => {
         const val = input.value.trim();
         if (!val) return;
-        writeMsg(val, true);
+        addMessage(val, true);
         input.value = '';
         input.style.height = '26px';
 
@@ -56,39 +78,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await puter.ai.chat(val);
             aiThinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-            chatHistory.push({ q: val, a: res });
-            updateHistoryUI();
+            history.push({ q: val, a: res });
+            renderHistory();
             saveCloud();
         } catch (e) {
-            aiThinking.innerText = "Connection lost. Please ensure you are logged into Puter.";
+            aiThinking.innerText = "Error: Please check your Puter session.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const saveCloud = async () => {
-        let db = JSON.parse(await puter.kv.get('copilot_db'));
-        if (db[session.name]) {
-            db[session.name].history = chatHistory;
-            db[session.name].settings = state;
-            await puter.kv.set('copilot_db', JSON.stringify(db));
-        }
-    };
-
-    const updateHistoryUI = () => {
-        document.getElementById('chat-list').innerHTML = chatHistory.map((h, i) => `
-            <div class="hist-item" onclick="loadChat(${i})">${h.q}</div>
+    const renderHistory = () => {
+        document.getElementById('history-box').innerHTML = history.map((h, i) => `
+            <div class="hist-item" onclick="viewChat(${i})">${h.q}</div>
         `).join('');
     };
 
-    window.loadChat = (i) => {
+    window.viewChat = (i) => {
         scroller.innerHTML = '';
-        writeMsg(chatHistory[i].q, true);
-        writeMsg(chatHistory[i].a);
+        addMessage(history[i].q, true);
+        addMessage(history[i].a);
     };
 
-    genBtn.addEventListener('click', runAI);
+    genBtn.addEventListener('click', runAction);
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAction(); }
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
     });
@@ -117,47 +130,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
     });
 
-    document.querySelectorAll('.s-nav').forEach(nav => {
-        nav.addEventListener('click', () => {
-            document.querySelectorAll('.s-nav, .tab').forEach(el => el.classList.remove('active'));
-            nav.classList.add('active');
-            document.getElementById(nav.dataset.tab).classList.add('active');
+    document.querySelectorAll('.s-link').forEach(link => {
+        link.addEventListener('click', () => {
+            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById(link.dataset.tab).classList.add('active');
         });
     });
 
     document.getElementById('work-lever').addEventListener('click', function() { this.classList.toggle('on'); });
     document.getElementById('side-lever').addEventListener('click', function() { this.classList.toggle('on'); });
 
-    document.getElementById('save-all').addEventListener('click', async () => {
+    document.getElementById('save-all-btn').addEventListener('click', async () => {
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value;
         state.workMode = document.getElementById('work-lever').classList.contains('on');
         state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
-        session.settings = state;
-        sessionStorage.setItem('active_session', JSON.stringify(session));
         await saveCloud();
         location.reload();
     });
 
-    document.getElementById('clear-history').addEventListener('click', async () => {
-        if (confirm("are you sure you want to clear your chat history?")) {
-            chatHistory = [];
-            updateHistoryUI();
-            scroller.innerHTML = '';
-            hub.classList.remove('up');
-            settingsModal.style.display = 'none';
+    document.getElementById('clear-hist-btn').addEventListener('click', async () => {
+        if (confirm("Clear history?")) {
+            history = [];
             await saveCloud();
+            location.reload();
         }
     });
 
-    document.getElementById('conn-btn').addEventListener('click', () => pluginModal.style.display = 'flex');
-    document.getElementById('plug-yes').addEventListener('click', () => { 
-        window.open('https://example.com');
-        pluginModal.style.display = 'none';
-    });
+    document.getElementById('connect-plugin').addEventListener('click', () => pluginModal.style.display = 'flex');
+    document.getElementById('plug-yes').addEventListener('click', () => { window.open('https://example.com'); pluginModal.style.display = 'none'; });
     document.getElementById('plug-no').addEventListener('click', () => {
         pluginModal.style.display = 'none';
-        writeMsg("you need to install the plugin for the website to connect and work.", false, true);
+        addMessage("you need to install the plugin for the website to connect and work.", false, true);
     });
 
     const toggleSearch = () => {
@@ -172,39 +177,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('search-q').addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase();
-        const matches = chatHistory.filter(h => h.q.toLowerCase().includes(q));
+        const matches = history.filter(h => h.q.toLowerCase().includes(q));
         document.getElementById('search-results').innerHTML = matches.map(m => `
             <div class="hist-item" onclick="loadHistMatch('${m.q}')">${m.q}</div>
         `).join('');
     });
 
     window.loadHistMatch = (q) => {
-        const item = chatHistory.find(h => h.q === q);
+        const item = history.find(h => h.q === q);
         if (item) {
             searchModal.style.display = 'none';
             scroller.innerHTML = '';
-            writeMsg(item.q, true);
-            writeMsg(item.a);
+            addMessage(item.q, true);
+            addMessage(item.a);
         }
     };
 
-    document.querySelectorAll('.sq-btn').forEach(btn => {
+    document.querySelectorAll('.sq-opt').forEach(btn => {
         btn.addEventListener('click', () => {
             input.value = btn.dataset.p;
             input.focus();
         });
     });
 
-    document.getElementById('mob-menu').addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.getElementById('mob-toggle').addEventListener('click', () => sidebar.classList.toggle('open'));
     document.getElementById('new-chat-btn').addEventListener('click', () => location.reload());
-    document.getElementById('logout').addEventListener('click', () => { sessionStorage.clear(); window.location.href = "../"; });
+    document.getElementById('logout-btn').addEventListener('click', () => { sessionStorage.clear(); window.location.href = "../"; });
 
-    let raw = await puter.kv.get('copilot_db');
-    if (raw) {
-        let db = JSON.parse(raw);
-        if (db[session.name]) {
-            chatHistory = db[session.name].history || [];
-            updateHistoryUI();
-        }
-    }
+    await loadCloudData();
 });
