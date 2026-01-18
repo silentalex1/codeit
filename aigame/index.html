@@ -10,120 +10,120 @@
 <body>
     <div class="grid-bg"></div>
 
-    <div id="search-modal" class="modal-overlay">
-        <div class="search-wrap">
+    <div id="search-modal" class="overlay">
+        <div class="search-box">
             <input type="text" id="search-q" placeholder="Search your chats...">
-            <div id="search-results" class="search-list"></div>
+            <div id="search-results" class="results-list"></div>
         </div>
     </div>
 
-    <div id="settings-modal" class="modal-overlay">
-        <div class="settings-box">
+    <div id="settings-modal" class="overlay">
+        <div class="settings-card">
             <div class="set-side">
-                <div class="set-link active" data-tab="profile-area">User Settings</div>
-                <div class="set-link" data-tab="ai-area">AI Settings</div>
-                <div class="set-actions">
-                    <button id="btn-save-set" class="save-trigger">Save Settings</button>
-                    <button id="btn-clear-hist" class="clear-trigger">Clear Chat History</button>
-                    <button id="btn-puter-login" class="puter-trigger">login with puterjs</button>
+                <div class="set-tab-link active" data-tab="profile-pane">User Settings</div>
+                <div class="set-tab-link" data-tab="ai-pane">AI Settings</div>
+                <div class="set-footer">
+                    <button id="btn-save" class="btn-p">Save Settings</button>
+                    <button id="btn-clear" class="btn-d">Clear Chat History</button>
+                    <button id="btn-re-puter" class="btn-re">login with puterjs</button>
                 </div>
             </div>
-            <div class="set-main">
-                <div id="profile-area" class="set-tab active">
-                    <div class="tab-head">
+            <div class="set-body">
+                <div id="profile-pane" class="pane active">
+                    <div class="pane-head">
                         <h3>Profile</h3>
                         <div class="line"></div>
                     </div>
-                    <div class="field">
+                    <div class="input-grp">
                         <label>Display Name</label>
-                        <input type="text" id="display-name-val">
+                        <input type="text" id="set-nick">
                     </div>
-                    <div class="field">
+                    <div class="input-grp">
                         <label>Profile Image URL</label>
-                        <input type="text" id="pfp-url-val">
+                        <input type="text" id="set-pfp-url">
                     </div>
-                    <div class="pfp-drop" id="pfp-dropzone">
-                        <input type="file" id="pfp-file" hidden accept="image/*">
-                        <div id="pfp-prompt">
-                            <button class="select-btn">select pfp</button>
-                            <p class="pc-text">drop image here</p>
+                    <div class="drop-area" id="drop-zone">
+                        <input type="file" id="file-inp" hidden accept="image/*">
+                        <div id="drop-idle">
+                            <button type="button" class="btn-s">select pfp</button>
+                            <p class="pc-only">drop image here</p>
                         </div>
-                        <img id="pfp-preview-img" src="">
+                        <img id="pfp-prev-img" src="">
                     </div>
-                    <div class="toggle-row">
+                    <div class="lever-grp">
                         <span>Double click to hide sidebar</span>
-                        <div class="lever" id="side-lever"><div class="dot"></div></div>
+                        <div class="lever" id="side-toggle"><div class="dot"></div></div>
                     </div>
                 </div>
-                <div id="ai-area" class="set-tab">
-                    <div class="tab-head">
+                <div id="ai-pane" class="pane">
+                    <div class="pane-head">
                         <h3>AI Settings</h3>
                         <div class="line"></div>
                     </div>
-                    <div class="toggle-row">
+                    <div class="lever-grp">
                         <span>Turn AI to work mode</span>
-                        <div class="lever" id="work-lever"><div class="dot"></div></div>
+                        <div class="lever" id="work-toggle"><div class="dot"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="plugin-modal" class="modal-overlay">
-        <div class="plug-card">
+    <div id="plugin-modal" class="overlay">
+        <div class="alert-box">
             <h3>do you got the plugin installed?</h3>
-            <div class="plug-row">
-                <button id="plug-yes">Yes</button>
-                <button id="plug-no">No</button>
+            <div class="alert-row">
+                <button id="plug-y">Yes</button>
+                <button id="plug-n">No</button>
             </div>
         </div>
     </div>
 
-    <aside id="sidebar" class="side-panel">
-        <div class="side-top">
-            <div class="search-entry" id="open-search">press ctrl+k to search</div>
-            <div id="chat-history-list" class="hist-container"></div>
-        </div>
-        <div class="side-bottom">
-            <button id="new-chat-trigger" class="new-chat-btn">+ New Chat</button>
+    <aside id="side-ui" class="side">
+        <div class="side-inner">
+            <div class="search-trigger" id="open-s">press ctrl+k to search</div>
+            <div id="hist-view" class="hist"></div>
+            <div class="side-foot">
+                <button id="btn-new-chat" class="new-btn">+ New Chat</button>
+            </div>
         </div>
     </aside>
 
-    <div id="restore-sidebar" class="restore-handle"></div>
+    <div id="side-restore" class="side-restore-btn"></div>
 
-    <main class="main-frame">
-        <nav class="navbar">
-            <div class="brand-side">
-                <button id="mob-toggle" class="burger-btn">=</button>
+    <main class="content">
+        <nav class="nav">
+            <div class="nav-l">
+                <button id="mob-burger" class="burger-btn">=</button>
                 <div class="logo">codeit copilot</div>
             </div>
-            <div class="nav-right">
-                <button id="plugin-connect" class="green-btn">connect plugin</button>
-                <button class="text-btn">donate here</button>
-                <div class="user-anchor">
-                    <div id="user-pfp" class="avatar"></div>
-                    <div id="user-menu" class="pfp-dropdown">
-                        <button id="open-settings-ui">settings</button>
-                        <button id="logout-trigger">logout</button>
+            <div class="nav-r">
+                <button id="connect-trigger" class="btn-green">connect plugin</button>
+                <button class="nav-btn-text">donate here</button>
+                <div class="pfp-box">
+                    <div id="header-avatar" class="avatar-ui"></div>
+                    <div id="avatar-drop" class="drop-menu">
+                        <button id="open-settings">settings</button>
+                        <button id="logout-btn">logout</button>
                     </div>
                 </div>
-                <button class="text-btn">our community</button>
+                <button class="nav-btn-text">our community</button>
             </div>
         </nav>
 
-        <div id="chat-viewport" class="chat-scroller"></div>
+        <div id="chat-stream" class="chat-area"></div>
 
         <div id="hub-ui" class="hub">
-            <div class="hub-content">
-                <h2>codeit copilot imagine anything.</h2>
+            <div class="hub-container">
+                <h2 id="hub-title">codeit copilot imagine anything.</h2>
                 <div class="sq-grid">
-                    <button class="sq-btn" data-p="create me a obby that ">create me a obby that ___</button>
-                    <button class="sq-btn" data-p="make me a horror scene that does ">make me a horror scene that does ___</button>
-                    <button class="sq-btn" data-p="create me a map that looks like ">create me a map that looks like ___</button>
+                    <button class="sq-item" data-p="create me a obby that "><span>create me a obby that ___</span></button>
+                    <button class="sq-item" data-p="make me a horror scene that does "><span>make me a horror scene that does ___</span></button>
+                    <button class="sq-item" data-p="create me a map that looks like "><span>create me a map that looks like ___</span></button>
                 </div>
-                <div class="input-bar">
+                <div class="bar-input">
                     <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
-                    <button id="submit-btn">Generate</button>
+                    <button id="action-gen">Generate</button>
                 </div>
             </div>
         </div>
