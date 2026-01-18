@@ -1,43 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="the #2 best roblox ai game generator free.">
-    <title>codeit copilot</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://js.puter.com/v2/"></script>
-</head>
-<body>
-    <div class="visual-glow"></div>
-    <div class="grid-overlay"></div>
-    <main class="page-wrapper">
-        <section class="hero-section">
-            <div class="status-badge">#2 Best Free Generator</div>
-            <h1>imagine what you want, then type your imagination. <span>You imagine we create.</span></h1>
-            <p>the most accurate, efficent, powerful, roblox ai game generator.</p>
-        </section>
-
-        <section class="auth-section">
-            <div class="auth-card">
-                <h2>Create account here</h2>
-                <div class="input-item">
-                    <label>enter your username here</label>
-                    <input type="text" id="reg-user" placeholder="Username">
-                </div>
-                <div class="input-item">
-                    <label>enter your password here</label>
-                    <input type="password" id="reg-pass" placeholder="Password">
-                </div>
-                <button id="submit-auth" class="btn-primary">create account</button>
-                <div class="auth-divider"><span>or</span></div>
-                <button id="puter-auth" class="btn-secondary">login with puterjs</button>
-                <div class="auth-footer">
-                    powered by using <a href="https://docs.puter.com/Auth/" target="_blank">https://docs.puter.com/Auth/</a>
-                </div>
-            </div>
-        </section>
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+body { background: #050505; color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.grid-overlay { position: fixed; inset: 0; z-index: -1; background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 60px 60px; }
+.visual-glow { position: fixed; inset: 0; z-index: -2; background: radial-gradient(circle at 15% 25%, rgba(30, 64, 175, 0.4) 0%, transparent 45%), radial-gradient(circle at 85% 75%, rgba(109, 40, 217, 0.4) 0%, transparent 45%); filter: blur(100px); }
+.page-wrapper { display: flex; width: 1200px; max-width: 90%; gap: 80px; align-items: center; z-index: 10; }
+.hero-section { flex: 1.2; }
+.status-badge { color: #3b82f6; font-size: 14px; font-weight: 800; margin-bottom: 20px; }
+h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 25px; }
+h1 span { color: #3b82f6; }
+p { color: #94a3b8; font-size: 18px; line-height: 1.6; max-width: 500px; }
+.auth-card { flex: 0.8; background: rgba(10, 10, 15, 0.9); border: 1px solid rgba(255,255,255,0.08); padding: 45px; border-radius: 32px; box-shadow: 0 40px 80px rgba(0,0,0,0.7); backdrop-filter: blur(15px); }
+h2 { text-align: center; margin-bottom: 35px; font-weight: 800; font-size: 22px; }
+.input-item { margin-bottom: 20px; }
+.input-item label { font-size: 11px; color: #4b5563; display: block; margin-bottom: 8px; text-transform: uppercase; }
+input { width: 100%; background: #020202; border: 1px solid #1e1e24; padding: 16px; border-radius: 14px; color: white; outline: none; transition: 0.2s border-color; }
+input:focus { border-color: #3b82f6; }
+.btn-primary { width: 100%; padding: 16px; background: white; color: black; border: none; border-radius: 14px; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 15px; }
+.btn-primary:hover { transform: translateY(-2px); }
+.auth-divider { text-align: center; margin: 25px 0; color: #1e1e24; position: relative; }
+.auth-divider span { background: #0c0c11; padding: 0 15px; position: relative; z-index: 2; color: #4b5563; font-size: 12px; font-weight: 600; }
+.auth-divider::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #1e1e24; }
+.btn-secondary { width: 100%; padding: 14px; background: transparent; border: 1px solid #1e1e24; color: white; border-radius: 14px; cursor: pointer; font-weight: 600; }
+.auth-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #334155; }
+.auth-footer a { color: #3b82f6; text-decoration: none; }
+@media (max-width: 1024px) { .page-wrapper { flex-direction: column; text-align: center; } h1 { font-size: 36px; } }
