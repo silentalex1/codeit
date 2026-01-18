@@ -1,42 +1,33 @@
-const UserSystem = {
-    handleRegister: (user, pass) => {
-        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-        if (db[user]) return false;
-        db[user] = { password: pass, created: Date.now() };
-        localStorage.setItem('app_users', JSON.stringify(db));
-        return true;
-    },
-    handleLogin: (user, pass) => {
-        const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-        return db[user] && db[user].password === pass;
-    }
-};
+const api = "http://localhost:3000/api";
 
-document.getElementById('create-acc-btn').addEventListener('click', () => {
-    const u = document.getElementById('user-field').value.trim();
-    const p = document.getElementById('pass-field').value.trim();
+document.getElementById('go-btn').addEventListener('click', async () => {
+    const username = document.getElementById('user').value.trim();
+    const password = document.getElementById('pass').value.trim();
 
-    if (!u || !p) return alert("Please fill in both fields.");
+    if(!username || !password) return;
 
-    const db = JSON.parse(localStorage.getItem('app_users') || '{}');
-    if (db[u]) {
-        if (UserSystem.handleLogin(u, p)) {
-            sessionStorage.setItem('active_session', u);
-            window.location.href = "/aigame";
-        } else {
-            alert("Username is taken. If this is you, check your password.");
+    try {
+        const res = await fetch(`${api}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (res.ok || (await res.json()).error === "Username taken") {
+            const login = await fetch(`${api}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if(login.ok) {
+                sessionStorage.setItem('copilot_user', username);
+                window.location.href = "/aigame";
+            }
         }
-    } else {
-        if (UserSystem.handleRegister(u, p)) {
-            sessionStorage.setItem('active_session', u);
-            window.location.href = "/aigame";
-        }
-    }
+    } catch (e) { alert("Server not running. Run server.js first!"); }
 });
 
-document.getElementById('puter-btn').addEventListener('click', async () => {
-    try {
-        const res = await puter.auth.signIn();
-        if (res) window.location.href = "/aigame";
-    } catch (err) {}
+document.getElementById('p-btn').addEventListener('click', async () => {
+    const u = await puter.auth.signIn();
+    if(u) window.location.href = "/aigame";
 });
