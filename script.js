@@ -1,33 +1,40 @@
-const api = "http://localhost:3000/api";
+const DB = {
+    async register(user, pass) {
+        let users = JSON.parse(localStorage.getItem('cp_users') || '[]');
+        if (users.find(u => u.user === user)) return false;
+        users.push({ user, pass });
+        localStorage.setItem('cp_users', JSON.stringify(users));
+        return true;
+    },
+    async login(user, pass) {
+        let users = JSON.parse(localStorage.getItem('cp_users') || '[]');
+        return users.find(u => u.user === user && u.pass === pass);
+    }
+};
 
-document.getElementById('go-btn').addEventListener('click', async () => {
-    const username = document.getElementById('user').value.trim();
-    const password = document.getElementById('pass').value.trim();
+document.getElementById('create-acc-btn').addEventListener('click', async () => {
+    const user = document.getElementById('user-field').value.trim();
+    const pass = document.getElementById('pass-field').value.trim();
+    if (!user || !pass) return;
 
-    if(!username || !password) return;
-
-    try {
-        const res = await fetch(`${api}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        
-        if (res.ok || (await res.json()).error === "Username taken") {
-            const login = await fetch(`${api}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            if(login.ok) {
-                sessionStorage.setItem('copilot_user', username);
-                window.location.href = "/aigame";
-            }
+    const exists = await DB.login(user, pass);
+    if (exists) {
+        sessionStorage.setItem('cp_session', user);
+        window.location.href = "/aigame";
+    } else {
+        const success = await DB.register(user, pass);
+        if (success) {
+            sessionStorage.setItem('cp_session', user);
+            window.location.href = "/aigame";
+        } else {
+            alert("Username taken");
         }
-    } catch (e) { alert("Server not running. Run server.js first!"); }
+    }
 });
 
-document.getElementById('p-btn').addEventListener('click', async () => {
-    const u = await puter.auth.signIn();
-    if(u) window.location.href = "/aigame";
+document.getElementById('puter-btn').addEventListener('click', async () => {
+    try {
+        const user = await puter.auth.signIn();
+        if (user) window.location.href = "/aigame";
+    } catch (e) {}
 });
