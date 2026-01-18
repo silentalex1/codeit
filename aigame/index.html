@@ -1,56 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>codeit copilot | Workspace</title>
-    <link rel="stylesheet" href="aigame.css">
-    <script src="https://js.puter.com/v2/"></script>
-</head>
-<body>
-    <div id="search-overlay" class="search-overlay">
-        <div class="search-modal">
-            <input type="text" id="search-input" placeholder="Search your chat history...">
-            <div id="search-results"></div>
-        </div>
-    </div>
+const DB = {
+    async register(user, pass) {
+        let users = JSON.parse(localStorage.getItem('cp_users') || '[]');
+        if (users.find(u => u.user === user)) return false;
+        users.push({ user, pass });
+        localStorage.setItem('cp_users', JSON.stringify(users));
+        return true;
+    },
+    async login(user, pass) {
+        let users = JSON.parse(localStorage.getItem('cp_users') || '[]');
+        return users.find(u => u.user === user && u.pass === pass);
+    }
+};
 
-    <aside class="sidebar">
-        <div class="side-top">
-            <div class="ctrl-k" id="open-search">press ctrl+k to search</div>
-        </div>
-        <div class="history-list" id="history"></div>
-        <div class="side-bottom">
-            <button class="new-chat" id="reset-ui">+ New Chat</button>
-        </div>
-    </aside>
+document.getElementById('create-acc-btn').addEventListener('click', async () => {
+    const user = document.getElementById('user-field').value.trim();
+    const pass = document.getElementById('pass-field').value.trim();
+    if (!user || !pass) return;
 
-    <nav class="navbar">
-        <div class="nav-brand">codeit copilot</div>
-        <div class="nav-actions">
-            <button class="nav-link">donate here</button>
-            <button class="nav-link">our community</button>
-            <div class="user-pfp" id="user-display"></div>
-        </div>
-    </nav>
+    const exists = await DB.login(user, pass);
+    if (exists) {
+        sessionStorage.setItem('cp_session', user);
+        window.location.href = "/aigame";
+    } else {
+        const success = await DB.register(user, pass);
+        if (success) {
+            sessionStorage.setItem('cp_session', user);
+            window.location.href = "/aigame";
+        } else {
+            alert("Username taken");
+        }
+    }
+});
 
-    <main class="workspace" id="main-ws">
-        <div id="chat-stream"></div>
-        
-        <div class="center-hub" id="hub">
-            <h1 id="hub-text">codeit copilot imagine anything.</h1>
-            <div class="pills">
-                <button class="pill" data-prompt="build me a parkour game that does ">Parkour</button>
-                <button class="pill" data-prompt="make me a horror scene animation that does ">Horror</button>
-                <button class="pill" data-prompt="create me a map of ">Map Build</button>
-            </div>
-            <div class="input-container">
-                <textarea id="ai-input" placeholder="Write your imagination..."></textarea>
-                <button id="send-trigger">Generate</button>
-            </div>
-        </div>
-    </main>
-
-    <script src="aigame.js"></script>
-</body>
-</html>
+document.getElementById('puter-btn').addEventListener('click', async () => {
+    try {
+        const user = await puter.auth.signIn();
+        if (user) window.location.href = "/aigame";
+    } catch (e) {}
+});
