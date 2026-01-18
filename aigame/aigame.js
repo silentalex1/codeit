@@ -1,51 +1,51 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    let session = JSON.parse(sessionStorage.getItem('active_session'));
+    let session = JSON.parse(sessionStorage.getItem('copilot_session'));
     if (!session) { window.location.href = "../"; return; }
 
-    const input = document.getElementById('ai-query');
-    const genBtn = document.getElementById('gen-action');
-    const hub = document.getElementById('hub');
-    const scroller = document.getElementById('chat-view');
+    const input = document.getElementById('ai-input');
+    const submitBtn = document.getElementById('btn-submit');
+    const hub = document.getElementById('hub-ui');
+    const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('restore-sidebar');
-    const pfpTrigger = document.getElementById('user-avatar');
-    const pfpMenu = document.getElementById('user-drop');
+    const restoreBtn = document.getElementById('sidebar-restore');
+    const avatar = document.getElementById('user-avatar');
+    const dropdown = document.getElementById('pfp-dropdown');
     const settingsModal = document.getElementById('settings-modal');
     const searchModal = document.getElementById('search-modal');
     const pluginModal = document.getElementById('plugin-modal');
 
-    let history = [];
-    let state = session.settings || { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
+    let chatHistory = [];
+    let state = session.settings || { nickname: session.username, pfp: '', workMode: false, hideSidebar: false };
 
-    const syncUI = () => {
-        document.getElementById('user-avatar').style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
-        document.getElementById('set-name').value = state.nickname;
+    const syncStateUI = () => {
+        avatar.style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
+        document.getElementById('set-nickname').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         
         if (state.workMode) {
-            genBtn.innerText = "Ask";
-            genBtn.classList.add('work-mode');
-            document.getElementById('work-lever').classList.add('on');
+            submitBtn.innerText = "Ask";
+            submitBtn.classList.add('work-mode-btn');
+            document.getElementById('work-mode-lever').classList.add('on');
         } else {
-            genBtn.innerText = "Generate";
-            genBtn.classList.remove('work-mode');
-            document.getElementById('work-lever').classList.remove('on');
+            submitBtn.innerText = "Generate";
+            submitBtn.classList.remove('work-mode-btn');
+            document.getElementById('work-mode-lever').classList.remove('on');
         }
 
         if (state.hideSidebar) {
-            document.getElementById('side-lever').classList.add('on');
+            document.getElementById('side-toggle-lever').classList.add('on');
         } else {
-            document.getElementById('side-lever').classList.remove('on');
+            document.getElementById('side-toggle-lever').classList.remove('on');
         }
     };
-    syncUI();
+    syncStateUI();
 
-    const renderMessage = (text, isUser = false, isError = false) => {
-        hub.classList.add('up');
+    const writeMessage = (text, isUser = false, isError = false) => {
+        hub.classList.add('minimized');
         scroller.style.display = 'block';
         const div = document.createElement('div');
         div.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) div.classList.add('red-error');
+        if (isError) div.classList.add('error-ai');
         
         if (isUser) {
             div.innerText = text;
@@ -57,47 +57,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const processAI = async () => {
+    const runAI = async () => {
         const val = input.value.trim();
         if (!val) return;
-        renderMessage(val, true);
+        writeMessage(val, true);
         input.value = '';
         input.style.height = '26px';
 
-        const aiPlaceholder = document.createElement('div');
-        aiPlaceholder.className = 'msg-ai';
-        aiPlaceholder.innerText = 'Analyzing...';
-        scroller.appendChild(aiPlaceholder);
+        const aiThinking = document.createElement('div');
+        aiThinking.className = 'msg-ai';
+        aiThinking.innerText = 'Analyzing...';
+        scroller.appendChild(aiThinking);
 
         try {
-            const res = await puter.ai.chat(val);
-            aiPlaceholder.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-            history.push({ q: val, a: res });
-            updateHistory();
+            const res = await puter.ai.chat(val, { model: 'gemini-1.5-pro-latest' });
+            aiThinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+            chatHistory.push({ q: val, a: res });
+            refreshHistoryUI();
+            saveSessionToCloud();
         } catch (e) {
-            aiPlaceholder.innerText = "Error: Please check your Puter session.";
+            aiThinking.innerText = "Connection lost. Please ensure you are logged in via Puter.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
-    const updateHistory = () => {
-        const list = document.getElementById('chat-list');
-        list.innerHTML = history.map((h, i) => `
-            <div class="hist-item" onclick="viewHistory(${i})">${h.q}</div>
+    const saveSessionToCloud = async () => {
+        let db = JSON.parse(await puter.kv.get('codeit_copilot_users'));
+        db[session.username].history = chatHistory;
+        db[session.username].settings = state;
+        await puter.kv.set('codeit_copilot_users', JSON.stringify(db));
+    };
+
+    const refreshHistoryUI = () => {
+        const container = document.getElementById('history-container');
+        container.innerHTML = chatHistory.map((h, i) => `
+            <div class="hist-item" onclick="loadHist(${i})">${h.q}</div>
         `).join('');
     };
 
-    window.viewHistory = (i) => {
-        hub.classList.add('up');
+    window.loadHist = (i) => {
+        hub.classList.add('minimized');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
-        renderMessage(history[i].q, true);
-        renderMessage(history[i].a);
+        writeMessage(chatHistory[i].q, true);
+        writeMessage(chatHistory[i].a);
     };
 
-    genBtn.addEventListener('click', processAI);
+    submitBtn.addEventListener('click', runAI);
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processAI(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
     });
@@ -114,102 +122,102 @@ document.addEventListener('DOMContentLoaded', async () => {
         restoreBtn.style.display = 'none';
     });
 
-    pfpTrigger.addEventListener('click', (e) => {
+    avatar.addEventListener('click', (e) => {
         e.stopPropagation();
-        pfpMenu.classList.toggle('active');
+        dropdown.classList.toggle('active');
     });
 
-    document.addEventListener('click', () => pfpMenu.classList.remove('active'));
+    document.addEventListener('click', () => dropdown.classList.remove('active'));
 
-    document.getElementById('open-settings').addEventListener('click', () => settingsModal.style.display = 'flex');
+    document.getElementById('btn-settings').addEventListener('click', () => settingsModal.style.display = 'flex');
     
     document.querySelectorAll('.modal').forEach(m => {
         m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
     });
 
-    document.querySelectorAll('.s-nav').forEach(nav => {
+    document.querySelectorAll('.s-link').forEach(nav => {
         nav.addEventListener('click', () => {
-            document.querySelectorAll('.s-nav, .tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.s-link, .tab-content').forEach(el => el.classList.remove('active'));
             nav.classList.add('active');
             document.getElementById(nav.dataset.tab).classList.add('active');
         });
     });
 
-    document.getElementById('work-lever').addEventListener('click', function() { this.classList.toggle('on'); });
-    document.getElementById('side-lever').addEventListener('click', function() { this.classList.toggle('on'); });
+    document.getElementById('work-mode-lever').addEventListener('click', function() { this.classList.toggle('on'); });
+    document.getElementById('side-toggle-lever').addEventListener('click', function() { this.classList.toggle('on'); });
 
-    document.getElementById('save-all').addEventListener('click', async () => {
-        state.nickname = document.getElementById('set-name').value;
+    document.getElementById('save-settings').addEventListener('click', async () => {
+        state.nickname = document.getElementById('set-nickname').value;
         state.pfp = document.getElementById('set-pfp').value;
-        state.workMode = document.getElementById('work-lever').classList.contains('on');
-        state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
+        state.workMode = document.getElementById('work-mode-lever').classList.contains('on');
+        state.hideSidebar = document.getElementById('side-toggle-lever').classList.contains('on');
 
-        let db = JSON.parse(await puter.kv.get('copilot_db'));
-        db[session.name].settings = state;
-        await puter.kv.set('copilot_db', JSON.stringify(db));
-        
         session.settings = state;
-        sessionStorage.setItem('active_session', JSON.stringify(session));
+        sessionStorage.setItem('copilot_session', JSON.stringify(session));
+        await saveSessionToCloud();
         location.reload();
     });
 
     document.getElementById('clear-history').addEventListener('click', async () => {
         if (confirm("are you sure you want to clear your chat history?")) {
-            history = [];
-            updateHistory();
+            chatHistory = [];
+            refreshHistoryUI();
             scroller.innerHTML = '';
-            hub.classList.remove('up');
+            hub.classList.remove('minimized');
             settingsModal.style.display = 'none';
+            await saveSessionToCloud();
         }
     });
 
-    document.getElementById('conn-btn').addEventListener('click', () => pluginModal.style.display = 'flex');
-    document.getElementById('plug-yes').addEventListener('click', () => { 
+    document.getElementById('btn-plugin').addEventListener('click', () => pluginModal.style.display = 'flex');
+    document.getElementById('plugin-yes').addEventListener('click', () => { 
         window.open('https://example.com');
         pluginModal.style.display = 'none';
     });
-    document.getElementById('plug-no').addEventListener('click', () => {
+    document.getElementById('plugin-no').addEventListener('click', () => {
         pluginModal.style.display = 'none';
-        renderMessage("you need to install the plugin for the website to connect and work.", false, true);
+        writeMessage("you need to install the plugin for the website to connect and work.", false, true);
     });
 
     window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-input').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     });
 
-    document.getElementById('search-q').addEventListener('input', (e) => {
+    document.getElementById('search-input').addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase();
-        const matches = history.filter(h => h.q.toLowerCase().includes(q));
+        const matches = chatHistory.filter(h => h.q.toLowerCase().includes(q));
         document.getElementById('search-results').innerHTML = matches.map(m => `
-            <div class="hist-item" onclick="viewHistoryItem('${m.q}')">${m.q}</div>
+            <div class="hist-item" onclick="viewSearchMatch('${m.q}')">${m.q}</div>
         `).join('');
     });
 
-    window.viewHistoryItem = (query) => {
-        const item = history.find(h => h.q === query);
+    window.viewSearchMatch = (query) => {
+        const item = chatHistory.find(h => h.q === query);
         if (item) {
             searchModal.style.display = 'none';
             scroller.innerHTML = '';
-            renderMessage(item.q, true);
-            renderMessage(item.a);
+            writeMessage(item.q, true);
+            writeMessage(item.a);
         }
     };
 
-    document.querySelectorAll('.sq-btn').forEach(btn => {
+    document.querySelectorAll('.sq-opt').forEach(btn => {
         btn.addEventListener('click', () => {
             input.value = btn.dataset.p;
             input.focus();
         });
     });
 
-    document.getElementById('mob-menu').addEventListener('click', () => sidebar.classList.toggle('open'));
-    document.getElementById('logout').addEventListener('click', () => { sessionStorage.clear(); window.location.href = "../"; });
+    document.getElementById('mob-burger').addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.getElementById('btn-logout').addEventListener('click', () => { sessionStorage.clear(); window.location.href = "../"; });
 
-    let db = await puter.kv.get('copilot_db');
-    if (db) {
-        let accounts = JSON.parse(db);
-        history = accounts[session.name].history || [];
-        updateHistory();
+    let dbRaw = await puter.kv.get('codeit_copilot_users');
+    if (dbRaw) {
+        let db = JSON.parse(dbRaw);
+        if (db[session.username]) {
+            chatHistory = db[session.username].history || [];
+            refreshHistoryUI();
+        }
     }
 });
