@@ -1,119 +1,238 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-body { background: #050505; color: white; height: 100vh; display: flex; overflow: hidden; }
+document.addEventListener('DOMContentLoaded', async () => {
+    let sessionRaw = sessionStorage.getItem('copilot_session');
+    if (!sessionRaw) { window.location.href = "../"; return; }
+    let session = JSON.parse(sessionRaw);
 
-.grid-overlay {
-    position: fixed; inset: 0; z-index: -1;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    pointer-events: none;
-}
+    const input = document.getElementById('ai-query');
+    const genBtn = document.getElementById('gen-action');
+    const hub = document.getElementById('hub');
+    const scroller = document.getElementById('chat-scroller');
+    const sidebar = document.getElementById('sidebar');
+    const restoreBtn = document.getElementById('restore-btn');
+    const avatar = document.getElementById('u-avatar');
+    const dropdown = document.getElementById('u-dropdown');
+    const settingsModal = document.getElementById('settings-modal');
+    const searchModal = document.getElementById('search-modal');
+    const pluginModal = document.getElementById('plugin-modal');
+    const pfpFile = document.getElementById('pfp-file');
+    const pfpPreview = document.getElementById('pfp-preview');
+    const dropContent = document.getElementById('drop-content');
 
-.sidebar { width: 280px; background: #08080a; border-right: 1px solid #1a1a1e; display: flex; flex-direction: column; padding: 20px; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; }
-.sidebar.hidden { transform: translateX(-280px); width: 0; border: none; padding: 0; }
-.side-inner { height: 100%; display: flex; flex-direction: column; padding: 0; }
-.history { flex: 1; margin: 25px 0; overflow-y: auto; }
-.hist-item { padding: 12px; color: #64748b; font-size: 13px; cursor: pointer; border-radius: 10px; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-item:hover { background: #15151a; color: white; }
-.search-btn { background: #15151a; padding: 12px; border-radius: 10px; border: 1px solid #222; color: #475569; font-size: 12px; cursor: pointer; text-align: center; }
-.sidebar-bottom { margin-top: auto; padding-bottom: 5px; }
-.btn-new { width: 100%; padding: 14px; background: #111116; border: 1px solid #222; color: white; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-.btn-new:hover { border-color: #3b82f6; background: #151520; }
+    let history = [];
+    let state = { nickname: session.username, pfp: '', workMode: false, hideSidebar: false };
 
-.side-restore { position: fixed; left: 15px; top: 50%; width: 6px; height: 50px; background: #3b82f6; border-radius: 100px; cursor: pointer; display: none; z-index: 200; box-shadow: 0 0 20px #3b82f666; }
+    const loadCloudData = async () => {
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        if (db[session.username]) {
+            state = db[session.username].settings || state;
+            history = db[session.username].history || [];
+            syncState();
+            renderHistory();
+        }
+    };
 
-.main { flex: 1; display: flex; flex-direction: column; position: relative; }
-.navbar { height: 75px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; border-bottom: 1px solid #1a1a1e; background: rgba(5,5,5,0.8); backdrop-filter: blur(10px); z-index: 900; }
-.logo { font-weight: 800; color: #3b82f6; font-size: 22px; }
-.n-right { display: flex; align-items: center; gap: 20px; }
-.green-btn { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.green-btn:hover { transform: scale(1.03); }
-.nav-item { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 13px; transition: 0.2s; }
-.nav-item:hover { color: white; }
+    const syncState = () => {
+        if (avatar && state.pfp) avatar.style.backgroundImage = 'url(' + state.pfp + ')';
+        const setNickname = document.getElementById('set-name');
+        const setPfp = document.getElementById('set-pfp-url');
+        
+        if (setNickname) setNickname.value = state.nickname;
+        if (setPfp) setPfp.value = state.pfp;
+        
+        if (state.pfp && pfpPreview && dropContent) {
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropContent.style.display = 'none';
+        }
 
-.user-wrap { position: relative; display: flex; align-items: center; }
-.avatar { width: 40px; height: 40px; background: #1e293b; border-radius: 50%; cursor: pointer; border: 1px solid #334155; background-size: cover; background-position: center; transition: 0.2s; }
-.avatar:hover { border-color: #3b82f6; }
-.dropdown { position: absolute; right: 0; top: 48px; width: 160px; background: #0c0c0e; border: 1px solid #1e1e24; border-radius: 14px; padding: 8px; display: none; z-index: 1001; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.dropdown.active { display: block; }
-.dropdown button { width: 100%; padding: 12px; background: transparent; border: none; color: white; text-align: left; cursor: pointer; border-radius: 8px; font-size: 14px; transition: 0.2s; }
-.dropdown button:hover { background: #15151a; }
+        if (state.workMode) {
+            genBtn.innerText = "Ask";
+            genBtn.style.background = "#10b981";
+            const workLev = document.getElementById('work-lever');
+            if (workLev) workLev.classList.add('on');
+        } else {
+            genBtn.innerText = "Generate";
+            genBtn.style.background = "#3b82f6";
+            const workLev = document.getElementById('work-lever');
+            if (workLev) workLev.classList.remove('on');
+        }
 
-.hub { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 750px; text-align: center; transition: 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-.hub.active { top: calc(100% - 115px); }
-.hub-title { font-size: 34px; margin-bottom: 45px; }
-.hub.active h1, .hub.active .premade-grid { display: none; }
+        const sideLev = document.getElementById('side-lever');
+        if (state.hideSidebar && sideLev) sideLev.classList.add('on');
+    };
 
-.premade-grid { display: flex; gap: 15px; justify-content: center; margin-bottom: 35px; }
-.sq-opt { width: 180px; height: 110px; background: #0c0c0e; border: 1px solid #222; border-radius: 20px; color: #94a3b8; cursor: pointer; padding: 15px; font-size: 12px; font-weight: 600; line-height: 1.4; transition: 0.3s; }
-.sq-opt:hover { border-color: #3b82f6; background: #111116; color: white; transform: translateY(-3px); }
+    const saveCloud = async () => {
+        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        db[session.username] = {
+            password: db[session.username]?.password || '',
+            settings: state,
+            history: history
+        };
+        await puter.kv.set('copilot_db', JSON.stringify(db));
+    };
 
-.input-hub { background: #111116; border: 1px solid #222; border-radius: 24px; padding: 14px 28px; display: flex; align-items: center; gap: 15px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-textarea { flex: 1; background: transparent; border: none; color: white; resize: none; height: 26px; outline: none; font-size: 16px; line-height: 26px; }
-#gen-action { background: #3b82f6; color: white; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-#gen-action:hover { background: #2563eb; }
+    const addMessage = (text, isUser = false, isError = false) => {
+        hub.classList.add('active');
+        scroller.style.display = 'block';
+        const div = document.createElement('div');
+        div.className = isUser ? 'msg-u' : 'msg-ai';
+        if (isError) div.style.borderColor = '#ef4444';
+        div.innerHTML = isUser ? text : text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+        scroller.appendChild(div);
+        scroller.scrollTop = scroller.scrollHeight;
+    };
 
-.chat-viewport { width: 850px; margin: 50px auto; overflow-y: auto; max-height: calc(100vh - 270px); display: none; padding-bottom: 60px; scroll-behavior: smooth; }
-.msg-u { font-weight: 700; font-size: 19px; border-left: 4px solid #3b82f6; padding-left: 20px; margin-bottom: 30px; }
-.msg-ai { background: #0c0c11; padding: 28px; border-radius: 22px; line-height: 1.7; color: #cbd5e1; margin-bottom: 45px; border: 1px solid #1e1e24; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-pre { background: #000; padding: 20px; border-radius: 14px; margin-top: 18px; overflow-x: auto; color: #4ade80; border: 1px solid #1a1a1e; font-family: monospace; font-size: 14px; }
+    const runAction = async () => {
+        const val = input.value.trim();
+        if (!val) return;
+        addMessage(val, true);
+        input.value = '';
+        input.style.height = '26px';
 
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-.search-box-container { width: 550px; background: #0c0c0e; border-radius: 24px; padding: 25px; border: 1px solid #222; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-#search-q { width: 100%; background: #111116; border: 1px solid #333; padding: 18px; border-radius: 14px; color: white; outline: none; }
-.results-list { max-height: 300px; overflow-y: auto; margin-top: 15px; }
+        const aiThinking = document.createElement('div');
+        aiThinking.className = 'msg-ai';
+        aiThinking.innerText = 'Analyzing...';
+        scroller.appendChild(aiThinking);
 
-.settings-card { width: 850px; height: 580px; background: #0c0c0e; display: flex; border-radius: 32px; border: 1px solid #222; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
-.s-nav-bar { width: 240px; background: #08080a; border-right: 1px solid #1a1a1e; padding: 40px; display: flex; flex-direction: column; }
-.s-link { padding: 14px 20px; color: #475569; font-size: 15px; cursor: pointer; border-radius: 12px; margin-bottom: 12px; transition: 0.2s; }
-.s-link.active { background: #111116; color: white; font-weight: 700; }
-.s-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
-#save-all-btn { background: #3b82f6; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-#save-all-btn:hover { background: #2563eb; }
-.danger { background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 14px; font-size: 12px; cursor: pointer; transition: 0.2s; }
-.danger:hover { background: rgba(239, 68, 68, 0.1); }
-.puter-btn-s { background: #111116; border: 1px solid #1a1a1e; color: #94a3b8; padding: 12px; border-radius: 12px; cursor: pointer; font-size: 11px; transition: 0.2s; }
-.puter-btn-s:hover { color: white; border-color: #333; }
+        try {
+            const res = await puter.ai.chat(val);
+            aiThinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
+            history.push({ q: val, a: res });
+            renderHistory();
+            saveCloud();
+        } catch (e) {
+            aiThinking.innerText = "Error: Puter session connection failure.";
+        }
+        scroller.scrollTop = scroller.scrollHeight;
+    };
 
-.s-body { flex: 1; padding: 50px; overflow-y: auto; background: #0c0c0e; }
-.tab { display: none; }
-.tab.active { display: block; }
-.profile-header { margin-bottom: 35px; }
-.profile-header h3 { font-size: 24px; margin-bottom: 12px; }
-.header-divider { height: 1px; background: #1a1a1e; width: 100%; }
+    const renderHistory = () => {
+        const container = document.getElementById('chat-history');
+        if (!container) return;
+        container.innerHTML = history.map((h, i) => `
+            <div class="hist-item" onclick="viewChat(${i})">${h.q}</div>
+        `).join('');
+    };
 
-.f-grp { margin-bottom: 25px; }
-.f-grp label { display: block; font-size: 11px; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-.f-grp input { width: 100%; padding: 14px; background: #050507; border: 1px solid #1e1e24; border-radius: 14px; color: white; outline: none; transition: 0.2s; }
-.f-grp input:focus { border-color: #3b82f6; }
+    window.viewChat = (i) => {
+        scroller.innerHTML = '';
+        addMessage(history[i].q, true);
+        addMessage(history[i].a);
+    };
 
-.drop-zone { width: 100%; height: 130px; border: 2px dashed #1e1e24; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 30px; cursor: pointer; transition: 0.3s; position: relative; }
-.drop-zone:hover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
-.select-btn { background: #1a1a1e; border: 1px solid #333; color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 10px; pointer-events: none; }
-.pc-only { font-size: 13px; color: #475569; }
-#pfp-preview { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; display: none; border: 2px solid #1a1a1e; }
+    genBtn.onclick = runAction;
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAction(); }
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+    };
 
-.lever-row { display: flex; justify-content: space-between; align-items: center; padding: 25px 0; border-top: 1px solid #1a1a1e; margin-top: 10px; }
-.lever { width: 48px; height: 26px; background: #1e1e24; border-radius: 100px; position: relative; cursor: pointer; transition: 0.3s; }
-.lever.on { background: #3b82f6; }
-.dot { width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
-.lever.on .dot { left: 25px; }
+    sidebar.ondblclick = () => {
+        if (state.hideSidebar || window.innerWidth < 1024) {
+            sidebar.classList.add('hidden');
+            restoreBtn.style.display = 'block';
+        }
+    };
 
-.plugin-card { text-align: center; width: 420px; background: #0c0c0e; padding: 40px; border-radius: 28px; border: 1px solid #222; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-.plug-btns { display: flex; gap: 20px; margin-top: 35px; }
-.plug-btns button { flex: 1; padding: 16px; border-radius: 14px; cursor: pointer; font-weight: 700; border: none; transition: 0.2s; }
-#plug-yes { background: #3b82f6; color: white; }
-#plug-no { background: #1a1a1e; color: white; border: 1px solid #333; }
+    restoreBtn.onclick = () => {
+        sidebar.classList.remove('hidden');
+        restoreBtn.style.display = 'none';
+    };
 
-.burger { display: none; background: none; border: none; color: white; font-size: 28px; cursor: pointer; }
-@media (max-width: 1024px) {
-    .sidebar { position: fixed; left: -280px; height: 100%; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
-    .sidebar.open { left: 0; }
-    .burger { display: block; margin-right: 15px; }
-    .navbar { padding: 0 20px; }
-    .chat-viewport, .hub { width: 95%; }
-    .pc-only { display: none; }
-    .settings-card { flex-direction: column; height: 90vh; width: 95vw; }
-    .s-nav-bar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #1a1a1e; padding: 20px; }
-    .s-bottom { display: none; }
-}
+    avatar.onclick = (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+    };
+
+    document.onclick = () => dropdown.classList.remove('active');
+
+    document.getElementById('open-settings').onclick = () => settingsModal.style.display = 'flex';
+    
+    document.querySelectorAll('.modal').forEach(m => {
+        m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; };
+    });
+
+    document.querySelectorAll('.s-link').forEach(link => {
+        link.onclick = () => {
+            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById(link.dataset.tab).classList.add('active');
+        };
+    });
+
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
+
+    document.getElementById('pfp-drop-zone').onclick = () => pfpFile.click();
+    pfpFile.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (x) => { state.pfp = x.target.result; syncState(); };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    document.getElementById('save-all-btn').onclick = async () => {
+        state.nickname = document.getElementById('set-name').value;
+        state.pfp = document.getElementById('set-pfp-url').value || state.pfp;
+        state.workMode = document.getElementById('work-lever').classList.contains('on');
+        state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
+        await saveCloud();
+        location.reload();
+    };
+
+    document.getElementById('clear-hist-btn').onclick = async () => {
+        if (confirm("Clear history?")) {
+            history = [];
+            renderHistory();
+            scroller.innerHTML = '';
+            hub.classList.remove('active');
+            settingsModal.style.display = 'none';
+            await saveCloud();
+        }
+    };
+
+    const toggleSearch = () => {
+        const isFlex = searchModal.style.display === 'flex';
+        searchModal.style.display = isFlex ? 'none' : 'flex';
+        if (!isFlex) document.getElementById('search-q').focus();
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleSearch(); }
+        if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    });
+
+    document.getElementById('search-q').oninput = (e) => {
+        const q = e.target.value.toLowerCase();
+        const matches = history.filter(h => h.q.toLowerCase().includes(q));
+        document.getElementById('search-results').innerHTML = matches.map(m => `
+            <div class="hist-item" onclick="pickMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>
+        `).join('');
+    };
+
+    window.pickMatch = (q) => {
+        const item = history.find(h => h.q === q);
+        if (item) {
+            searchModal.style.display = 'none';
+            scroller.innerHTML = '';
+            addMessage(item.q, true);
+            addMessage(item.a);
+        }
+    };
+
+    document.querySelectorAll('.sq-opt').forEach(btn => {
+        btn.onclick = () => { input.value = btn.dataset.p; input.focus(); };
+    });
+
+    document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
+    document.getElementById('new-chat-btn').onclick = () => location.reload();
+    document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
+    document.getElementById('connect-plugin').onclick = () => pluginModal.style.display = 'flex';
+    document.getElementById('plug-yes').onclick = () => window.open('https://example.com');
+    document.getElementById('plug-no').onclick = () => {
+        pluginModal.style.display = 'none';
+        addMessage("you need to install the plugin for the website to connect and work.", false, true);
+    };
+    document.getElementById('puter-reauth-btn').onclick = () => puter.auth.signIn().then(() => location.reload());
+
+    await loadCloudData();
+});
