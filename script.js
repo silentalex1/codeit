@@ -7,7 +7,7 @@ document.getElementById('auth-submit').addEventListener('click', async () => {
     if (db[user]) {
         if (db[user].password === pass) {
             sessionStorage.setItem('copilot_user', JSON.stringify({ username: user }));
-            window.location.href = "aigame/";
+            window.location.href = "/aigame";
         } else {
             alert("Username taken");
         }
