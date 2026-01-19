@@ -1,27 +1,25 @@
-document.getElementById('auth-btn').onclick = async () => {
-    const user = document.getElementById('u-reg').value.trim();
-    const pass = document.getElementById('p-reg').value.trim();
-    if (!user || !pass) return;
-    let data = await puter.kv.get('copilot_accounts');
-    let db = data ? JSON.parse(data) : {};
-    if (db[user]) {
-        if (db[user].password === pass) {
-            sessionStorage.setItem('copilot_user', JSON.stringify({ username: user }));
+document.getElementById('reg-btn').addEventListener('click', async () => {
+    const u = document.getElementById('reg-u').value.trim();
+    const p = document.getElementById('reg-p').value.trim();
+    if (!u || !p) return;
+    let raw = await puter.kv.get('copilot_db');
+    let db = raw ? JSON.parse(raw) : {};
+    if (db[u]) {
+        if (db[u].password === p) {
+            sessionStorage.setItem('copilot_user', JSON.stringify({ username: u }));
             window.location.href = "aigame/";
-        } else {
-            alert("Username already exists.");
-        }
+        } else { alert("User already exists."); }
     } else {
-        db[user] = { password: pass, settings: { nickname: user, pfp: '', workMode: false, hideSidebar: false }, history: [] };
-        await puter.kv.set('copilot_accounts', JSON.stringify(db));
-        sessionStorage.setItem('copilot_user', JSON.stringify({ username: user }));
+        db[u] = { password: p, settings: { nickname: u, pfp: '', workMode: false, hideSidebar: false }, history: [] };
+        await puter.kv.set('copilot_db', JSON.stringify(db));
+        sessionStorage.setItem('copilot_user', JSON.stringify({ username: u }));
         window.location.href = "aigame/";
     }
-};
-document.getElementById('puter-btn').onclick = async () => {
+});
+document.getElementById('puter-btn').addEventListener('click', async () => {
     const user = await puter.auth.signIn();
     if (user) {
         sessionStorage.setItem('copilot_user', JSON.stringify({ username: user.username }));
         window.location.href = "aigame/";
     }
-};
+});
