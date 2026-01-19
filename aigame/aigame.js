@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
     const loadCloud = async () => {
-        const data = await puter.kv.get('copilot_accounts');
-        const db = data ? JSON.parse(data) : {};
+        let data = await puter.kv.get('copilot_accounts');
+        let db = data ? JSON.parse(data) : {};
         if (db[session.name]) {
-            state = { ...state, ...(db[session.name].settings || {}) };
+            state = db[session.name].settings || state;
             history = db[session.name].history || [];
             syncUI();
             updateHistoryUI();
@@ -41,34 +41,86 @@ document.addEventListener('DOMContentLoaded', async () => {
             dropContent.style.display = 'none';
         }
 
-        genBtn.innerText = state.workMode ? "Ask" : "Generate";
-        document.getElementById('work-lever').classList.toggle('on', state.workMode);
-        document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-
-        if (state.hideSidebar && window.innerWidth > 1024) {
-            sidebar.classList.add('hidden');
-            restoreBtn.style.display = 'block';
+        if (state.workMode) {
+            genBtn.innerText = "Ask";
+            document.getElementById('work-lever').classList.add('on');
+        } else {
+            genBtn.innerText = "Generate";
+            document.getElementById('work-lever').classList.remove('on');
+        }
+        
+        if (state.hideSidebar) {
+            document.getElementById('side-lever').classList.add('on');
+        } else {
+            document.getElementById('side-lever').classList.remove('on');
         }
     };
 
     const saveCloud = async () => {
-        const data = await puter.kv.get('copilot_accounts');
-        const db = data ? JSON.parse(data) : {};
-        if (!db[session.name]) db[session.name] = { password: '', settings: {}, history: [] };
+        let data = await puter.kv.get('copilot_accounts');
+        let db = data ? JSON.parse(data) : {};
+        db[session.name] = db[session.name] || {};
         db[session.name].settings = state;
         db[session.name].history = history;
         await puter.kv.set('copilot_accounts', JSON.stringify(db));
     };
 
-    const getRandomThought = () => {
-        const thoughts = [
-            "Parsing user intent...", "Querying neural weights...", "Optimizing Roblox Luau performance...", 
-            "Generating mesh heuristics...", "Simulating physics constraints...", "Structuring game logic...", 
-            "Evaluating spatial hierarchy...", "Synthesizing environment assets...", "Refining algorithm paths...",
-            "Contextualizing creative input...", "Applying design patterns...", "Scanning metadata...",
-            "Constructing 3D arrays...", "Calculating vector transforms...", "Mapping entity relationships..."
-        ];
-        return thoughts[Math.floor(Math.random() * thoughts.length)];
+    const runAI = async () => {
+        const val = input.value.trim();
+        if (!val) return;
+        
+        const isSignedIn = await puter.auth.isSignedIn();
+        if (!isSignedIn) {
+            alert("Please sign in with Puter to use the AI.");
+            return;
+        }
+
+        sendMsg(val, true);
+        input.value = '';
+        input.style.height = '24px';
+
+        const aiBox = document.createElement('div');
+        aiBox.className = 'msg-ai';
+        
+        const reasonBox = document.createElement('div');
+        reasonBox.className = 'reasoning-box';
+        const reasonText = document.createElement('div');
+        reasonText.className = 'reasoning-text';
+        reasonBox.appendChild(reasonText);
+        
+        const statusText = document.createElement('div');
+        statusText.innerText = state.workMode ? 'Answering your question...' : 'Analyzing your imagination...';
+        
+        aiBox.appendChild(reasonBox);
+        aiBox.appendChild(statusText);
+        scroller.appendChild(aiBox);
+        scroller.scrollTop = scroller.scrollHeight;
+
+        let reasonInterval;
+        if (state.workMode) {
+            reasonBox.style.display = 'block';
+            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Refining thoughts...", "Calibrating neural net..."];
+            let idx = 0;
+            reasonInterval = setInterval(() => {
+                const p = document.createElement('p');
+                p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
+                reasonText.prepend(p);
+                if (reasonText.children.length > 5) reasonText.lastChild.remove();
+            }, 600);
+        }
+
+        try {
+            const res = await puter.ai.chat(val, { model: 'gpt-5o' });
+            if (reasonInterval) clearInterval(reasonInterval);
+            aiBox.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
+            history.push({ q: val, a: res });
+            updateHistoryUI();
+            await saveCloud();
+        } catch (e) {
+            if (reasonInterval) clearInterval(reasonInterval);
+            statusText.innerText = "Error: Connection failed. Verify Puter login.";
+        }
+        scroller.scrollTop = scroller.scrollHeight;
     };
 
     const sendMsg = (text, isUser = false) => {
@@ -76,90 +128,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.style.display = 'block';
         const div = document.createElement('div');
         div.className = isUser ? 'msg-u' : 'msg-ai';
-        
-        if (isUser) {
-            div.innerText = text;
-        } else {
-            const status = document.createElement('div');
-            status.className = 'status-text';
-            status.innerHTML = `<span>${state.workMode ? "Answering your question..." : "Imaginating your request..."}</span>`;
-            
-            const thoughtBox = document.createElement('div');
-            thoughtBox.className = 'thought-stream';
-            const thoughtLine = document.createElement('div');
-            thoughtLine.className = 'thought-line';
-            thoughtBox.appendChild(thoughtLine);
-            
-            const content = document.createElement('div');
-            content.className = 'ai-response-content';
-            content.innerHTML = text.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-            
-            div.appendChild(status);
-            div.appendChild(thoughtBox);
-            div.appendChild(content);
-
-            let thoughtTimer = setInterval(() => {
-                thoughtLine.innerText = getRandomThought();
-            }, 500);
-            
-            setTimeout(() => {
-                clearInterval(thoughtTimer);
-                thoughtBox.style.display = 'none';
-            }, 3000);
-        }
-        
+        div.innerHTML = isUser ? text : text;
         scroller.appendChild(div);
-        scroller.scrollTop = scroller.scrollHeight;
-    };
-
-    const runAI = async () => {
-        const val = input.value.trim();
-        if (!val) return;
-        sendMsg(val, true);
-        input.value = '';
-        input.style.height = '28px';
-
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'msg-ai';
-        
-        const status = document.createElement('div');
-        status.className = 'status-text';
-        status.innerHTML = `<span class="pulse-dot"></span><span>${state.workMode ? "Answering your question..." : "Imaginating your request..."}</span>`;
-        
-        const thoughtBox = document.createElement('div');
-        thoughtBox.className = 'thought-stream';
-        const thoughtLine = document.createElement('div');
-        thoughtLine.className = 'thought-line';
-        thoughtBox.appendChild(thoughtLine);
-        
-        const content = document.createElement('div');
-        content.className = 'ai-response-content';
-        
-        aiMsg.appendChild(status);
-        aiMsg.appendChild(thoughtBox);
-        aiMsg.appendChild(content);
-        scroller.appendChild(aiMsg);
-        scroller.scrollTop = scroller.scrollHeight;
-
-        let thoughtInterval = setInterval(() => {
-            thoughtLine.innerText = getRandomThought();
-        }, 300);
-
-        try {
-            const response = await puter.ai.chat(val, { model: 'gpt-4o' });
-            clearInterval(thoughtInterval);
-            thoughtBox.style.opacity = '0';
-            setTimeout(() => thoughtBox.remove(), 500);
-            
-            content.innerHTML = response.replace(/```lua([\s\S]*?)```/g, '<pre>$1</pre>');
-            history.push({ q: val, a: response });
-            updateHistoryUI();
-            saveCloud();
-        } catch (e) {
-            clearInterval(thoughtInterval);
-            content.innerText = "Connection lost. Please check your Puter account and refresh.";
-            content.style.color = "#ef4444";
-        }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
@@ -216,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.addEventListener('click', () => dropdown.classList.remove('active'));
     document.getElementById('trigger-settings').addEventListener('click', () => settingsModal.style.display = 'flex');
+    document.getElementById('open-search').addEventListener('click', () => searchModal.style.display = 'flex');
 
     document.querySelectorAll('.modal').forEach(m => {
         m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
@@ -242,26 +213,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('clear-history').addEventListener('click', async () => {
-        if (confirm("Clear history?")) {
+        if (confirm("Clear your chat history?")) {
             history = [];
             await saveCloud();
             location.reload();
         }
     });
 
-    document.getElementById('puter-reauth').onclick = () => puter.auth.signIn().then(() => location.reload());
-
-    const toggleSearch = () => {
-        if (searchModal.style.display === 'flex') {
-            searchModal.style.display = 'none';
-        } else {
-            searchModal.style.display = 'flex';
-            document.getElementById('search-q').focus();
-        }
+    document.getElementById('puter-reauth').onclick = async () => {
+        await puter.auth.signIn();
+        location.reload();
     };
 
     window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleSearch(); }
+        if (e.ctrlKey && e.key === 'k') { 
+            e.preventDefault(); 
+            if (searchModal.style.display === 'flex') {
+                searchModal.style.display = 'none';
+            } else {
+                searchModal.style.display = 'flex';
+                document.getElementById('search-q').focus();
+            }
+        }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     });
 
