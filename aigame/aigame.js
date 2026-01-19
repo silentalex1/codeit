@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
     const searchModal = document.getElementById('search-modal');
-    const pluginModal = document.getElementById('plugin-modal');
     const pfpInput = document.getElementById('pfp-file');
     const pfpPreview = document.getElementById('pfp-preview');
     const dropContent = document.getElementById('drop-content');
@@ -21,7 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
     const loadCloud = async () => {
-        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
+        let data = await puter.kv.get('copilot_accounts');
+        let db = data ? JSON.parse(data) : {};
         if (db[session.name]) {
             state = db[session.name].settings || state;
             history = db[session.name].history || [];
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const syncUI = () => {
-        if (avatar) avatar.style.backgroundImage = state.pfp ? `url(${state.pfp})` : '';
+        if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         
@@ -45,25 +45,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             genBtn.innerText = "Ask";
             document.getElementById('work-lever').classList.add('on');
         }
-        if (state.hideSidebar) document.getElementById('side-lever').classList.add('on');
-    };
-
-    const saveCloud = async () => {
-        let db = JSON.parse(await puter.kv.get('copilot_db') || '{}');
-        if (db[session.name]) {
-            db[session.name].settings = state;
-            db[session.name].history = history;
-            await puter.kv.set('copilot_db', JSON.stringify(db));
+        if (state.hideSidebar) {
+            document.getElementById('side-lever').classList.add('on');
         }
     };
 
-    const sendMsg = (text, isUser = false, isError = false) => {
+    const saveCloud = async () => {
+        let data = await puter.kv.get('copilot_accounts');
+        let db = data ? JSON.parse(data) : {};
+        if (db[session.name]) {
+            db[session.name].settings = state;
+            db[session.name].history = history;
+            await puter.kv.set('copilot_accounts', JSON.stringify(db));
+        }
+    };
+
+    const sendMsg = (text, isUser = false) => {
         hub.classList.add('active');
         scroller.style.display = 'block';
         const div = document.createElement('div');
         div.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) div.style.color = '#ef4444';
-        div.innerHTML = isUser ? text : text.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;">$1</pre>');
+        div.innerHTML = isUser ? text : text.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
         scroller.appendChild(div);
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -73,28 +75,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!val) return;
         sendMsg(val, true);
         input.value = '';
-        input.style.height = '26px';
+        input.style.height = '24px';
 
         const aiThinking = document.createElement('div');
         aiThinking.className = 'msg-ai';
-        aiThinking.innerText = 'Analyzing...';
+        aiThinking.innerText = 'Analyzing your imagination...';
         scroller.appendChild(aiThinking);
 
         try {
             const res = await puter.ai.chat(val);
-            aiThinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;">$1</pre>');
+            aiThinking.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
             history.push({ q: val, a: res });
             updateHistoryUI();
             saveCloud();
         } catch (e) {
-            aiThinking.innerText = "Error: Please check your Puter session.";
+            aiThinking.innerText = "Connection lost. Please refresh.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
     const updateHistoryUI = () => {
-        document.getElementById('chat-history').innerHTML = history.map((h, i) => `
-            <div class="hist-item" onclick="loadChat(${i})">${h.q}</div>
+        document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => `
+            <div class="hist-item" onclick="loadChat(${history.length - 1 - i})">${h.q}</div>
         `).join('');
     };
 
@@ -105,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const handleFile = (file) => {
-        if (!file.type.startsWith('image/')) return;
+        if (!file || !file.type.startsWith('image/')) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             state.pfp = e.target.result;
@@ -119,24 +121,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('pfp-drop-zone').onclick = () => pfpInput.click();
     pfpInput.onchange = (e) => handleFile(e.target.files[0]);
 
-    document.getElementById('pfp-drop-zone').ondragover = (e) => { e.preventDefault(); };
-    document.getElementById('pfp-drop-zone').ondrop = (e) => {
-        e.preventDefault();
-        handleFile(e.dataTransfer.files[0]);
-    };
-
     genBtn.addEventListener('click', runAI);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
-        input.style.height = 'auto';
-        input.style.height = input.scrollHeight + 'px';
+        setTimeout(() => {
+            input.style.height = 'auto';
+            input.style.height = input.scrollHeight + 'px';
+        }, 0);
     });
 
     sidebar.addEventListener('dblclick', () => {
-        if (state.hideSidebar || window.innerWidth < 1024) {
-            sidebar.classList.add('hidden');
-            restoreBtn.style.display = 'block';
-        }
+        sidebar.classList.add('hidden');
+        restoreBtn.style.display = 'block';
     });
 
     restoreBtn.addEventListener('click', () => {
@@ -150,8 +146,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.addEventListener('click', () => dropdown.classList.remove('active'));
-    document.getElementById('open-settings').addEventListener('click', () => settingsModal.style.display = 'flex');
-    
+    document.getElementById('trigger-settings').addEventListener('click', () => settingsModal.style.display = 'flex');
+    document.getElementById('open-search').addEventListener('click', () => searchModal.style.display = 'flex');
+
     document.querySelectorAll('.modal').forEach(m => {
         m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
     });
@@ -172,14 +169,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.pfp = document.getElementById('set-pfp').value || state.pfp;
         state.workMode = document.getElementById('work-lever').classList.contains('on');
         state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
-        session.settings = state;
-        sessionStorage.setItem('copilot_session', JSON.stringify(session));
         await saveCloud();
         location.reload();
     });
 
     document.getElementById('clear-history').addEventListener('click', async () => {
-        if (confirm("Clear history?")) {
+        if (confirm("Permanently clear your imagination history?")) {
             history = [];
             await saveCloud();
             location.reload();
@@ -188,13 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('puter-reauth').onclick = () => puter.auth.signIn().then(() => location.reload());
 
-    const toggleSearch = () => {
-        searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-        if (searchModal.style.display === 'flex') document.getElementById('search-q').focus();
-    };
-
     window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); toggleSearch(); }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     });
 
@@ -202,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const q = e.target.value.toLowerCase();
         const matches = history.filter(h => h.q.toLowerCase().includes(q));
         document.getElementById('search-results').innerHTML = matches.map(m => `
-            <div class="hist-item" onclick="loadMatch('${m.q}')">${m.q}</div>
+            <div class="hist-item" onclick="loadMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>
         `).join('');
     });
 
@@ -226,6 +216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mob-toggle').addEventListener('click', () => sidebar.classList.toggle('open'));
     document.getElementById('new-chat').addEventListener('click', () => location.reload());
     document.getElementById('logout-btn').addEventListener('click', () => { sessionStorage.clear(); window.location.href = "../"; });
+    document.getElementById('conn-plugin').addEventListener('click', () => document.getElementById('plugin-modal').style.display = 'flex');
+    document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
+    document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
 
     await loadCloud();
 });
