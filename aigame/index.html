@@ -12,9 +12,8 @@
 
     <div id="search-modal" class="modal">
         <div class="modal-box">
-            <div class="search-wrapper">
-                <input type="text" id="search-q" placeholder="Type to search history...">
-                <div class="search-glow"></div>
+            <div class="search-container">
+                <input type="text" id="search-q" placeholder="Search your chats...">
             </div>
             <div id="search-results"></div>
         </div>
@@ -23,57 +22,48 @@
     <div id="settings-modal" class="modal">
         <div class="settings-card">
             <div class="s-nav">
-                <div class="s-nav-header">Workspace</div>
                 <div class="s-link active" data-tab="u-set">User Settings</div>
                 <div class="s-link" data-tab="a-set">AI Settings</div>
                 <div class="s-bottom">
-                    <button id="save-all" class="save-btn">Save Changes</button>
-                    <button id="clear-history" class="danger-btn">Clear History</button>
-                    <button id="puter-reauth" class="puter-auth-btn">Sync PuterJS</button>
+                    <button id="save-all" class="save-btn">Save Settings</button>
+                    <button id="clear-history" class="danger-btn">Clear Chat History</button>
+                    <button id="puter-reauth" class="puter-auth-btn">login with puterjs</button>
                 </div>
             </div>
             <div class="s-body">
                 <div id="u-set" class="tab active">
                     <div class="title-wrap">
-                        <h3>User Profile</h3>
-                        <p>Customize how you appear in the workspace.</p>
+                        <h3>Profile</h3>
                         <div class="v-line"></div>
                     </div>
                     <div class="f-grp">
                         <label>Display Name</label>
-                        <input type="text" id="set-name" placeholder="Enter nickname">
+                        <input type="text" id="set-name">
                     </div>
                     <div class="f-grp">
                         <label>Profile Image URL</label>
-                        <input type="text" id="set-pfp" placeholder="https://image.link/...">
+                        <input type="text" id="set-pfp">
                     </div>
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
                         <div id="drop-content">
-                            <button id="select-pfp" class="fancy-mini-btn">Upload Image</button>
-                            <p class="pc-only">or drag and drop</p>
+                            <button id="select-pfp" class="fancy-mini-btn">select pfp</button>
+                            <p class="pc-only">drop image here</p>
                         </div>
                         <img id="pfp-preview" src="" style="display:none;">
                     </div>
                     <div class="lever-row">
-                        <div class="lever-info">
-                            <span>Sidebar Toggle</span>
-                            <p>Double click sidebar to hide it manually.</p>
-                        </div>
+                        <span>Double click to hide sidebar</span>
                         <div class="lever" id="side-lever"><div class="dot"></div></div>
                     </div>
                 </div>
                 <div id="a-set" class="tab">
                     <div class="title-wrap">
-                        <h3>AI Configuration</h3>
-                        <p>Adjust the behavior of your workspace assistant.</p>
+                        <h3>AI Settings</h3>
                         <div class="v-line"></div>
                     </div>
                     <div class="lever-row">
-                        <div class="lever-info">
-                            <span>Work Mode</span>
-                            <p>Enables reasoning and logical optimization.</p>
-                        </div>
+                        <span>Turn AI to work mode</span>
                         <div class="lever" id="work-lever"><div class="dot"></div></div>
                     </div>
                 </div>
@@ -83,21 +73,20 @@
 
     <div id="plugin-modal" class="modal">
         <div class="plugin-box">
-            <h3>Plugin Status</h3>
-            <p>Do you have the required plugin installed?</p>
+            <h3>do you got the plugin installed?</h3>
             <div class="p-btns">
-                <button id="plug-yes" class="plug-confirm">Yes, Connected</button>
-                <button id="plug-no" class="plug-cancel">No, Install</button>
+                <button id="plug-yes" class="plug-confirm">Yes</button>
+                <button id="plug-no" class="plug-cancel">No</button>
             </div>
         </div>
     </div>
 
     <aside id="sidebar" class="sidebar">
         <div class="side-inner">
-            <div class="search-box" id="open-search">Search history (Ctrl+K)</div>
+            <div class="search-box" id="open-search">press ctrl+k to search</div>
             <div id="chat-history" class="history"></div>
             <div class="side-bottom">
-                <button id="new-chat" class="new-btn">+ Start New Chat</button>
+                <button id="new-chat" class="new-btn">+ New Chat</button>
             </div>
         </div>
     </aside>
@@ -111,14 +100,14 @@
                 <div class="logo">codeit copilot</div>
             </div>
             <div class="nav-r">
-                <button id="conn-plugin" class="plugin-btn">Connect Plugin</button>
-                <button class="nav-item">Donate</button>
-                <button class="nav-item">Community</button>
+                <button id="conn-plugin" class="plugin-btn">connect plugin</button>
+                <button class="nav-item">donate here</button>
+                <button class="nav-item">our community</button>
                 <div class="pfp-container">
                     <div id="u-avatar" class="avatar"></div>
                     <div id="u-dropdown" class="dropdown">
-                        <button id="trigger-settings">Settings</button>
-                        <button id="logout-btn">Logout</button>
+                        <button id="trigger-settings">settings</button>
+                        <button id="logout-btn">logout</button>
                     </div>
                 </div>
             </div>
