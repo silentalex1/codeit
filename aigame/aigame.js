@@ -45,10 +45,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (state.workMode) {
             genBtn.innerText = "Ask";
             genBtn.classList.add('work-mode-btn');
+            document.getElementById('work-lever').classList.add('on');
             updateWorkPrompts();
         } else {
             genBtn.innerText = "Generate";
             genBtn.classList.remove('work-mode-btn');
+            document.getElementById('work-lever').classList.remove('on');
             updateImaginePrompts();
         }
         
@@ -78,15 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button class="sq-opt" id="dynamic-work-btn" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button>
             <button class="sq-opt" data-p="fix this code for me: ">fix this code for me: ___</button>
         `;
-        const dynamicBtn = document.getElementById('dynamic-work-btn');
-        const randomQuestions = ["who would win godzilla vs thor?", "explain quantum physics simply", "best way to learn lua?", "how to bake a cake?", "top 5 roblox games?"];
-        setInterval(() => {
-            if (state.workMode) {
-                const q = randomQuestions[Math.floor(Math.random() * randomQuestions.length)];
-                dynamicBtn.innerText = q;
-                dynamicBtn.dataset.p = q;
-            }
-        }, 5000);
         attachPromptEvents();
     };
 
@@ -113,29 +106,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         hub.classList.add('typing');
         scroller.style.display = 'block';
-        
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-u';
         userDiv.innerText = val;
         scroller.appendChild(userDiv);
-        
         input.value = '';
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
         aiBox.className = 'msg-ai';
-        
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         const reasonTextDiv = document.createElement('div');
         reasonTextDiv.className = 'reasoning-text';
         reasonBox.appendChild(reasonTextDiv);
-        
         const statusText = document.createElement('div');
         statusText.style.color = '#3b82f6';
         statusText.style.fontWeight = '800';
         statusText.innerText = state.workMode ? 'Answering your question...' : 'Analyzing your imagination...';
-        
         aiBox.appendChild(reasonBox);
         aiBox.appendChild(statusText);
         scroller.appendChild(aiBox);
@@ -144,13 +132,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         let reasonInterval;
         if (state.workMode) {
             reasonBox.style.display = 'block';
-            const thoughts = ["Thinking...", "Searching knowledge...", "Logic check...", "Structuring...", "Refining...", "Calculating...", "Processing...", "Syncing neural..."];
+            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output..."];
             reasonInterval = setInterval(() => {
                 const p = document.createElement('p');
                 p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
                 reasonTextDiv.prepend(p);
-                if (reasonTextDiv.children.length > 3) reasonTextDiv.lastChild.remove();
-            }, 700);
+                if (reasonTextDiv.children.length > 2) reasonTextDiv.lastChild.remove();
+            }, 800);
         }
 
         try {
@@ -178,14 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         hub.classList.add('typing');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
-        const qDiv = document.createElement('div');
-        qDiv.className = 'msg-u';
-        qDiv.innerText = history[i].q;
-        scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div');
-        aDiv.className = 'msg-ai';
-        aDiv.innerHTML = history[i].a;
-        scroller.appendChild(aDiv);
+        const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
+        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = history[i].a; scroller.appendChild(aDiv);
     };
 
     input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
@@ -197,16 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
-
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
-    
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
-
-    document.querySelectorAll('.modal').forEach(m => {
-        m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; };
-    });
+    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
     document.querySelectorAll('.s-link').forEach(link => {
         link.onclick = () => {
@@ -228,18 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         location.reload();
     };
 
-    document.getElementById('clear-history').onclick = async () => {
-        if (confirm("Clear your chat history?")) { history = []; await saveCloud(); location.reload(); }
-    };
-
+    document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
 
     window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { 
-            e.preventDefault(); 
-            searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-            if (searchModal.style.display === 'flex') document.getElementById('search-q').focus();
-        }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex'; if (searchModal.style.display === 'flex') document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
 
