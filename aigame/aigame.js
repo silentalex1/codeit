@@ -104,6 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const val = input.value.trim();
         if (!val) return;
         
+        const userIsSignedIn = await puter.auth.isSignedIn();
+        if(!userIsSignedIn){
+            alert("Please login via the settings menu to use the AI features.");
+            return;
+        }
+
         hub.classList.add('typing');
         scroller.style.display = 'block';
         const userDiv = document.createElement('div');
@@ -137,14 +143,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const p = document.createElement('p');
                 p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
                 reasonTextDiv.prepend(p);
-                if (reasonTextDiv.children.length > 2) reasonTextDiv.lastChild.remove();
+                if (reasonTextDiv.children.length > 1) reasonTextDiv.lastChild.remove();
             }, 800);
         }
 
         try {
             const response = await puter.ai.chat(val, { model: 'gpt-4o' });
             if (reasonInterval) clearInterval(reasonInterval);
-            aiBox.innerHTML = response.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
+            aiBox.innerHTML = response;
             history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
