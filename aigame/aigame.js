@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateWorkPrompts = () => {
         premadeContainer.innerHTML = `
             <button class="sq-opt" data-p="solve this math question that im stuck on: ">solve this math question that im stuck on: ___</button>
-            <button class="sq-opt" id="dynamic-work-btn" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button>
+            <button class="sq-opt" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button>
             <button class="sq-opt" data-p="fix this code for me: ">fix this code for me: ___</button>
         `;
         attachPromptEvents();
