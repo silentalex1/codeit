@@ -9,8 +9,8 @@ body { background: #050505; color: white; height: 100vh; display: flex; overflow
 .sidebar.hidden { transform: translateX(-280px); width: 0; border: none; visibility: hidden; }
 .side-inner { height: 100%; display: flex; flex-direction: column; padding: 20px; }
 .history { flex: 1; overflow-y: auto; margin: 20px 0; }
-.hist-item { padding: 12px; border-radius: 12px; font-size: 13px; color: #4b5563; cursor: pointer; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-.hist-item:hover { background: #0c0c0e; color: white; }
+.hist-item { padding: 12px; border-radius: 12px; font-size: 13px; color: #4b5563; cursor: pointer; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; border: 1px solid transparent; }
+.hist-item:hover { background: #0c0c0e; color: white; border-color: #1a1a1e; }
 .search-box { background: #0c0c0e; border: 1px solid #1a1a1e; padding: 12px; border-radius: 12px; color: #4b5563; font-size: 12px; cursor: pointer; text-align: center; }
 .new-btn { width: 100%; padding: 14px; background: #0c0c0e; border: 1px solid #1a1a1e; color: white; border-radius: 14px; cursor: pointer; font-weight: 700; transition: 0.3s; }
 .new-btn:hover { border-color: #3b82f6; background: #111116; }
@@ -35,11 +35,11 @@ body { background: #050505; color: white; height: 100vh; display: flex; overflow
 .sq-opt:hover { border-color: #3b82f6; background: #111116; color: white; }
 .input-hub { background: #0c0c0e; border: 1px solid #1a1a1e; border-radius: 26px; padding: 12px 14px 12px 28px; display: flex; align-items: center; gap: 15px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 textarea { flex: 1; background: transparent; border: none; color: white; resize: none; min-height: 24px; max-height: 200px; outline: none; font-size: 16px; line-height: 24px; }
-.fancy-gen { background: #3b82f6; color: white; border: none; padding: 12px 28px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.3s; }
-.fancy-gen.work-mode-btn { background: transparent; border: 1px solid #1a1a1e; color: #4b5563; }
+.fancy-gen { background: #3b82f6; color: white; border: none; padding: 12px 28px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+.fancy-gen.work-mode-btn { background: transparent; border: 1px solid #1a1a1e; color: #4b5563; box-shadow: none; }
 .chat-viewport { width: 850px; margin: 0 auto; overflow-y: auto; height: calc(100vh - 180px); display: none; padding: 40px 20px 120px; }
 .msg-u { font-weight: 800; font-size: 22px; border-left: 4px solid #3b82f6; padding-left: 24px; margin-bottom: 40px; }
-.msg-ai { background: #0c0c0e; padding: 30px; border-radius: 28px; line-height: 1.8; color: #94a3b8; margin-bottom: 50px; border: 1px solid #1a1a1e; }
+.msg-ai { background: #0c0c0e; padding: 30px; border-radius: 28px; line-height: 1.8; color: #94a3b8; margin-bottom: 50px; border: 1px solid #1a1a1e; transition: 0.3s; }
 .reasoning-box { margin-bottom: 15px; padding: 14px; background: rgba(59, 130, 246, 0.05); border-radius: 16px; border: 1px solid rgba(59, 130, 246, 0.1); font-size: 13px; color: #3b82f6; display: none; height: 50px; overflow: hidden; }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); display: none; justify-content: center; align-items: center; z-index: 5000; padding: 20px; }
 .modal-box { width: 100%; max-width: 500px; background: #0c0c0e; border-radius: 28px; padding: 35px; border: 1px solid #1a1a1e; }
