@@ -23,9 +23,9 @@
                 <div class="s-link active" data-tab="u-set">User Settings</div>
                 <div class="s-link" data-tab="a-set">AI Settings</div>
                 <div class="s-bottom">
-                    <button id="save-all" class="save-btn-fancy">Save Settings</button>
-                    <button id="clear-history" class="danger-btn-fancy">Clear Chat History</button>
-                    <button id="puter-reauth" class="puter-btn-fancy">login with puterjs</button>
+                    <button id="save-all" class="save-btn">Save Settings</button>
+                    <button id="clear-history" class="danger">Clear Chat History</button>
+                    <button id="puter-reauth" class="puter-btn-s">login with puterjs</button>
                 </div>
             </div>
             <div class="s-body">
@@ -45,7 +45,7 @@
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
                         <div id="drop-content">
-                            <button id="select-pfp" class="pfp-btn-fancy">select pfp</button>
+                            <button id="select-pfp" class="fancy-mini-btn">select pfp</button>
                             <p class="pc-only">drop image here</p>
                         </div>
                         <img id="pfp-preview" src="" style="display:none;">
@@ -114,7 +114,7 @@
         <div id="chat-scroller" class="chat-viewport"></div>
 
         <div id="hub" class="hub">
-            <div class="hub-center" id="hub-center">
+            <div class="hub-center">
                 <h1>codeit copilot imagine anything.</h1>
                 <div class="premade" id="premade-container">
                     <button class="sq-opt" data-p="create me a obby that ">create me a obby that ___</button>
@@ -122,9 +122,9 @@
                     <button class="sq-opt" data-p="create me a map that looks like ">create me a map that looks like ___</button>
                 </div>
             </div>
-            <div class="input-hub" id="input-container">
+            <div class="input-hub">
                 <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
-                <button id="gen-action" class="main-action-btn">Generate</button>
+                <button id="gen-action" class="fancy-gen">Generate</button>
             </div>
         </div>
     </main>
