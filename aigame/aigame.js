@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const input = document.getElementById('ai-query');
     const genBtn = document.getElementById('gen-action');
     const hub = document.getElementById('hub');
-    const hubCenter = document.getElementById('hub-center');
     const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
     const restoreBtn = document.getElementById('restore-tab');
@@ -21,29 +20,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
-    const workOptions = [
-        "solve this math question that im stuck on: ____",
-        "who would win godzilla vs thor?",
-        "fix this code for me: _____"
-    ];
-
-    const creativeOptions = [
-        "create me a obby that ___",
-        "make me a horror scene that does ___",
-        "create me a map that looks like ___"
-    ];
-
     const loadCloud = async () => {
-        try {
-            let data = await puter.kv.get('copilot_accounts');
-            let db = data ? JSON.parse(data) : {};
-            if (db[session.name]) {
-                state = db[session.name].settings || state;
-                history = db[session.name].history || [];
-                syncUI();
-                updateHistoryUI();
-            }
-        } catch(e) {}
+        let data = await puter.kv.get('copilot_accounts');
+        let db = data ? JSON.parse(data) : {};
+        if (db[session.name]) {
+            state = db[session.name].settings || state;
+            history = db[session.name].history || [];
+            syncUI();
+            updateHistoryUI();
+        }
     };
 
     const syncUI = () => {
@@ -59,55 +44,66 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (state.workMode) {
             genBtn.innerText = "Ask";
-            genBtn.classList.add('work-mode');
-            updatePremadeUI(workOptions);
+            genBtn.classList.add('work-mode-btn');
+            updateWorkPrompts();
         } else {
             genBtn.innerText = "Generate";
-            genBtn.classList.remove('work-mode');
-            updatePremadeUI(creativeOptions);
+            genBtn.classList.remove('work-mode-btn');
+            updateImaginePrompts();
         }
         
-        document.getElementById('work-lever').classList.toggle('on', state.workMode);
-        document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-    };
-
-    const updatePremadeUI = (opts) => {
-        premadeContainer.innerHTML = opts.map(o => `
-            <button class="sq-opt" data-p="${o}">${o}</button>
-        `).join('');
-        document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { input.value = btn.dataset.p; input.focus(); hubCenter.classList.add('hidden'); };
-        });
-    };
-
-    const randomizeLively = () => {
-        if (!state.workMode) return;
-        const vs = [
-            "who would win godzilla vs thor?",
-            "who would win batman vs ironman?",
-            "who would win naruto vs luffy?",
-            "who would win goku vs superman?"
-        ];
-        const btn = premadeContainer.children[1];
-        if (btn) {
-            btn.style.opacity = '0';
-            setTimeout(() => {
-                const text = vs[Math.floor(Math.random() * vs.length)];
-                btn.innerText = text;
-                btn.dataset.p = text;
-                btn.style.opacity = '1';
-            }, 300);
+        if (state.hideSidebar) {
+            document.getElementById('side-lever').classList.add('on');
+            sidebar.classList.add('hidden');
+            restoreBtn.style.display = 'block';
+        } else {
+            document.getElementById('side-lever').classList.remove('on');
+            sidebar.classList.remove('hidden');
+            restoreBtn.style.display = 'none';
         }
     };
 
-    setInterval(randomizeLively, 4000);
+    const updateImaginePrompts = () => {
+        premadeContainer.innerHTML = `
+            <button class="sq-opt" data-p="create me a obby that ">create me a obby that ___</button>
+            <button class="sq-opt" data-p="make me a horror scene that does ">make me a horror scene that does ___</button>
+            <button class="sq-opt" data-p="create me a map that looks like ">create me a map that looks like ___</button>
+        `;
+        attachPromptEvents();
+    };
+
+    const updateWorkPrompts = () => {
+        premadeContainer.innerHTML = `
+            <button class="sq-opt" data-p="solve this math question that im stuck on: ">solve this math question that im stuck on: ___</button>
+            <button class="sq-opt" id="dynamic-work-btn" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button>
+            <button class="sq-opt" data-p="fix this code for me: ">fix this code for me: ___</button>
+        `;
+        const dynamicBtn = document.getElementById('dynamic-work-btn');
+        const randomQuestions = ["who would win godzilla vs thor?", "explain quantum physics simply", "best way to learn lua?", "how to bake a cake?", "top 5 roblox games?"];
+        setInterval(() => {
+            if (state.workMode) {
+                const q = randomQuestions[Math.floor(Math.random() * randomQuestions.length)];
+                dynamicBtn.innerText = q;
+                dynamicBtn.dataset.p = q;
+            }
+        }, 5000);
+        attachPromptEvents();
+    };
+
+    const attachPromptEvents = () => {
+        document.querySelectorAll('.sq-opt').forEach(btn => {
+            btn.onclick = () => {
+                input.value = btn.dataset.p;
+                input.focus();
+                hub.classList.add('typing');
+            };
+        });
+    };
 
     const saveCloud = async () => {
         let data = await puter.kv.get('copilot_accounts');
         let db = data ? JSON.parse(data) : {};
-        db[session.name] = db[session.name] || {};
-        db[session.name].settings = state;
-        db[session.name].history = history;
+        db[session.name] = { password: db[session.name]?.password, settings: state, history: history };
         await puter.kv.set('copilot_accounts', JSON.stringify(db));
     };
 
@@ -115,13 +111,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const val = input.value.trim();
         if (!val) return;
         
-        const user = await puter.auth.getUser();
-        if (!user) {
-            sendMsg("Please check your Puter account and refresh.", false, true);
-            return;
-        }
-
-        sendMsg(val, true);
+        hub.classList.add('typing');
+        scroller.style.display = 'block';
+        
+        const userDiv = document.createElement('div');
+        userDiv.className = 'msg-u';
+        userDiv.innerText = val;
+        scroller.appendChild(userDiv);
+        
         input.value = '';
         input.style.height = '24px';
 
@@ -130,13 +127,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
-        const reasonText = document.createElement('div');
-        reasonText.className = 'reasoning-text';
-        reasonBox.appendChild(reasonText);
+        const reasonTextDiv = document.createElement('div');
+        reasonTextDiv.className = 'reasoning-text';
+        reasonBox.appendChild(reasonTextDiv);
         
         const statusText = document.createElement('div');
         statusText.style.color = '#3b82f6';
-        statusText.style.fontWeight = '700';
+        statusText.style.fontWeight = '800';
         statusText.innerText = state.workMode ? 'Answering your question...' : 'Analyzing your imagination...';
         
         aiBox.appendChild(reasonBox);
@@ -147,39 +144,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         let reasonInterval;
         if (state.workMode) {
             reasonBox.style.display = 'block';
-            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Refining thoughts...", "Calibrating neural net..."];
+            const thoughts = ["Thinking...", "Searching knowledge...", "Logic check...", "Structuring...", "Refining...", "Calculating...", "Processing...", "Syncing neural..."];
             reasonInterval = setInterval(() => {
                 const p = document.createElement('p');
                 p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
-                reasonText.prepend(p);
-                if (reasonText.children.length > 5) reasonText.lastChild.remove();
-            }, 600);
+                reasonTextDiv.prepend(p);
+                if (reasonTextDiv.children.length > 3) reasonTextDiv.lastChild.remove();
+            }, 700);
         }
 
         try {
-            const res = await puter.ai.chat(val);
+            const response = await puter.ai.chat(val, { model: 'gpt-4o' });
             if (reasonInterval) clearInterval(reasonInterval);
-            aiBox.innerHTML = res.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
-            history.push({ q: val, a: res });
+            aiBox.innerHTML = response.replace(/```lua([\s\S]*?)```/g, '<pre style="background:#000;padding:20px;border-radius:14px;color:#4ade80;overflow-x:auto;margin-top:15px;font-family:monospace;font-size:14px;">$1</pre>');
+            history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
         } catch (e) {
             if (reasonInterval) clearInterval(reasonInterval);
-            statusText.style.color = '#ef4444';
             statusText.innerText = "Connection lost. Please check your Puter account and refresh.";
+            statusText.style.color = "#ef4444";
         }
-        scroller.scrollTop = scroller.scrollHeight;
-    };
-
-    const sendMsg = (text, isUser = false, isError = false) => {
-        hub.classList.add('active');
-        hubCenter.classList.add('hidden');
-        scroller.style.display = 'block';
-        const div = document.createElement('div');
-        div.className = isUser ? 'msg-u' : 'msg-ai';
-        if (isError) { div.style.color = '#ef4444'; div.innerText = text; }
-        else div.innerHTML = text;
-        scroller.appendChild(div);
         scroller.scrollTop = scroller.scrollHeight;
     };
 
@@ -190,39 +175,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.loadChat = (i) => {
+        hub.classList.add('typing');
+        scroller.style.display = 'block';
         scroller.innerHTML = '';
-        sendMsg(history[i].q, true);
-        sendMsg(history[i].a);
+        const qDiv = document.createElement('div');
+        qDiv.className = 'msg-u';
+        qDiv.innerText = history[i].q;
+        scroller.appendChild(qDiv);
+        const aDiv = document.createElement('div');
+        aDiv.className = 'msg-ai';
+        aDiv.innerHTML = history[i].a;
+        scroller.appendChild(aDiv);
     };
 
-    input.oninput = () => { if (input.value.length > 0) hubCenter.classList.add('hidden'); else if (scroller.children.length === 0) hubCenter.classList.remove('hidden'); };
-
-    document.getElementById('pfp-drop-zone').onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            state.pfp = ev.target.result;
-            pfpPreview.src = state.pfp;
-            pfpPreview.style.display = 'block';
-            dropContent.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    };
-
+    input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
     genBtn.onclick = runAI;
-    input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
+        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
+    };
 
-    sidebar.ondblclick = () => { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; };
-    restoreBtn.onclick = () => { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; };
+    sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
+    restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
+    
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
 
-    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
+    document.querySelectorAll('.modal').forEach(m => {
+        m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; };
+    });
 
     document.querySelectorAll('.s-link').forEach(link => {
         link.onclick = () => {
@@ -244,21 +228,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         location.reload();
     };
 
-    document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
+    document.getElementById('clear-history').onclick = async () => {
+        if (confirm("Clear your chat history?")) { history = []; await saveCloud(); location.reload(); }
+    };
+
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
 
     window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = (searchModal.style.display === 'flex' ? 'none' : 'flex'); document.getElementById('search-q').focus(); }
+        if (e.ctrlKey && e.key === 'k') { 
+            e.preventDefault(); 
+            searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
+            if (searchModal.style.display === 'flex') document.getElementById('search-q').focus();
+        }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
 
     document.getElementById('search-q').oninput = (e) => {
         const q = e.target.value.toLowerCase();
         const matches = history.filter(h => h.q.toLowerCase().includes(q));
-        document.getElementById('search-results').innerHTML = matches.map(m => `<div class="hist-item" onclick="loadMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>`).join('');
+        document.getElementById('search-results').innerHTML = matches.map(m => `
+            <div class="hist-item" onclick="loadMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>
+        `).join('');
     };
 
-    window.loadMatch = (q) => { const item = history.find(h => h.q === q); if (item) { searchModal.style.display = 'none'; scroller.innerHTML = ''; sendMsg(item.q, true); sendMsg(item.a); } };
+    window.loadMatch = (q) => {
+        const item = history.find(h => h.q === q);
+        if (item) { searchModal.style.display = 'none'; hub.classList.add('typing'); scroller.style.display = 'block'; scroller.innerHTML = ''; loadChat(history.indexOf(item)); }
+    };
+
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
     document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
