@@ -176,11 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         reasonPulse.innerText = state.workMode ? 'Answering your question...' : 'Analyzing your imagination...';
         reasonBox.appendChild(reasonPulse);
         
-        const statusText = document.createElement('div');
-        statusText.style.display = 'none'; 
-        
         aiBox.appendChild(reasonBox);
-        aiBox.appendChild(statusText);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
 
@@ -193,9 +189,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            statusText.style.display = 'block';
-            statusText.innerText = "Connection lost. Please refresh or re-sync PuterJS.";
-            statusText.style.color = "#ef4444";
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = "#ef4444";
+            errorDiv.innerText = "Connection lost. Please refresh or re-sync PuterJS.";
+            aiBox.appendChild(errorDiv);
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -212,7 +209,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatMsg(history[i].a); scroller.appendChild(aDiv);
     };
 
-    input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
     genBtn.onclick = runAI;
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
@@ -234,23 +230,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
-
-    document.getElementById('select-pfp').onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            state.pfp = ev.target.result;
-            pfpPreview.src = state.pfp;
-            pfpPreview.style.display = 'block';
-            dropContent.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    };
-
-    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
-    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
 
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
@@ -283,9 +262,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
     document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
-    document.getElementById('conn-plugin').onclick = () => document.getElementById('plugin-modal').style.display = 'flex';
-    document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
-    document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
 
     window.onresize = detectUI;
     detectUI();
