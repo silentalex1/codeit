@@ -156,6 +156,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runAI = async () => {
         const val = input.value.trim();
         if (!val) return;
+        const isAuthed = await puter.auth.isSignedIn();
+        if(!isAuthed) { alert("Please sync PuterJS in settings."); return; }
 
         hub.classList.add('typing');
         scroller.style.display = 'block';
@@ -189,10 +191,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            const errorDiv = document.createElement('div');
-            errorDiv.style.color = "#ef4444";
-            errorDiv.innerText = "Connection lost. Please refresh or re-sync PuterJS.";
-            aiBox.appendChild(errorDiv);
+            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
+            aiBox.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -221,6 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
+    
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
     document.querySelectorAll('.s-link').forEach(link => {
@@ -230,6 +231,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
+
+    document.getElementById('select-pfp').onclick = () => pfpInput.click();
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            state.pfp = ev.target.result;
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropContent.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
 
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
@@ -244,7 +262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
 
     window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex'; if (searchModal.style.display === 'flex') document.getElementById('search-q').focus(); }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
 
