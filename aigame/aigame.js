@@ -220,8 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            state.pfp = e.target.result;
+        reader.onload = (ev) => {
+            state.pfp = ev.target.result;
             pfpPreview.src = state.pfp;
             pfpPreview.style.display = 'block';
             dropContent.style.display = 'none';
