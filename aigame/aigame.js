@@ -27,13 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         notif.classList.add('show');
         for (const step of steps) {
             notifText.innerText = step;
-            await new Promise(r => setTimeout(r, 1200));
+            await new Promise(r => setTimeout(r, 1100));
         }
         notif.classList.add('fade');
         setTimeout(() => {
             notif.classList.remove('show', 'fade');
             sessionStorage.setItem('notif_shown', 'true');
-        }, 1000);
+        }, 800);
     };
 
     const detectUI = () => {
@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (w <= 600) mode = "mobile";
         else if (w <= 1024) mode = "tablet";
         else if (w <= 1440 && isTouch) mode = "laptop";
-        
         document.documentElement.dataset.ui = mode;
         return mode;
     };
@@ -73,13 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        
         if (state.pfp) {
             pfpPreview.src = state.pfp;
             pfpPreview.style.display = 'block';
             dropContent.style.display = 'none';
         }
-
         if (state.workMode) {
             genBtn.innerText = "Ask";
             genBtn.classList.add('work-mode-btn');
@@ -91,7 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('work-lever').classList.remove('on');
             updateImaginePrompts();
         }
-        
         if (state.hideSidebar) {
             document.getElementById('side-lever').classList.add('on');
             sidebar.classList.add('hidden');
@@ -165,12 +161,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const val = input.value.trim();
         if (!val) return;
 
-        const isSignedIn = await puter.auth.isSignedIn();
-        if(!isSignedIn) {
-            alert("Model authentication failed. Please sync PuterJS in settings.");
-            return;
-        }
-
         hub.classList.add('typing');
         scroller.style.display = 'block';
         const userDiv = document.createElement('div');
@@ -199,16 +189,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         let reasonInterval;
         if (state.workMode) {
             reasonBox.style.display = 'block';
-            const thoughts = ["Initializing high-density neural map...", "Synthesizing logical parameters...", "Cross-referencing algorithmic database...", "Calibrating response vectors...", "Optimizing output stream..."];
+            const thoughts = ["Compiling logical variables...", "Mapping neural pathways...", "Optimizing output parameters...", "Synthesizing response...", "Analyzing data sets..."];
             let tIdx = 0;
             reasonInterval = setInterval(() => {
                 const p = document.createElement('p');
                 p.innerText = thoughts[tIdx];
                 reasonTextDiv.appendChild(p);
                 tIdx = (tIdx + 1) % thoughts.length;
-                if(reasonTextDiv.children.length > 3) reasonTextDiv.firstChild.remove();
+                if(reasonTextDiv.children.length > 2) reasonTextDiv.firstChild.remove();
                 reasonBox.scrollTop = reasonBox.scrollHeight;
-            }, 1400);
+            }, 1300);
         }
 
         try {
@@ -220,9 +210,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             if (reasonInterval) clearInterval(reasonInterval);
-            statusText.innerText = "Model connection reset. Retrying Puter link...";
+            statusText.innerText = "Error encountered. Model connection failed.";
             statusText.style.color = "#ef4444";
-            await puter.auth.signIn();
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
