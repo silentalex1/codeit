@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
     let attachedFiles = [];
-    let selectedChatIndex = -1;
     let editingIndex = -1;
     let isDrawing = false;
     let lastX = 0, lastY = 0;
@@ -75,10 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
+        
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
         genBtn.className = state.workMode ? 'fancy-gen work-mode-btn' : 'fancy-gen';
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
+
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
         if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
         else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
@@ -110,13 +111,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const formatMsg = (text) => {
-        let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
+        let html = text
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<i>$1</i>')
+            .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
+        
         html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
             const id = 'code-' + Math.random().toString(36).substr(2, 9);
             const lineCount = code.trim().split('\n').length;
             let gutter = '';
             for(let i=1; i<=lineCount; i++) gutter += `<div>${i}</div>`;
-            return `<div class="code-panel"><div class="code-header"><div class="header-left"><div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div><span class="pill">${lang || 'code'}</span></div><button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button></div><div class="code-body"><div class="gutter">${gutter}</div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div></div>`;
+            
+            return `
+                <div class="code-panel">
+                    <div class="code-header">
+                        <div class="header-left">
+                            <div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div>
+                            <span class="pill">${lang || 'code'}</span>
+                        </div>
+                        <button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button>
+                    </div>
+                    <div class="code-body">
+                        <div class="gutter">${gutter}</div>
+                        <pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                    </div>
+                </div>`;
         });
         return html;
     };
@@ -162,15 +181,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     canvas.onmousedown = (e) => { isDrawing = true; [lastX, lastY] = [e.offsetX * (canvas.width/canvas.clientWidth), e.offsetY * (canvas.height/canvas.clientHeight)]; };
     canvas.onmousemove = (e) => {
         if (!isDrawing) return;
-        ctx.beginPath();
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#3b82f6';
+        ctx.beginPath(); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.strokeStyle = '#3b82f6';
         ctx.moveTo(lastX, lastY);
         const curX = e.offsetX * (canvas.width/canvas.clientWidth);
         const curY = e.offsetY * (canvas.height/canvas.clientHeight);
-        ctx.lineTo(curX, curY);
-        ctx.stroke();
+        ctx.lineTo(curX, curY); ctx.stroke();
         [lastX, lastY] = [curX, curY];
     };
     window.onmouseup = () => isDrawing = false;
@@ -190,10 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const handleFiles = (files) => {
         for (let file of files) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                attachedFiles.push({ name: file.name, data: e.target.result });
-                refreshPreviews();
-            };
+            reader.onload = (e) => { attachedFiles.push({ name: file.name, data: e.target.result }); refreshPreviews(); };
             reader.readAsDataURL(file);
         }
     };
@@ -217,7 +229,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.appendChild(userDiv);
         
         input.value = '';
-        const currentBatch = [...attachedFiles];
         attachedFiles = [];
         previewBar.innerHTML = '';
         input.style.height = '24px';
@@ -241,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error: Model connection reset. Ensure you are signed into Puter.";
+            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
             aiBox.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
@@ -255,7 +266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
         document.querySelectorAll('.hist-item').forEach(item => {
             item.onclick = () => loadChat(parseInt(item.dataset.idx));
-            item.ondblclick = () => { selectedChatIndex = parseInt(item.dataset.idx); updateHistoryUI(); };
         });
     };
 
@@ -269,6 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: formatMsg(history[i].a) }));
     };
 
+    genBtn.onclick = runAI;
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; hub.classList.toggle('typing', input.value.length > 0); }, 0);
@@ -276,8 +287,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     mediaBtn.onclick = () => mediaInput.click();
     mediaInput.onchange = (e) => handleFiles(e.target.files);
-    sidebar.ondblclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
-    restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
@@ -295,14 +304,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        await saveCloud();
-        location.reload();
+        await saveCloud(); location.reload();
     };
 
     document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
-    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); syncUI(); saveCloud(); };
-    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); syncUI(); saveCloud(); };
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); saveCloud(); syncUI(); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); saveCloud(); syncUI(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
