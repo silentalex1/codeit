@@ -20,32 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
-    const formatResponse = (text) => {
-        const codeRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-        let formatted = text.replace(codeRegex, (match, lang, code) => {
-            const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `
-                <div class="code-container">
-                    <div class="code-header">
-                        <span>${lang || 'code'}</span>
-                        <button class="copy-btn" onclick="copyCode('${id}')">copy</button>
-                    </div>
-                    <pre class="code-content" id="${id}">${code.trim()}</pre>
-                </div>`;
-        });
-        return formatted;
-    };
-
-    window.copyCode = (id) => {
-        const text = document.getElementById(id).innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = event.target;
-            const old = btn.innerText;
-            btn.innerText = 'copied!';
-            setTimeout(() => btn.innerText = old, 2000);
-        });
-    };
-
     const loadCloud = async () => {
         let data = await puter.kv.get('copilot_accounts');
         let db = data ? JSON.parse(data) : {};
@@ -55,6 +29,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             syncUI();
             updateHistoryUI();
         }
+    };
+
+    const formatResponse = (text) => {
+        let formatted = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `<div class="code-block-wrapper">
+                <div class="code-header">
+                    <span>${lang || 'code'}</span>
+                    <button class="copy-btn" onclick="copyCode('${id}')">Copy</button>
+                </div>
+                <pre id="${id}"><code>${code.trim()}</code></pre>
+            </div>`;
+        });
+        return formatted;
+    };
+
+    window.copyCode = (id) => {
+        const code = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.querySelector(`button[onclick="copyCode('${id}')"]`);
+            btn.innerText = 'Copied!';
+            setTimeout(() => btn.innerText = 'Copy', 2000);
+        });
     };
 
     const syncUI = () => {
@@ -132,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const userIsSignedIn = await puter.auth.isSignedIn();
         if(!userIsSignedIn){
-            alert("Please login via settings to use AI features.");
+            alert("Please login via the settings menu to use the AI features.");
             return;
         }
 
@@ -149,9 +146,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         aiBox.className = 'msg-ai';
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
-        const reasonTextDiv = document.createElement('div');
-        reasonTextDiv.className = 'reasoning-text';
-        reasonBox.appendChild(reasonTextDiv);
         const statusText = document.createElement('div');
         statusText.style.color = '#3b82f6';
         statusText.style.fontWeight = '800';
@@ -163,17 +157,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let reasonInterval;
         if (state.workMode) {
-            reasonBox.style.display = 'block';
-            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output..."];
+            reasonBox.style.display = 'flex';
+            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Validating data...", "Refining logic..."];
             reasonInterval = setInterval(() => {
-                const p = document.createElement('p');
-                p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
-                reasonTextDiv.innerHTML = `<p>${p.innerText}</p>`;
+                const line = document.createElement('div');
+                line.className = 'reason-line';
+                line.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
+                reasonBox.prepend(line);
+                if (reasonBox.children.length > 2) reasonBox.lastChild.remove();
             }, 800);
         }
 
         try {
-            const response = await puter.ai.chat(val, { model: 'gpt-4o' });
+            const response = await puter.ai.chat(val);
             if (reasonInterval) clearInterval(reasonInterval);
             aiBox.innerHTML = formatResponse(response);
             history.push({ q: val, a: response });
@@ -199,7 +195,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.innerHTML = '';
         const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
         const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatResponse(history[i].a); scroller.appendChild(aDiv);
-        if(window.innerWidth <= 1024) sidebar.classList.remove('open');
     };
 
     input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
@@ -224,6 +219,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
+
+    document.getElementById('select-pfp').onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pfpInput.click();
+    };
 
     document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
     document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
@@ -258,26 +259,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (item) { searchModal.style.display = 'none'; hub.classList.add('typing'); scroller.style.display = 'block'; scroller.innerHTML = ''; loadChat(history.indexOf(item)); }
     };
 
-    document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
+    document.getElementById('mob-toggle').onclick = () => {
+        sidebar.classList.toggle('open');
+    };
+    
     document.getElementById('new-chat').onclick = () => location.reload();
     document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
-    document.getElementById('conn-plugin').onclick = () => document.getElementById('plugin-modal').style.display = 'flex';
-    document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
-    document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
-
-    document.getElementById('pfp-drop-zone').onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            state.pfp = ev.target.result;
-            pfpPreview.src = state.pfp;
-            pfpPreview.style.display = 'block';
-            dropContent.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    };
 
     await loadCloud();
 });
