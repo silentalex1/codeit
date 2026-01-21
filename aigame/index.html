@@ -18,11 +18,13 @@
     </div>
 
     <div id="search-modal" class="modal">
-        <div class="modal-box">
-            <div class="search-wrapper">
-                <input type="text" id="search-q" placeholder="search your chat history here..">
+        <div class="spotlight-box">
+            <div class="spotlight-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="search-q" placeholder="search your chat history here.." autocomplete="off">
+                <div class="search-kbd">ESC</div>
             </div>
-            <div id="search-results"></div>
+            <div id="search-results" class="spotlight-results"></div>
         </div>
     </div>
 
@@ -51,7 +53,7 @@
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
                         <div id="drop-content">
-                            <button id="select-pfp" class="fancy-mini-btn">select pfp</button>
+                            <button id="select-pfp" class="aesthetic-btn">select pfp</button>
                             <p class="drop-text">drop image here</p>
                         </div>
                         <img id="pfp-preview" src="" style="display:none;">
@@ -110,11 +112,13 @@
                 <div class="premade" id="premade-container"></div>
             </div>
             <div id="media-preview-bar" class="media-preview-container"></div>
-            <div class="input-hub">
-                <button id="media-btn" class="media-add-btn">+</button>
-                <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
-                <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
-                <button id="gen-action" class="fancy-gen">Generate</button>
+            <div class="input-hub-container">
+                <div class="input-hub-pill">
+                    <button id="media-btn" class="media-add-btn">+</button>
+                    <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
+                    <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
+                    <button id="gen-action" class="fancy-gen">Generate</button>
+                </div>
             </div>
         </div>
     </main>
