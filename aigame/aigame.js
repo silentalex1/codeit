@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const avatar = document.getElementById('u-avatar');
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
+    const drawModal = document.getElementById('draw-modal');
     const searchModal = document.getElementById('search-modal');
     const pfpInput = document.getElementById('pfp-file');
     const pfpPreview = document.getElementById('pfp-preview');
@@ -21,10 +22,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mediaInput = document.getElementById('media-input');
     const mediaBtn = document.getElementById('media-btn');
     const previewBar = document.getElementById('media-preview-bar');
+    const canvas = document.getElementById('editor-canvas');
+    const ctx = canvas.getContext('2d');
 
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
     let attachedFiles = [];
+    let selectedChatIndex = -1;
+    let editingIndex = -1;
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
 
     const detectUI = () => {
         const w = window.innerWidth;
@@ -42,10 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await new Promise(r => setTimeout(r, 1100));
         }
         notif.classList.add('fade');
-        setTimeout(() => {
-            notif.classList.remove('show', 'fade');
-            sessionStorage.setItem('notif_shown', 'true');
-        }, 800);
+        setTimeout(() => { notif.classList.remove('show', 'fade'); sessionStorage.setItem('notif_shown', 'true'); }, 800);
     };
 
     const initUI = async () => {
@@ -71,12 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
-        
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
         genBtn.className = state.workMode ? 'fancy-gen work-mode-btn' : 'fancy-gen';
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
         if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
         else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
@@ -108,31 +110,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const formatMsg = (text) => {
-        let html = text
-            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-            .replace(/\*(.*?)\*/g, '<i>$1</i>')
-            .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
-        
+        let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
         html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
             const id = 'code-' + Math.random().toString(36).substr(2, 9);
             const lineCount = code.trim().split('\n').length;
             let gutter = '';
             for(let i=1; i<=lineCount; i++) gutter += `<div>${i}</div>`;
-            
-            return `
-                <div class="code-panel">
-                    <div class="code-header">
-                        <div class="header-left">
-                            <div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div>
-                            <span class="pill">${lang || 'code'}</span>
-                        </div>
-                        <button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button>
-                    </div>
-                    <div class="code-body">
-                        <div class="gutter">${gutter}</div>
-                        <pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-                    </div>
-                </div>`;
+            return `<div class="code-panel"><div class="code-header"><div class="header-left"><div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div><span class="pill">${lang || 'code'}</span></div><button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button></div><div class="code-body"><div class="gutter">${gutter}</div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div></div>`;
         });
         return html;
     };
@@ -143,6 +127,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
         btn.innerText = 'Copied!';
         setTimeout(() => btn.innerText = 'Copy Code', 2000);
+    };
+
+    const refreshPreviews = () => {
+        previewBar.innerHTML = '';
+        attachedFiles.forEach((file, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-item';
+            const img = document.createElement('img');
+            img.src = file.data;
+            img.onclick = () => openDrawing(i);
+            const rm = document.createElement('button');
+            rm.className = 'remove-preview';
+            rm.innerText = '×';
+            rm.onclick = (e) => { e.stopPropagation(); attachedFiles.splice(i, 1); refreshPreviews(); };
+            wrap.appendChild(img);
+            wrap.appendChild(rm);
+            previewBar.appendChild(wrap);
+        });
+    };
+
+    const openDrawing = (index) => {
+        editingIndex = index;
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            drawModal.style.display = 'flex';
+        };
+        img.src = attachedFiles[index].data;
+    };
+
+    canvas.onmousedown = (e) => { isDrawing = true; [lastX, lastY] = [e.offsetX * (canvas.width/canvas.clientWidth), e.offsetY * (canvas.height/canvas.clientHeight)]; };
+    canvas.onmousemove = (e) => {
+        if (!isDrawing) return;
+        ctx.beginPath();
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#3b82f6';
+        ctx.moveTo(lastX, lastY);
+        const curX = e.offsetX * (canvas.width/canvas.clientWidth);
+        const curY = e.offsetY * (canvas.height/canvas.clientHeight);
+        ctx.lineTo(curX, curY);
+        ctx.stroke();
+        [lastX, lastY] = [curX, curY];
+    };
+    window.onmouseup = () => isDrawing = false;
+
+    document.getElementById('clear-canvas').onclick = () => {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = attachedFiles[editingIndex].data;
+    };
+
+    document.getElementById('close-draw').onclick = () => {
+        attachedFiles[editingIndex].data = canvas.toDataURL();
+        drawModal.style.display = 'none';
+        refreshPreviews();
+    };
+
+    const handleFiles = (files) => {
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                attachedFiles.push({ name: file.name, data: e.target.result });
+                refreshPreviews();
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    window.onpaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const runAI = async () => {
@@ -159,6 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.appendChild(userDiv);
         
         input.value = '';
+        const currentBatch = [...attachedFiles];
         attachedFiles = [];
         previewBar.innerHTML = '';
         input.style.height = '24px';
@@ -168,14 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `
-            <div class="thought-dots">
-                <div class="thought-dot"></div>
-                <div class="thought-dot"></div>
-                <div class="thought-dot"></div>
-            </div>
-            <div class="grammarly-pulse">${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>
-        `;
+        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div class="grammarly-pulse">${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -189,51 +241,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
+            aiBox.innerText = "Error: Model connection reset. Ensure you are signed into Puter.";
             aiBox.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
     const updateHistoryUI = () => {
-        document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => `<div class="hist-item" onclick="loadChat(${history.length - 1 - i})">${h.q}</div>`).join('');
+        const container = document.getElementById('chat-history');
+        container.innerHTML = history.slice().reverse().map((h, i) => {
+            const actualIndex = history.length - 1 - i;
+            return `<div class="hist-item" data-idx="${actualIndex}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${actualIndex})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
+        }).join('');
+        document.querySelectorAll('.hist-item').forEach(item => {
+            item.onclick = () => loadChat(parseInt(item.dataset.idx));
+            item.ondblclick = () => { selectedChatIndex = parseInt(item.dataset.idx); updateHistoryUI(); };
+        });
     };
+
+    window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); await saveCloud(); };
 
     window.loadChat = (i) => {
         hub.classList.add('typing');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
-        const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerHTML = formatMsg(history[i].q); scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatMsg(history[i].a); scroller.appendChild(aDiv);
+        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
+        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: formatMsg(history[i].a) }));
     };
 
-    genBtn.onclick = runAI;
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
-        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
+        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; hub.classList.toggle('typing', input.value.length > 0); }, 0);
     };
 
-    mediaBtn.onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            if(settingsModal.style.display === 'flex') {
-                state.pfp = ev.target.result;
-                pfpPreview.src = state.pfp;
-                pfpPreview.style.display = 'block';
-                dropContent.style.display = 'none';
-            } else {
-                attachedFiles.push({ name: file.name, data: ev.target.result });
-                const img = document.createElement('img');
-                img.src = ev.target.result;
-                previewBar.appendChild(img);
-            }
-        };
-        reader.readAsDataURL(file);
-    };
-
+    mediaBtn.onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
     sidebar.ondblclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
@@ -250,9 +292,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); syncUI(); saveCloud(); };
-    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); syncUI(); saveCloud(); };
-
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value || state.pfp;
@@ -262,6 +301,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); syncUI(); saveCloud(); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); syncUI(); saveCloud(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
@@ -277,8 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
 
-    window.onresize = detectUI;
     detectUI();
+    window.onresize = detectUI;
     await initUI();
     await loadCloud();
 });
