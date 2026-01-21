@@ -18,13 +18,11 @@
     </div>
 
     <div id="search-modal" class="modal">
-        <div class="spotlight-box">
-            <div class="spotlight-input-wrapper">
-                <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="search-q" placeholder="search your chat history here.." autocomplete="off">
-                <div class="search-kbd">ESC</div>
+        <div class="modal-box">
+            <div class="search-wrapper">
+                <input type="text" id="search-q" placeholder="search your chat history here..">
             </div>
-            <div id="search-results" class="spotlight-results"></div>
+            <div id="search-results"></div>
         </div>
     </div>
 
@@ -41,10 +39,7 @@
             </div>
             <div class="s-body">
                 <div id="u-set" class="tab active">
-                    <div class="title-wrap">
-                        <h3>Profile</h3>
-                        <div class="v-line"></div>
-                    </div>
+                    <div class="title-wrap"><h3>Profile</h3><div class="v-line"></div></div>
                     <div class="f-grp">
                         <label>Display Name</label>
                         <input type="text" id="set-name" class="s-input">
@@ -67,10 +62,7 @@
                     </div>
                 </div>
                 <div id="a-set" class="tab">
-                    <div class="title-wrap">
-                        <h3>AI Settings</h3>
-                        <div class="v-line"></div>
-                    </div>
+                    <div class="title-wrap"><h3>AI Settings</h3><div class="v-line"></div></div>
                     <div class="lever-row">
                         <span>Turn AI to work mode</span>
                         <div class="lever" id="work-lever"><div class="dot"></div></div>
@@ -84,9 +76,7 @@
         <div class="side-inner">
             <div class="search-box-trigger" id="open-search">press ctrl+k to search</div>
             <div id="chat-history" class="history"></div>
-            <div class="side-bottom">
-                <button id="new-chat" class="new-btn">+ New Chat</button>
-            </div>
+            <div class="side-bottom"><button id="new-chat" class="new-btn">+ New Chat</button></div>
         </div>
     </aside>
 
@@ -119,7 +109,10 @@
                 <h1>codeit copilot imagine anything.</h1>
                 <div class="premade" id="premade-container"></div>
             </div>
+            <div id="media-preview-bar" class="media-preview-container"></div>
             <div class="input-hub">
+                <button id="media-btn" class="media-add-btn">+</button>
+                <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
                 <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
                 <button id="gen-action" class="fancy-gen">Generate</button>
             </div>
