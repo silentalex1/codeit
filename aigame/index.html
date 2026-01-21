@@ -45,7 +45,7 @@
                         <input type="text" id="set-pfp">
                     </div>
                     <div class="drop-zone" id="pfp-drop-zone">
-                        <input type="file" id="pfp-file" hidden accept="image/*">
+                        <input type="file" id="pfp-file" accept="image/*">
                         <div id="drop-content">
                             <button id="select-pfp" class="fancy-mini-btn">select pfp</button>
                             <p class="pc-only">drop image here</p>
@@ -71,6 +71,16 @@
         </div>
     </div>
 
+    <div id="plugin-modal" class="modal">
+        <div class="plugin-box">
+            <h3>do you got the plugin installed?</h3>
+            <div class="p-btns">
+                <button id="plug-yes" class="plug-confirm">Yes</button>
+                <button id="plug-no" class="plug-cancel">No</button>
+            </div>
+        </div>
+    </div>
+
     <aside id="sidebar" class="sidebar">
         <div class="side-inner">
             <div class="search-box" id="open-search">press ctrl+k to search</div>
@@ -90,6 +100,7 @@
                 <div class="logo">codeit copilot</div>
             </div>
             <div class="nav-r">
+                <button id="conn-plugin" class="plugin-btn">connect plugin</button>
                 <button class="nav-item pc-only">donate here</button>
                 <button class="nav-item pc-only">our community</button>
                 <div class="pfp-container">
