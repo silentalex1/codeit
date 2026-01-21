@@ -31,29 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const formatResponse = (text) => {
-        let formatted = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-            const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `<div class="code-block-wrapper">
-                <div class="code-header">
-                    <span>${lang || 'code'}</span>
-                    <button class="copy-btn" onclick="copyCode('${id}')">Copy</button>
-                </div>
-                <pre id="${id}"><code>${code.trim()}</code></pre>
-            </div>`;
-        });
-        return formatted;
-    };
-
-    window.copyCode = (id) => {
-        const code = document.getElementById(id).innerText;
-        navigator.clipboard.writeText(code).then(() => {
-            const btn = document.querySelector(`button[onclick="copyCode('${id}')"]`);
-            btn.innerText = 'Copied!';
-            setTimeout(() => btn.innerText = 'Copy', 2000);
-        });
-    };
-
     const syncUI = () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
@@ -79,8 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (state.hideSidebar) {
             document.getElementById('side-lever').classList.add('on');
-            sidebar.classList.add('hidden');
-            restoreBtn.style.display = 'block';
+            if (window.innerWidth > 1024) {
+                sidebar.classList.add('hidden');
+                restoreBtn.style.display = 'block';
+            }
         } else {
             document.getElementById('side-lever').classList.remove('on');
             sidebar.classList.remove('hidden');
@@ -123,6 +102,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         await puter.kv.set('copilot_accounts', JSON.stringify(db));
     };
 
+    const parseResponse = (text) => {
+        const parts = text.split(/```/);
+        let html = '';
+        for (let i = 0; i < parts.length; i++) {
+            if (i % 2 === 1) {
+                const codeContent = parts[i].trim();
+                const lang = codeContent.split('\n')[0];
+                const code = codeContent.substring(lang.length).trim();
+                html += `<div class="code-container">
+                    <div class="code-header">
+                        <span>${lang || 'code'}</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                    </div>
+                    <pre class="code-block">${code}</pre>
+                </div>`;
+            } else {
+                html += parts[i];
+            }
+        }
+        return html;
+    };
+
+    window.copyCode = (btn) => {
+        const code = btn.parentElement.nextElementSibling.innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            const originalText = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = '';
+            }, 2000);
+        });
+    };
+
     const runAI = async () => {
         const val = input.value.trim();
         if (!val) return;
@@ -146,6 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         aiBox.className = 'msg-ai';
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
+        const reasonTextDiv = document.createElement('div');
+        reasonTextDiv.className = 'reasoning-text';
+        reasonBox.appendChild(reasonTextDiv);
         const statusText = document.createElement('div');
         statusText.style.color = '#3b82f6';
         statusText.style.fontWeight = '800';
@@ -157,21 +174,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let reasonInterval;
         if (state.workMode) {
-            reasonBox.style.display = 'flex';
-            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Validating data...", "Refining logic..."];
+            reasonBox.style.display = 'block';
+            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Refining results..."];
+            let tIdx = 0;
             reasonInterval = setInterval(() => {
-                const line = document.createElement('div');
-                line.className = 'reason-line';
-                line.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
-                reasonBox.prepend(line);
-                if (reasonBox.children.length > 2) reasonBox.lastChild.remove();
-            }, 800);
+                const p = document.createElement('p');
+                p.innerText = thoughts[tIdx % thoughts.length];
+                reasonTextDiv.appendChild(p);
+                if (reasonTextDiv.children.length > 1) {
+                    reasonTextDiv.style.transform = `translateY(-${(reasonTextDiv.children.length - 1) * 20}px)`;
+                }
+                tIdx++;
+            }, 1000);
         }
 
         try {
-            const response = await puter.ai.chat(val);
+            const response = await puter.ai.chat(val, { model: 'gpt-4o' });
             if (reasonInterval) clearInterval(reasonInterval);
-            aiBox.innerHTML = formatResponse(response);
+            aiBox.innerHTML = parseResponse(response);
             history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
@@ -190,11 +210,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.loadChat = (i) => {
+        if(window.innerWidth <= 1024) sidebar.classList.remove('open');
         hub.classList.add('typing');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatResponse(history[i].a); scroller.appendChild(aDiv);
+        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = parseResponse(history[i].a); scroller.appendChild(aDiv);
+        scroller.scrollTop = scroller.scrollHeight;
     };
 
     input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
@@ -204,11 +226,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
     };
 
-    sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
+    sidebar.ondblclick = () => { if(window.innerWidth > 1024) { state.hideSidebar = true; syncUI(); saveCloud(); } };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.onclick = () => dropdown.classList.remove('active');
-    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
+    document.onclick = () => { dropdown.classList.remove('active'); };
+    document.getElementById('trigger-settings').onclick = () => { settingsModal.style.display = 'flex'; dropdown.classList.remove('active'); };
     document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
@@ -219,12 +241,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
-
-    document.getElementById('select-pfp').onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        pfpInput.click();
-    };
 
     document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
     document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
@@ -259,12 +275,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (item) { searchModal.style.display = 'none'; hub.classList.add('typing'); scroller.style.display = 'block'; scroller.innerHTML = ''; loadChat(history.indexOf(item)); }
     };
 
-    document.getElementById('mob-toggle').onclick = () => {
-        sidebar.classList.toggle('open');
-    };
-    
+    document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
     document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
+    document.getElementById('conn-plugin').onclick = () => document.getElementById('plugin-modal').style.display = 'flex';
+    document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
+    document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
+
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                state.pfp = re.target.result;
+                pfpPreview.src = state.pfp;
+                pfpPreview.style.display = 'block';
+                dropContent.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     await loadCloud();
 });
