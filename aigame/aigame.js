@@ -56,10 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (state.hideSidebar) {
             document.getElementById('side-lever').classList.add('on');
-            if (window.innerWidth > 1024) {
-                sidebar.classList.add('hidden');
-                restoreBtn.style.display = 'block';
-            }
+            sidebar.classList.add('hidden');
+            restoreBtn.style.display = 'block';
         } else {
             document.getElementById('side-lever').classList.remove('on');
             sidebar.classList.remove('hidden');
@@ -102,39 +100,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         await puter.kv.set('copilot_accounts', JSON.stringify(db));
     };
 
-    const parseResponse = (text) => {
-        const parts = text.split(/```/);
-        let html = '';
-        for (let i = 0; i < parts.length; i++) {
-            if (i % 2 === 1) {
-                const codeContent = parts[i].trim();
-                const lang = codeContent.split('\n')[0];
-                const code = codeContent.substring(lang.length).trim();
-                html += `<div class="code-container">
+    const formatMsg = (text) => {
+        return text.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `
+                <div class="code-container">
                     <div class="code-header">
                         <span>${lang || 'code'}</span>
-                        <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+                        <button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button>
                     </div>
-                    <pre class="code-block">${code}</pre>
-                </div>`;
-            } else {
-                html += parts[i];
-            }
-        }
-        return html;
+                    <pre id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                </div>
+            `;
+        });
     };
 
-    window.copyCode = (btn) => {
-        const code = btn.parentElement.nextElementSibling.innerText;
-        navigator.clipboard.writeText(code).then(() => {
-            const originalText = btn.innerText;
-            btn.innerText = 'Copied!';
-            btn.style.background = '#10b981';
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = '';
-            }, 2000);
-        });
+    window.copyCode = (id) => {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy Code', 2000);
     };
 
     const runAI = async () => {
@@ -175,23 +161,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let reasonInterval;
         if (state.workMode) {
             reasonBox.style.display = 'block';
-            const thoughts = ["Parsing context...", "Initializing logic gates...", "Scanning database...", "Structuring response...", "Optimizing output...", "Refining results..."];
+            const thoughts = ["Initializing high-density neural map...", "Synthesizing logical parameters...", "Cross-referencing algorithmic database...", "Calibrating response vectors...", "Optimizing output stream..."];
             let tIdx = 0;
             reasonInterval = setInterval(() => {
-                const p = document.createElement('p');
-                p.innerText = thoughts[tIdx % thoughts.length];
-                reasonTextDiv.appendChild(p);
-                if (reasonTextDiv.children.length > 1) {
-                    reasonTextDiv.style.transform = `translateY(-${(reasonTextDiv.children.length - 1) * 20}px)`;
-                }
-                tIdx++;
-            }, 1000);
+                reasonTextDiv.innerHTML = `<p>${thoughts[tIdx]}</p>`;
+                tIdx = (tIdx + 1) % thoughts.length;
+            }, 1200);
         }
 
         try {
-            const response = await puter.ai.chat(val, { model: 'gpt-4o' });
+            const response = await puter.ai.chat(val);
             if (reasonInterval) clearInterval(reasonInterval);
-            aiBox.innerHTML = parseResponse(response);
+            aiBox.innerHTML = formatMsg(response);
             history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
@@ -210,13 +191,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.loadChat = (i) => {
-        if(window.innerWidth <= 1024) sidebar.classList.remove('open');
         hub.classList.add('typing');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = parseResponse(history[i].a); scroller.appendChild(aDiv);
-        scroller.scrollTop = scroller.scrollHeight;
+        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatMsg(history[i].a); scroller.appendChild(aDiv);
     };
 
     input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
@@ -226,11 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
     };
 
-    sidebar.ondblclick = () => { if(window.innerWidth > 1024) { state.hideSidebar = true; syncUI(); saveCloud(); } };
+    sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.onclick = () => { dropdown.classList.remove('active'); };
-    document.getElementById('trigger-settings').onclick = () => { settingsModal.style.display = 'flex'; dropdown.classList.remove('active'); };
+    document.onclick = () => dropdown.classList.remove('active');
+    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
@@ -241,6 +220,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
+
+    document.getElementById('pfp-drop-zone').onclick = (e) => {
+        e.preventDefault();
+        pfpInput.click();
+    };
 
     document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
     document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); };
@@ -281,20 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('conn-plugin').onclick = () => document.getElementById('plugin-modal').style.display = 'flex';
     document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
     document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
-
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                state.pfp = re.target.result;
-                pfpPreview.src = state.pfp;
-                pfpPreview.style.display = 'block';
-                dropContent.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-    };
 
     await loadCloud();
 });
