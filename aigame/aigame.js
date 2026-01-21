@@ -20,6 +20,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
+    const formatResponse = (text) => {
+        const codeRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        let formatted = text.replace(codeRegex, (match, lang, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>${lang || 'code'}</span>
+                        <button class="copy-btn" onclick="copyCode('${id}')">copy</button>
+                    </div>
+                    <pre class="code-content" id="${id}">${code.trim()}</pre>
+                </div>`;
+        });
+        return formatted;
+    };
+
+    window.copyCode = (id) => {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = event.target;
+            const old = btn.innerText;
+            btn.innerText = 'copied!';
+            setTimeout(() => btn.innerText = old, 2000);
+        });
+    };
+
     const loadCloud = async () => {
         let data = await puter.kv.get('copilot_accounts');
         let db = data ? JSON.parse(data) : {};
@@ -106,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const userIsSignedIn = await puter.auth.isSignedIn();
         if(!userIsSignedIn){
-            alert("Please login via the settings menu to use the AI features.");
+            alert("Please login via settings to use AI features.");
             return;
         }
 
@@ -142,15 +168,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             reasonInterval = setInterval(() => {
                 const p = document.createElement('p');
                 p.innerText = thoughts[Math.floor(Math.random() * thoughts.length)];
-                reasonTextDiv.prepend(p);
-                if (reasonTextDiv.children.length > 1) reasonTextDiv.lastChild.remove();
+                reasonTextDiv.innerHTML = `<p>${p.innerText}</p>`;
             }, 800);
         }
 
         try {
             const response = await puter.ai.chat(val, { model: 'gpt-4o' });
             if (reasonInterval) clearInterval(reasonInterval);
-            aiBox.innerHTML = response;
+            aiBox.innerHTML = formatResponse(response);
             history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
@@ -173,7 +198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = history[i].a; scroller.appendChild(aDiv);
+        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatResponse(history[i].a); scroller.appendChild(aDiv);
+        if(window.innerWidth <= 1024) sidebar.classList.remove('open');
     };
 
     input.oninput = () => { if(input.value.length > 0) hub.classList.add('typing'); };
@@ -238,6 +264,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('conn-plugin').onclick = () => document.getElementById('plugin-modal').style.display = 'flex';
     document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
     document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
+
+    document.getElementById('pfp-drop-zone').onclick = () => pfpInput.click();
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            state.pfp = ev.target.result;
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropContent.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    };
 
     await loadCloud();
 });
