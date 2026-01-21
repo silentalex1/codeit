@@ -72,27 +72,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('set-pfp').value = state.pfp;
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
         
-        if (state.workMode) {
-            genBtn.innerText = "Ask";
-            genBtn.classList.add('work-mode-btn');
-            document.getElementById('work-lever').classList.add('on');
-            updateWorkPrompts();
-        } else {
-            genBtn.innerText = "Generate";
-            genBtn.classList.remove('work-mode-btn');
-            document.getElementById('work-lever').classList.remove('on');
-            updateImaginePrompts();
-        }
-        
-        if (state.hideSidebar) {
-            document.getElementById('side-lever').classList.add('on');
-            sidebar.classList.add('hidden');
-            restoreBtn.style.display = 'block';
-        } else {
-            document.getElementById('side-lever').classList.remove('on');
-            sidebar.classList.remove('hidden');
-            restoreBtn.style.display = 'none';
-        }
+        genBtn.innerText = state.workMode ? "Ask" : "Generate";
+        genBtn.className = state.workMode ? 'fancy-gen work-mode-btn' : 'fancy-gen';
+        document.getElementById('work-lever').classList.toggle('on', state.workMode);
+        document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
+
+        if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
+        if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
+        else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
     };
 
     const updateImaginePrompts = () => {
@@ -120,28 +107,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) {}
     };
 
-    const handleFiles = (files) => {
-        for (let file of files) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                attachedFiles.push({ name: file.name, data: e.target.result, type: file.type });
-                const el = file.type.startsWith('video') ? document.createElement('video') : document.createElement('img');
-                el.src = e.target.result;
-                previewBar.appendChild(el);
-            };
-            reader.readAsDataURL(file);
-        }
+    const formatMsg = (text) => {
+        let html = text
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<i>$1</i>')
+            .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
+        
+        html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            const lineCount = code.trim().split('\n').length;
+            let gutter = '';
+            for(let i=1; i<=lineCount; i++) gutter += `<div>${i}</div>`;
+            
+            return `
+                <div class="code-panel">
+                    <div class="code-header">
+                        <div class="header-left">
+                            <div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div>
+                            <span class="pill">${lang || 'code'}</span>
+                        </div>
+                        <button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button>
+                    </div>
+                    <div class="code-body">
+                        <div class="gutter">${gutter}</div>
+                        <pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                    </div>
+                </div>`;
+        });
+        return html;
     };
 
-    mediaBtn.onclick = () => mediaInput.click();
-    mediaInput.onchange = (e) => handleFiles(e.target.files);
-
-    window.addEventListener('paste', (e) => {
-        const items = e.clipboardData.items;
-        for (let item of items) {
-            if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]);
-        }
-    });
+    window.copyCode = (id) => {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy Code', 2000);
+    };
 
     const runAI = async () => {
         const val = input.value.trim();
@@ -153,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.style.display = 'block';
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-u';
-        userDiv.innerText = val;
+        userDiv.innerHTML = formatMsg(val);
         scroller.appendChild(userDiv);
         
         input.value = '';
@@ -166,10 +168,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        const reasonPulse = document.createElement('div');
-        reasonPulse.className = 'grammarly-pulse';
-        reasonPulse.innerText = state.workMode ? 'Answering your question...' : 'Analyzing your imagination...';
-        reasonBox.appendChild(reasonPulse);
+        reasonBox.innerHTML = `
+            <div class="thought-dots">
+                <div class="thought-dot"></div>
+                <div class="thought-dot"></div>
+                <div class="thought-dot"></div>
+            </div>
+            <div class="grammarly-pulse">${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>
+        `;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -177,13 +183,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await puter.ai.chat(val);
             reasonBox.style.display = 'none';
-            aiBox.innerText = response;
+            aiBox.innerHTML = formatMsg(response);
             history.push({ q: val, a: response });
             updateHistoryUI();
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error: Model connection reset. Retrying Puter link...";
+            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
             aiBox.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
@@ -197,8 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         hub.classList.add('typing');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
-        const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerText = history[i].q; scroller.appendChild(qDiv);
-        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerText = history[i].a; scroller.appendChild(aDiv);
+        const qDiv = document.createElement('div'); qDiv.className = 'msg-u'; qDiv.innerHTML = formatMsg(history[i].q); scroller.appendChild(qDiv);
+        const aDiv = document.createElement('div'); aDiv.className = 'msg-ai'; aDiv.innerHTML = formatMsg(history[i].a); scroller.appendChild(aDiv);
     };
 
     genBtn.onclick = runAI;
@@ -207,7 +213,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
     };
 
-    sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
+    mediaBtn.onclick = () => pfpInput.click();
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            if(settingsModal.style.display === 'flex') {
+                state.pfp = ev.target.result;
+                pfpPreview.src = state.pfp;
+                pfpPreview.style.display = 'block';
+                dropContent.style.display = 'none';
+            } else {
+                attachedFiles.push({ name: file.name, data: ev.target.result });
+                const img = document.createElement('img');
+                img.src = ev.target.result;
+                previewBar.appendChild(img);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    sidebar.ondblclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
@@ -223,11 +250,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
+    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); syncUI(); saveCloud(); };
+    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); syncUI(); saveCloud(); };
+
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        state.workMode = document.getElementById('work-lever').classList.contains('on');
-        state.hideSidebar = document.getElementById('side-lever').classList.contains('on');
         await saveCloud();
         location.reload();
     };
@@ -243,17 +271,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('search-q').oninput = (e) => {
         const q = e.target.value.toLowerCase();
         const matches = history.filter(h => h.q.toLowerCase().includes(q));
-        document.getElementById('search-results').innerHTML = matches.map(m => `<div class="hist-item" onclick="loadMatch('${m.q.replace(/'/g, "\\'")}')">${m.q}</div>`).join('');
-    };
-
-    window.loadMatch = (q) => {
-        const item = history.find(h => h.q === q);
-        if (item) { searchModal.style.display = 'none'; hub.classList.add('typing'); scroller.style.display = 'block'; scroller.innerHTML = ''; loadChat(history.indexOf(item)); }
+        document.getElementById('search-results').innerHTML = matches.map(m => `<div class="hist-item" onclick="loadChat(${history.indexOf(m)})">${m.q}</div>`).join('');
     };
 
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
-    document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
 
     window.onresize = detectUI;
     detectUI();
