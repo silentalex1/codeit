@@ -21,13 +21,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
 
     const loadCloud = async () => {
-        let data = await puter.kv.get('copilot_accounts');
-        let db = data ? JSON.parse(data) : {};
-        if (db[session.name]) {
-            state = db[session.name].settings || state;
-            history = db[session.name].history || [];
-            syncUI();
-            updateHistoryUI();
+        try {
+            let data = await puter.kv.get('copilot_accounts');
+            let db = data ? JSON.parse(data) : {};
+            if (db[session.name]) {
+                state = db[session.name].settings || state;
+                history = db[session.name].history || [];
+                syncUI();
+                updateHistoryUI();
+            }
+        } catch (e) {
+            console.error("Cloud load error", e);
         }
     };
 
@@ -56,8 +60,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (state.hideSidebar) {
             document.getElementById('side-lever').classList.add('on');
-            sidebar.classList.add('hidden');
-            restoreBtn.style.display = 'block';
+            if (window.innerWidth > 1024) {
+                sidebar.classList.add('hidden');
+                restoreBtn.style.display = 'block';
+            }
         } else {
             document.getElementById('side-lever').classList.remove('on');
             sidebar.classList.remove('hidden');
@@ -94,10 +100,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const saveCloud = async () => {
-        let data = await puter.kv.get('copilot_accounts');
-        let db = data ? JSON.parse(data) : {};
-        db[session.name] = { password: db[session.name]?.password, settings: state, history: history };
-        await puter.kv.set('copilot_accounts', JSON.stringify(db));
+        try {
+            let data = await puter.kv.get('copilot_accounts');
+            let db = data ? JSON.parse(data) : {};
+            db[session.name] = { password: db[session.name]?.password, settings: state, history: history };
+            await puter.kv.set('copilot_accounts', JSON.stringify(db));
+        } catch (e) {
+            console.error("Cloud save error", e);
+        }
     };
 
     const formatMsg = (text) => {
@@ -126,12 +136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runAI = async () => {
         const val = input.value.trim();
         if (!val) return;
-        
-        const userIsSignedIn = await puter.auth.isSignedIn();
-        if(!userIsSignedIn){
-            alert("Please login via the settings menu to use the AI features.");
-            return;
-        }
 
         hub.classList.add('typing');
         scroller.style.display = 'block';
@@ -178,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             if (reasonInterval) clearInterval(reasonInterval);
-            statusText.innerText = "Connection lost. Please check your Puter account and refresh.";
+            statusText.innerText = "Error getting response. Verify Puter session.";
             statusText.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
@@ -205,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
     };
 
-    sidebar.ondblclick = () => { state.hideSidebar = true; syncUI(); saveCloud(); };
+    sidebar.ondblclick = () => { if(window.innerWidth > 1024) { state.hideSidebar = true; syncUI(); saveCloud(); } };
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
@@ -221,9 +225,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    document.getElementById('pfp-drop-zone').onclick = (e) => {
-        e.preventDefault();
-        pfpInput.click();
+    document.getElementById('pfp-drop-zone').onclick = (e) => { e.preventDefault(); pfpInput.click(); };
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.pfp = ev.target.result;
+                pfpPreview.src = state.pfp;
+                pfpPreview.style.display = 'block';
+                dropContent.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); };
