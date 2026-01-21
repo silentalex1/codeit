@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>codeit copilot | Workspace</title>
     <link rel="stylesheet" href="aigame.css">
     <script src="https://js.puter.com/v2/"></script>
@@ -10,12 +10,21 @@
 <body>
     <div class="grid-bg"></div>
 
+    <div id="ui-notifier" class="ui-notification">
+        <div class="notif-content">
+            <div class="notif-icon"></div>
+            <span id="notif-text">detecting the user device..</span>
+        </div>
+    </div>
+
     <div id="search-modal" class="modal">
-        <div class="modal-box">
-            <div class="search-container">
-                <input type="text" id="search-q" placeholder="Search your chats...">
+        <div class="spotlight-box">
+            <div class="spotlight-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="search-q" placeholder="Search chats, prompts, or history..." autocomplete="off">
+                <div class="search-kbd">ESC</div>
             </div>
-            <div id="search-results"></div>
+            <div id="search-results" class="spotlight-results"></div>
         </div>
     </div>
 
@@ -25,9 +34,9 @@
                 <div class="s-link active" data-tab="u-set">User Settings</div>
                 <div class="s-link" data-tab="a-set">AI Settings</div>
                 <div class="s-bottom">
-                    <button id="save-all" class="save-btn">Save Settings</button>
-                    <button id="clear-history" class="danger-btn">Clear Chat History</button>
-                    <button id="puter-reauth" class="puter-auth-btn">login with puterjs</button>
+                    <button id="save-all" class="save-btn">Save Changes</button>
+                    <button id="clear-history" class="danger-btn">Clear History</button>
+                    <button id="puter-reauth" class="puter-auth-btn">Sync PuterJS</button>
                 </div>
             </div>
             <div class="s-body">
@@ -38,11 +47,11 @@
                     </div>
                     <div class="f-grp">
                         <label>Display Name</label>
-                        <input type="text" id="set-name" class="s-input" placeholder="Your display name">
+                        <input type="text" id="set-name" class="s-input">
                     </div>
                     <div class="f-grp">
                         <label>Profile Image URL</label>
-                        <input type="text" id="set-pfp" class="s-input" placeholder="https://...">
+                        <input type="text" id="set-pfp" class="s-input">
                     </div>
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
@@ -53,7 +62,7 @@
                         <img id="pfp-preview" src="" style="display:none;">
                     </div>
                     <div class="lever-row">
-                        <span class="lever-label">Double click to hide sidebar</span>
+                        <span>Double click to hide sidebar</span>
                         <div class="lever" id="side-lever"><div class="dot"></div></div>
                     </div>
                 </div>
@@ -63,7 +72,7 @@
                         <div class="v-line"></div>
                     </div>
                     <div class="lever-row">
-                        <span class="lever-label">Turn AI to work mode</span>
+                        <span>Turn AI to work mode</span>
                         <div class="lever" id="work-lever"><div class="dot"></div></div>
                     </div>
                 </div>
@@ -73,17 +82,17 @@
 
     <div id="plugin-modal" class="modal">
         <div class="plugin-box">
-            <h3>do you got the plugin installed?</h3>
+            <h3>Plugin Connectivity</h3>
             <div class="p-btns">
-                <button id="plug-yes" class="plug-confirm">Yes</button>
-                <button id="plug-no" class="plug-cancel">No</button>
+                <button id="plug-yes" class="plug-confirm">Connected</button>
+                <button id="plug-no" class="plug-cancel">Not Yet</button>
             </div>
         </div>
     </div>
 
     <aside id="sidebar" class="sidebar">
         <div class="side-inner">
-            <div class="search-box" id="open-search">press ctrl+k to search</div>
+            <div class="search-box-trigger" id="open-search">press ctrl+k to search</div>
             <div id="chat-history" class="history"></div>
             <div class="side-bottom">
                 <button id="new-chat" class="new-btn">+ New Chat</button>
