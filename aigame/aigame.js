@@ -16,9 +16,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pfpPreview = document.getElementById('pfp-preview');
     const dropContent = document.getElementById('drop-content');
     const premadeContainer = document.getElementById('premade-container');
+    const notif = document.getElementById('ui-notifier');
+    const notifText = document.getElementById('notif-text');
 
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
+
+    const showNotif = async (steps) => {
+        if (sessionStorage.getItem('notif_shown')) return;
+        notif.classList.add('show');
+        for (const step of steps) {
+            notifText.innerText = step;
+            await new Promise(r => setTimeout(r, 1200));
+        }
+        notif.classList.add('fade');
+        setTimeout(() => {
+            notif.classList.remove('show', 'fade');
+            sessionStorage.setItem('notif_shown', 'true');
+        }, 1000);
+    };
+
+    const detectUI = () => {
+        const w = window.innerWidth;
+        const isTouch = navigator.maxTouchPoints > 0;
+        let mode = "pc";
+        if (w <= 600) mode = "mobile";
+        else if (w <= 1024) mode = "tablet";
+        else if (w <= 1440 && isTouch) mode = "laptop";
+        
+        document.documentElement.dataset.ui = mode;
+        return mode;
+    };
+
+    const initUI = async () => {
+        const mode = detectUI();
+        await showNotif([
+            "detecting the user device..",
+            `user is on ${mode}`,
+            `switching site to ${mode}`,
+            `switch to ${mode}`
+        ]);
+    };
 
     const loadCloud = async () => {
         let data = await puter.kv.get('copilot_accounts');
@@ -127,6 +165,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const val = input.value.trim();
         if (!val) return;
 
+        const isSignedIn = await puter.auth.isSignedIn();
+        if(!isSignedIn) {
+            alert("Model authentication failed. Please sync PuterJS in settings.");
+            return;
+        }
+
         hub.classList.add('typing');
         scroller.style.display = 'block';
         const userDiv = document.createElement('div');
@@ -158,9 +202,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const thoughts = ["Initializing high-density neural map...", "Synthesizing logical parameters...", "Cross-referencing algorithmic database...", "Calibrating response vectors...", "Optimizing output stream..."];
             let tIdx = 0;
             reasonInterval = setInterval(() => {
-                reasonTextDiv.innerHTML = `<p>${thoughts[tIdx]}</p>`;
+                const p = document.createElement('p');
+                p.innerText = thoughts[tIdx];
+                reasonTextDiv.appendChild(p);
                 tIdx = (tIdx + 1) % thoughts.length;
-            }, 1200);
+                if(reasonTextDiv.children.length > 3) reasonTextDiv.firstChild.remove();
+                reasonBox.scrollTop = reasonBox.scrollHeight;
+            }, 1400);
         }
 
         try {
@@ -172,8 +220,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             if (reasonInterval) clearInterval(reasonInterval);
-            statusText.innerText = "Connection lost. Please check your Puter account and refresh.";
+            statusText.innerText = "Model connection reset. Retrying Puter link...";
             statusText.style.color = "#ef4444";
+            await puter.auth.signIn();
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -269,5 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('plug-yes').onclick = () => document.getElementById('plugin-modal').style.display = 'none';
     document.getElementById('plug-no').onclick = () => window.open('https://www.roblox.com/library/create', '_blank');
 
+    window.onresize = detectUI;
+    detectUI();
+    await initUI();
     await loadCloud();
 });
