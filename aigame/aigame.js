@@ -193,11 +193,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runAI = async () => {
         const val = input.value.trim();
         if (!val && attachedFiles.length === 0) return;
+        
         const isAuthed = await puter.auth.isSignedIn();
         if(!isAuthed) { await puter.auth.signIn(); return; }
 
-        hub.classList.add('typing');
+        hub.classList.add('fade-out');
         scroller.style.display = 'block';
+        
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-u';
         userDiv.innerHTML = formatMsg(val);
@@ -220,9 +222,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const response = await puter.ai.chat(val);
+            const content = response.message ? response.message.content : response;
             reasonBox.style.display = 'none';
-            aiBox.innerHTML = formatMsg(response);
-            history.push({ q: val, a: response });
+            aiBox.innerHTML = formatMsg(String(content));
+            history.push({ q: val, a: String(content) });
             updateHistoryUI();
             await saveCloud();
         } catch (e) {
@@ -244,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); await saveCloud(); };
 
     window.loadChat = (i) => {
-        hub.classList.add('typing');
+        hub.classList.add('fade-out');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
@@ -254,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     genBtn.onclick = runAI;
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
-        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; hub.classList.toggle('typing', input.value.length > 0); }, 0);
+        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
     };
 
     mediaBtn.onclick = () => mediaInput.click();
