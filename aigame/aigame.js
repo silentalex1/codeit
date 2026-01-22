@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const input = document.getElementById('ai-query');
     const genBtn = document.getElementById('gen-action');
     const hub = document.getElementById('hub');
-    const hubVisuals = document.getElementById('hub-visuals');
     const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
     const restoreBtn = document.getElementById('restore-tab');
@@ -17,12 +16,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mediaBtn = document.getElementById('media-btn');
     const previewContainer = document.getElementById('media-preview-container');
     const premadeContainer = document.getElementById('premade-container');
-    const pfpPreview = document.getElementById('pfp-preview');
-    const dropContent = document.getElementById('drop-content');
+    const notif = document.getElementById('ui-notifier');
+    const notifText = document.getElementById('notif-text');
 
     let history = [];
     let attachedFiles = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, model: 'gemini-3-pro' };
+    let state = { 
+        nickname: session.name, 
+        pfp: '', 
+        workMode: false, 
+        hideSidebar: false,
+        model: 'gemini-1.5-pro' 
+    };
+
+    const showNotif = (text) => {
+        notifText.innerText = text;
+        notif.classList.add('show');
+        setTimeout(() => notif.classList.remove('show'), 3000);
+    };
 
     const loadCloud = async () => {
         try {
@@ -36,16 +47,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateHistoryUI();
                 }
             }
-        } catch(e) { console.error(e); }
+        } catch(e) {}
     };
 
     const syncUI = () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        modelSelect.value = state.model || 'gemini-3-pro';
-        
-        if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
+        modelSelect.value = state.model || 'gemini-1.5-pro';
         
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
@@ -79,7 +88,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 db[session.name] = { ...db[session.name], settings: state, history: history };
                 await puter.kv.set('copilot_accounts', JSON.stringify(db));
             }
-        } catch(e) { console.error(e); }
+        } catch(e) {}
+    };
+
+    const refreshPreviews = () => {
+        previewContainer.innerHTML = '';
+        attachedFiles.forEach((file, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-item';
+            const img = document.createElement('img');
+            img.src = file.data;
+            const rm = document.createElement('button');
+            rm.className = 'remove-preview';
+            rm.innerText = '×';
+            rm.onclick = () => { attachedFiles.splice(i, 1); refreshPreviews(); };
+            wrap.appendChild(img);
+            wrap.appendChild(rm);
+            previewContainer.appendChild(wrap);
+        });
+    };
+
+    const handleFiles = (files) => {
+        for (let file of files) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => { attachedFiles.push({ type: file.type, data: e.target.result }); refreshPreviews(); };
+                reader.readAsDataURL(file);
+            }
+        }
+    };
+
+    window.onpaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const runAI = async () => {
@@ -96,28 +137,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const currentFiles = [...attachedFiles];
         attachedFiles = [];
-        previewContainer.innerHTML = '';
+        refreshPreviews();
         input.value = '';
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
         aiBox.className = 'msg-ai';
         const reasonBox = document.createElement('div');
-        reasonBox.innerHTML = `<div>Processing with ${state.model}...</div>`;
+        reasonBox.className = 'reasoning-box';
+        reasonBox.style.display = 'block';
+        reasonBox.innerHTML = `<div>Analyzing with ${state.model}...</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
 
         try {
-            let prompt = val;
+            let promptContent = val;
             if (currentFiles.length > 0) {
-                prompt = [{ type: "text", text: val || "Examine these images." }];
-                currentFiles.forEach(f => prompt.push({ type: "image_url", image_url: { url: f.data } }));
+                promptContent = [{ type: "text", text: val || "Analyze this image." }];
+                currentFiles.forEach(f => { promptContent.push({ type: "image_url", image_url: { url: f.data } }); });
             }
 
-            const response = await puter.ai.chat(prompt, { model: state.model });
-            let content = response?.message?.content || response || "Error fetching response.";
-            
+            const response = await puter.ai.chat(promptContent, { model: state.model });
+            let content = response?.message?.content || response || "Error: No response";
+
             reasonBox.style.display = 'none';
             aiBox.innerHTML = content.replace(/\n/g, '<br>');
             history.push({ q: val, a: content });
@@ -125,41 +168,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerHTML = `<span style="color:#ef4444">Connection Error. Sign in to Puter.</span>`;
+            aiBox.innerHTML = `<span style="color:#ef4444">Connection lost. Ensure you are signed into Puter.</span>`;
         }
         scroller.scrollTop = scroller.scrollHeight;
-    };
-
-    const handleFiles = (files) => {
-        for (let file of files) {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => { 
-                    attachedFiles.push({ type: file.type, data: e.target.result });
-                    const wrap = document.createElement('div');
-                    wrap.className = 'preview-item';
-                    wrap.innerHTML = `<img src="${e.target.result}">`;
-                    previewContainer.appendChild(wrap);
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-    };
-
-    window.onpaste = (e) => {
-        const items = e.clipboardData.items;
-        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const updateHistoryUI = () => {
         document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const idx = history.length - 1 - i;
-            return `<div class="hist-item" data-idx="${idx}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${idx})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
+            return `<div class="hist-item" data-idx="${idx}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${idx})">🗑️</div></div>`;
         }).join('');
         document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
     };
 
-    window.deleteHistory = async (e, idx) => { e.stopPropagation(); history.splice(idx, 1); updateHistoryUI(); saveCloud(); };
+    window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); saveCloud(); };
 
     window.loadChat = (i) => {
         hub.classList.add('hidden-hub');
@@ -167,7 +189,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.innerHTML = '';
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: history[i].q }));
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: history[i].a.replace(/\n/g, '<br>') }));
-        sidebar.classList.remove('open');
     };
 
     genBtn.onclick = runAI;
@@ -175,22 +196,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     mediaInput.onchange = (e) => handleFiles(e.target.files);
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
     input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
+
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.onclick = () => { dropdown.classList.remove('active'); sidebar.classList.remove('open'); };
+    document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
+    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
+    
+    document.querySelectorAll('.s-link').forEach(link => {
+        link.onclick = () => {
+            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById(link.dataset.tab).classList.add('active');
+        };
+    });
+
     document.getElementById('save-all').onclick = async () => { 
         state.nickname = document.getElementById('set-name').value;
+        state.pfp = document.getElementById('set-pfp').value;
         state.model = modelSelect.value;
         await saveCloud(); 
-        location.reload(); 
+        location.reload();
     };
+
     document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
     document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
+    document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
     document.getElementById('mob-toggle').onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
     document.getElementById('new-chat').onclick = () => location.reload();
+
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
+
     loadCloud();
 });
