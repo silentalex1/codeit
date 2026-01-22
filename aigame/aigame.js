@@ -97,7 +97,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attachPromptEvents = () => {
         document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { input.value = btn.dataset.p; input.focus(); hub.classList.add('typing'); };
+            btn.onclick = () => { 
+                input.value = btn.dataset.p; 
+                input.focus(); 
+                input.dispatchEvent(new Event('input'));
+            };
         });
     };
 
@@ -134,24 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => btn.innerText = 'Copy Code', 2000);
     };
 
-    const refreshPreviews = () => {
-        previewBar.innerHTML = '';
-        attachedFiles.forEach((file, i) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'preview-item';
-            const img = document.createElement('img');
-            img.src = file.data;
-            img.onclick = () => openDrawing(i);
-            const rm = document.createElement('button');
-            rm.className = 'remove-preview';
-            rm.innerText = '×';
-            rm.onclick = (e) => { e.stopPropagation(); attachedFiles.splice(i, 1); refreshPreviews(); };
-            wrap.appendChild(img);
-            wrap.appendChild(rm);
-            previewBar.appendChild(wrap);
-        });
-    };
-
     const openDrawing = (index) => {
         editingIndex = index;
         const img = new Image();
@@ -164,30 +150,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         img.src = attachedFiles[index].data;
     };
 
-    canvas.onmousedown = (e) => { isDrawing = true; [lastX, lastY] = [e.offsetX * (canvas.width/canvas.clientWidth), e.offsetY * (canvas.height/canvas.clientHeight)]; };
-    canvas.onmousemove = (e) => {
-        if (!isDrawing) return;
-        ctx.beginPath(); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.strokeStyle = '#3b82f6';
-        ctx.moveTo(lastX, lastY);
-        const curX = e.offsetX * (canvas.width/canvas.clientWidth);
-        const curY = e.offsetY * (canvas.height/canvas.clientHeight);
-        ctx.lineTo(curX, curY); ctx.stroke(); [lastX, lastY] = [curX, curY];
-    };
-    window.onmouseup = () => isDrawing = false;
-    document.getElementById('clear-canvas').onclick = () => { ctx.fillStyle="white"; ctx.fillRect(0,0,canvas.width,canvas.height); };
-    document.getElementById('close-draw').onclick = () => { attachedFiles[editingIndex].data = canvas.toDataURL(); drawModal.style.display = 'none'; refreshPreviews(); };
-
     const handleFiles = (files) => {
         for (let file of files) {
             const reader = new FileReader();
             reader.onload = (e) => { attachedFiles.push({ name: file.name, data: e.target.result }); refreshPreviews(); };
             reader.readAsDataURL(file);
         }
-    };
-
-    window.onpaste = (e) => {
-        const items = e.clipboardData.items;
-        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const runAI = async () => {
@@ -197,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAuthed = await puter.auth.isSignedIn();
         if(!isAuthed) { await puter.auth.signIn(); return; }
 
-        hub.classList.add('fade-out');
+        hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
         
         const userDiv = document.createElement('div');
@@ -207,7 +175,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         input.value = '';
         attachedFiles = [];
-        previewBar.innerHTML = '';
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
@@ -247,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); await saveCloud(); };
 
     window.loadChat = (i) => {
-        hub.classList.add('fade-out');
+        hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
@@ -257,41 +224,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     genBtn.onclick = runAI;
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
-        setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0);
+    };
+    input.oninput = () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
     };
 
-    mediaBtn.onclick = () => mediaInput.click();
-    mediaInput.onchange = (e) => handleFiles(e.target.files);
-    sidebar.ondblclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
-    restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('open-search').onclick = () => searchModal.style.display = 'flex';
+    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
+    
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
-
-    document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = () => {
-            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(link.dataset.tab).classList.add('active');
-        };
-    });
-
-    document.getElementById('select-pfp').onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => { state.pfp = ev.target.result; pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; };
-        reader.readAsDataURL(file);
-    };
-
-    document.getElementById('work-lever').onclick = function() { state.workMode = !state.workMode; syncUI(); saveCloud(); };
-    document.getElementById('side-lever').onclick = function() { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
-    document.getElementById('save-all').onclick = async () => { state.nickname = document.getElementById('set-name').value; await saveCloud(); location.reload(); };
-    document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
-    document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
