@@ -28,10 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
     let attachedFiles = [];
-    let selectedChatIndex = -1;
-    let editingIndex = -1;
     let isDrawing = false;
     let lastX = 0, lastY = 0;
+    let editingIndex = -1;
 
     const detectUI = () => {
         const w = window.innerWidth;
@@ -52,6 +51,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { notif.classList.remove('show', 'fade'); sessionStorage.setItem('notif_shown', 'true'); }, 800);
     };
 
+    const initUI = async () => {
+        const mode = detectUI();
+        await showNotif(["detecting the user device..", `user is on ${mode}`, `switching site to ${mode}`, `switch to ${mode}`]);
+    };
+
     const loadCloud = async () => {
         try {
             let data = await puter.kv.get('copilot_accounts');
@@ -70,10 +74,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
+        
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
         genBtn.className = state.workMode ? 'fancy-gen work-mode-btn' : 'fancy-gen';
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
+
+        if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
         if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
         else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
     };
@@ -104,7 +111,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const formatMsg = (text) => {
-        let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
+        let html = text
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<i>$1</i>')
+            .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
+        
         html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
             const id = 'code-' + Math.random().toString(36).substr(2, 9);
             const lineCount = code.trim().split('\n').length;
@@ -126,18 +137,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const refreshPreviews = () => {
         previewBar.innerHTML = '';
         attachedFiles.forEach((file, i) => {
-            const wrap = document.createElement('div'); wrap.className = 'preview-item';
-            const img = document.createElement('img'); img.src = file.data; img.onclick = () => openDrawing(i);
-            const rm = document.createElement('button'); rm.className = 'remove-preview'; rm.innerText = '×';
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-item';
+            const img = document.createElement('img');
+            img.src = file.data;
+            img.onclick = () => openDrawing(i);
+            const rm = document.createElement('button');
+            rm.className = 'remove-preview';
+            rm.innerText = '×';
             rm.onclick = (e) => { e.stopPropagation(); attachedFiles.splice(i, 1); refreshPreviews(); };
-            wrap.appendChild(img); wrap.appendChild(rm); previewBar.appendChild(wrap);
+            wrap.appendChild(img);
+            wrap.appendChild(rm);
+            previewBar.appendChild(wrap);
         });
     };
 
     const openDrawing = (index) => {
         editingIndex = index;
         const img = new Image();
-        img.onload = () => { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); drawModal.style.display = 'flex'; };
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            drawModal.style.display = 'flex';
+        };
         img.src = attachedFiles[index].data;
     };
 
@@ -151,7 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctx.lineTo(curX, curY); ctx.stroke(); [lastX, lastY] = [curX, curY];
     };
     window.onmouseup = () => isDrawing = false;
-    document.getElementById('clear-canvas').onclick = () => { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = attachedFiles[editingIndex].data; };
+    document.getElementById('clear-canvas').onclick = () => { ctx.fillStyle="white"; ctx.fillRect(0,0,canvas.width,canvas.height); };
     document.getElementById('close-draw').onclick = () => { attachedFiles[editingIndex].data = canvas.toDataURL(); drawModal.style.display = 'none'; refreshPreviews(); };
 
     const handleFiles = (files) => {
@@ -175,7 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         hub.classList.add('typing');
         scroller.style.display = 'block';
-        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(val) }));
+        const userDiv = document.createElement('div');
+        userDiv.className = 'msg-u';
+        userDiv.innerHTML = formatMsg(val);
+        scroller.appendChild(userDiv);
         
         input.value = '';
         attachedFiles = [];
@@ -201,21 +227,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error connecting to Puter. Verify session.";
+            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
+            aiBox.style.color = "#ef4444";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
     const updateHistoryUI = () => {
-        const container = document.getElementById('chat-history');
-        container.innerHTML = history.slice().reverse().map((h, i) => {
+        document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const actualIndex = history.length - 1 - i;
-            return `<div class="hist-item ${selectedChatIndex === actualIndex ? 'selected' : ''}" data-idx="${actualIndex}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${actualIndex})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
+            return `<div class="hist-item" data-idx="${actualIndex}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${actualIndex})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
         }).join('');
-        document.querySelectorAll('.hist-item').forEach(item => {
-            item.onclick = () => loadChat(parseInt(item.dataset.idx));
-            item.ondblclick = (e) => { e.preventDefault(); selectedChatIndex = parseInt(item.dataset.idx); updateHistoryUI(); };
-        });
+        document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
     };
 
     window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); await saveCloud(); };
@@ -234,6 +257,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; hub.classList.toggle('typing', input.value.length > 0); }, 0);
     };
 
+    mediaBtn.onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
+    sidebar.ondblclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
+    restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); saveCloud(); };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
@@ -248,17 +275,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    document.getElementById('save-all').onclick = async () => {
-        state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        await saveCloud();
-        location.reload();
+    document.getElementById('select-pfp').onclick = () => pfpInput.click();
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => { state.pfp = ev.target.result; pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; };
+        reader.readAsDataURL(file);
     };
 
+    document.getElementById('work-lever').onclick = function() { state.workMode = !state.workMode; syncUI(); saveCloud(); };
+    document.getElementById('side-lever').onclick = function() { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
+    document.getElementById('save-all').onclick = async () => { state.nickname = document.getElementById('set-name').value; await saveCloud(); location.reload(); };
     document.getElementById('clear-history').onclick = async () => { if (confirm("Clear history?")) { history = []; await saveCloud(); location.reload(); } };
     document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
-    document.getElementById('work-lever').onclick = function() { this.classList.toggle('on'); state.workMode = this.classList.contains('on'); syncUI(); saveCloud(); };
-    document.getElementById('side-lever').onclick = function() { this.classList.toggle('on'); state.hideSidebar = this.classList.contains('on'); syncUI(); saveCloud(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
