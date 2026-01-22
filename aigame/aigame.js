@@ -12,32 +12,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
     const modelSelect = document.getElementById('ai-model-select');
-    const pfpInput = document.getElementById('pfp-file');
-    const pfpPreview = document.getElementById('pfp-preview');
-    const dropContent = document.getElementById('drop-content');
+    const mediaInput = document.getElementById('media-input');
+    const mediaBtn = document.getElementById('media-btn');
+    const previewContainer = document.getElementById('media-preview-container');
     const premadeContainer = document.getElementById('premade-container');
-    const notif = document.getElementById('ui-notifier');
-    const notifText = document.getElementById('notif-text');
-    const previewBar = document.getElementById('media-preview-bar');
 
     let history = [];
+    let attachedFiles = [];
     let state = { 
         nickname: session.name, 
         pfp: '', 
         workMode: false, 
         hideSidebar: false,
         model: 'gpt-4o' 
-    };
-
-    const detectUI = () => {
-        const w = window.innerWidth;
-        document.documentElement.dataset.ui = w <= 1024 ? "mobile" : "pc";
-    };
-
-    const showNotif = (text, type = 'info') => {
-        notifText.innerText = text;
-        notif.classList.add('show');
-        setTimeout(() => { notif.classList.add('fade'); setTimeout(() => notif.classList.remove('show', 'fade'), 500); }, 2000);
     };
 
     const loadCloud = async () => {
@@ -52,20 +39,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateHistoryUI();
                 }
             }
-        } catch(e) { console.error("Cloud Load Error", e); }
+        } catch(e) { console.error(e); }
     };
 
     const syncUI = () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
-        document.getElementById('set-name').value = state.nickname;
-        document.getElementById('set-pfp').value = state.pfp;
         modelSelect.value = state.model || 'gpt-4o';
-        
-        if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
-        
-        document.getElementById('work-lever').classList.toggle('on', state.workMode);
-        document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
         if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
         else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
@@ -87,28 +66,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const saveCloud = async () => {
-        try {
-            if (await puter.auth.isSignedIn()) {
-                let data = await puter.kv.get('copilot_accounts');
-                let db = data ? JSON.parse(data) : {};
-                db[session.name] = { ...db[session.name], settings: state, history: history };
-                await puter.kv.set('copilot_accounts', JSON.stringify(db));
+    const refreshPreviews = () => {
+        previewContainer.innerHTML = '';
+        attachedFiles.forEach((file, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-item';
+            const img = document.createElement('img');
+            img.src = file.data;
+            const rm = document.createElement('button');
+            rm.className = 'remove-preview';
+            rm.innerText = '×';
+            rm.onclick = () => { attachedFiles.splice(i, 1); refreshPreviews(); };
+            wrap.appendChild(img);
+            wrap.appendChild(rm);
+            previewContainer.appendChild(wrap);
+        });
+    };
+
+    const handleFiles = (files) => {
+        for (let file of files) {
+            if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => { attachedFiles.push({ type: file.type, data: e.target.result }); refreshPreviews(); };
+                reader.readAsDataURL(file);
             }
-        } catch(e) { console.error("Save Error", e); }
+        }
+    };
+
+    window.onpaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const runAI = async () => {
         const val = input.value.trim();
-        if (!val) return;
+        if (!val && attachedFiles.length === 0) return;
         
-        const isAuthed = await puter.auth.isSignedIn();
-        if(!isAuthed) { 
-            showNotif("Please log in to chat."); 
-            puter.auth.signIn(); 
-            return; 
-        }
-
         hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
         
@@ -117,6 +110,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         userDiv.innerText = val;
         scroller.appendChild(userDiv);
         
+        const currentFiles = [...attachedFiles];
+        attachedFiles = [];
+        refreshPreviews();
         input.value = '';
         input.style.height = '24px';
 
@@ -125,31 +121,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>Analyzing with ${state.model}...</div>`;
+        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>Thinking with ${state.model}...</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
 
         try {
-            // Enhanced Puter AI call with selected model
-            const response = await puter.ai.chat(val, { model: state.model });
-            
-            // Clean extraction of message content
-            let content = "";
-            if (typeof response === 'string') content = response;
-            else if (response.message && response.message.content) content = response.message.content;
-            else content = JSON.stringify(response);
+            let prompt = val;
+            if (currentFiles.length > 0) {
+                prompt = [{ type: "text", text: val || "Describe this media." }];
+                currentFiles.forEach(f => {
+                    prompt.push({ type: "image_url", image_url: { url: f.data } });
+                });
+            }
 
+            const response = await puter.ai.chat(prompt, { model: state.model });
+            let content = response?.message?.content || response || "No response received.";
+            
             reasonBox.style.display = 'none';
             aiBox.innerHTML = content.replace(/\n/g, '<br>');
-            
             history.push({ q: val, a: content });
             updateHistoryUI();
-            saveCloud();
         } catch (e) {
-            console.error("Puter AI Error:", e);
             reasonBox.style.display = 'none';
-            aiBox.innerHTML = `<span style="color:#ef4444"><b>Connection Error:</b> Ensure you have a stable connection and are signed into Puter properly. Try logging in again from settings.</span>`;
+            aiBox.innerHTML = `<span style="color:#ef4444">Connection lost. Ensure you are signed into Puter.</span>`;
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -157,61 +152,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateHistoryUI = () => {
         document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const idx = history.length - 1 - i;
-            return `<div class="hist-item" data-idx="${idx}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${idx})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
+            return `<div class="hist-item" data-idx="${idx}">${h.q}</div>`;
         }).join('');
-        document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
-    };
-
-    window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); saveCloud(); };
-
-    window.loadChat = (i) => {
-        hub.classList.add('hidden-hub');
-        scroller.style.display = 'block';
-        scroller.innerHTML = '';
-        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: history[i].q }));
-        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: history[i].a.replace(/\n/g, '<br>') }));
-        sidebar.classList.remove('open');
     };
 
     genBtn.onclick = runAI;
+    mediaBtn.onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
     input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
-
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.onclick = () => { dropdown.classList.remove('active'); if (window.innerWidth <= 1024) sidebar.classList.remove('open'); };
+    document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
-    
-    document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = () => {
-            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(link.dataset.tab).classList.add('active');
-        };
-    });
-
-    document.getElementById('save-all').onclick = async () => { 
-        state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value;
-        state.model = modelSelect.value;
-        await saveCloud(); 
-        showNotif("Settings Saved Successfully!");
-        setTimeout(() => location.reload(), 1000);
-    };
-
-    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
-    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
-    document.getElementById('clear-history').onclick = async () => { if (confirm("Wipe chat history?")) { history = []; await saveCloud(); location.reload(); } };
-    document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
+    document.getElementById('save-all').onclick = () => { state.model = modelSelect.value; settingsModal.style.display='none'; };
     document.getElementById('mob-toggle').onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
     document.getElementById('new-chat').onclick = () => location.reload();
 
-    window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); document.getElementById('open-search').click(); }
-        if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    };
-
-    detectUI();
-    window.onresize = detectUI;
     loadCloud();
 });
