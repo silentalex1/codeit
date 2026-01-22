@@ -7,18 +7,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hub = document.getElementById('hub');
     const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('restore-tab');
     const avatar = document.getElementById('u-avatar');
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
     const modelSelect = document.getElementById('ai-model-select');
-    const premadeContainer = document.getElementById('premade-container');
     const mediaInput = document.getElementById('media-input');
+    const mediaBtn = document.getElementById('media-btn');
     const previewContainer = document.getElementById('media-preview-container');
+    const premadeContainer = document.getElementById('premade-container');
 
     let history = [];
     let attachedFiles = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, model: 'gemini-3-pro' };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, model: 'gemini-1.5-pro' };
 
     const loadCloud = async () => {
         try {
@@ -37,15 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const syncUI = () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
-        modelSelect.value = state.model || 'gemini-3-pro';
+        modelSelect.value = state.model;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-        
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
-        if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
-        else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
+        if (state.hideSidebar) sidebar.classList.add('hidden'); else sidebar.classList.remove('hidden');
     };
 
     const updateImaginePrompts = () => {
@@ -60,46 +58,78 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attachPromptEvents = () => {
         document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { input.value = btn.dataset.p; input.focus(); };
+            btn.onclick = () => { input.value = btn.dataset.p; input.focus(); input.dispatchEvent(new Event('input')); };
         });
+    };
+
+    const refreshPreviews = () => {
+        previewContainer.innerHTML = '';
+        attachedFiles.forEach((file, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'preview-item';
+            const img = document.createElement('img');
+            img.src = file.data;
+            const rm = document.createElement('button');
+            rm.className = 'remove-preview';
+            rm.innerText = '×';
+            rm.onclick = () => { attachedFiles.splice(i, 1); refreshPreviews(); };
+            wrap.appendChild(img);
+            wrap.appendChild(rm);
+            previewContainer.appendChild(wrap);
+        });
+    };
+
+    const handleFiles = (files) => {
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => { attachedFiles.push({ type: file.type, data: e.target.result }); refreshPreviews(); };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    window.onpaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
     };
 
     const runAI = async () => {
         const val = input.value.trim();
         if (!val && attachedFiles.length === 0) return;
-
+        
         hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
-
+        
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-u';
-        userDiv.innerText = val || "Image/Media Shared";
+        userDiv.innerText = val;
         scroller.appendChild(userDiv);
-
+        
         const currentFiles = [...attachedFiles];
         attachedFiles = [];
-        if(previewContainer) previewContainer.innerHTML = '';
+        refreshPreviews();
         input.value = '';
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
         aiBox.className = 'msg-ai';
-        aiBox.innerText = "Processing...";
+        aiBox.innerText = "Thinking...";
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
 
         try {
             let prompt = val;
             if (currentFiles.length > 0) {
-                prompt = [{ type: "text", text: val || "Describe this media." }];
+                prompt = [{ type: "text", text: val || "Explain this media." }];
                 currentFiles.forEach(f => prompt.push({ type: "image_url", image_url: { url: f.data } }));
             }
+
             const response = await puter.ai.chat(prompt, { model: state.model });
-            aiBox.innerText = response?.message?.content || response;
-            history.push({ q: val, a: aiBox.innerText });
+            let content = response?.message?.content || response;
+            aiBox.innerText = content;
+            history.push({ q: val, a: content });
             updateHistoryUI();
         } catch (e) {
-            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
+            aiBox.innerHTML = `<span style="color:#ef4444">Connection lost. Sign into Puter.</span>`;
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -107,9 +137,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateHistoryUI = () => {
         document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const idx = history.length - 1 - i;
-            return `<div class="hist-item" onclick="loadChat(${idx})">${h.q}</div>`;
+            return `<div class="hist-item" data-idx="${idx}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${idx})">🗑️</div></div>`;
         }).join('');
+        document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
     };
+
+    window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); };
 
     window.loadChat = (i) => {
         hub.classList.add('hidden-hub');
@@ -120,33 +153,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     genBtn.onclick = runAI;
+    mediaBtn.onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
+    input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.onclick = () => { dropdown.classList.remove('active'); };
+    document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('save-all').onclick = () => { 
+    document.getElementById('save-all').onclick = async () => { 
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value;
         state.model = modelSelect.value;
-        settingsModal.style.display = 'none';
-        syncUI();
+        await puter.kv.set('copilot_accounts', JSON.stringify({ [session.name]: { settings: state, history } }));
+        location.reload(); 
     };
+    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
+    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
+    document.querySelectorAll('.s-link').forEach(link => link.onclick = () => { document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active')); link.classList.add('active'); document.getElementById(link.dataset.tab).classList.add('active'); });
 
-    document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = () => {
-            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(link.dataset.tab).classList.add('active');
-        };
-    });
-
-    document.getElementById('mob-toggle').onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
-    document.getElementById('new-chat').onclick = () => location.reload();
-    
-    window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); document.getElementById('search-modal').style.display = 'flex'; }
-        if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    };
+    window.onkeydown = (e) => { if (e.ctrlKey && e.key === 'k') { e.preventDefault(); document.getElementById('open-search').click(); } if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
 
     loadCloud();
 });
