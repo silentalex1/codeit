@@ -112,6 +112,7 @@ textarea { flex: 1; background: transparent; border: none; color: white; resize:
 .f-grp { margin-bottom: 25px; }
 .f-grp label { display: block; font-size: 11px; color: #4b5563; margin-bottom: 10px; font-weight: 800; text-transform: uppercase; }
 .s-input { width: 100%; padding: 14px; background: #050507; border: 1px solid #1a1a1e; border-radius: 14px; color: white; outline: none; }
+select.s-input { appearance: none; cursor: pointer; }
 .drop-zone { width: 100%; height: 140px; border: 2px dashed #1a1a1e; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 30px; cursor: pointer; }
 .aesthetic-btn-mini { background: #111; border: 1.5px solid #1a1a1e; color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 13px; }
 .lever-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; color: #4b5563; font-weight: 700; font-size: 14px; }
