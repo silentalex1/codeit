@@ -81,11 +81,11 @@
                 <div id="a-set" class="tab">
                     <div class="title-wrap"><h3>AI Settings</h3><div class="v-line"></div></div>
                     <div class="f-grp">
-                        <label>AI Model Selection</label>
+                        <label>AI Model</label>
                         <select id="set-model" class="s-input">
                             <option value="gemini-3-pro">Gemini 3 Pro</option>
                             <option value="gpt-5.2">ChatGPT 5.2</option>
-                            <option value="claude-4.5-opus">Claude 4.5 Opus</option>
+                            <option value="claude-opus-4.5">Claude 4.5 Opus</option>
                             <option value="grok-4.1-fast">Grok 4.1 Fast</option>
                         </select>
                     </div>
@@ -135,16 +135,16 @@
                 <h1>codeit copilot imagine anything.</h1>
                 <div class="premade" id="premade-container"></div>
             </div>
+        </div>
+
+        <div class="input-master-container">
             <div id="media-preview-bar" class="media-preview-container"></div>
             <div class="input-hub-container">
-                <div class="input-hub-pill-wrapper">
-                    <div id="paste-preview-area" class="paste-preview-area"></div>
-                    <div class="input-hub-pill">
-                        <button id="media-btn" class="media-add-btn">+</button>
-                        <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
-                        <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
-                        <button id="gen-action" class="fancy-gen">Ask</button>
-                    </div>
+                <div class="input-hub-pill">
+                    <button id="media-btn" class="media-add-btn">+</button>
+                    <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
+                    <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
+                    <button id="gen-action" class="fancy-gen">Ask</button>
                 </div>
             </div>
         </div>
