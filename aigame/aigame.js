@@ -13,18 +13,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const settingsModal = document.getElementById('settings-modal');
     const pfpInput = document.getElementById('pfp-file');
     const pfpPreview = document.getElementById('pfp-preview');
-    const dropZone = document.getElementById('pfp-drop-zone');
     const dropContent = document.getElementById('drop-content');
     const premadeContainer = document.getElementById('premade-container');
     const notif = document.getElementById('ui-notifier');
     const notifText = document.getElementById('notif-text');
     const mediaInput = document.getElementById('media-input');
     const mediaBtn = document.getElementById('media-btn');
-    const previewBar = document.getElementById('media-preview-bar');
     const modelSelect = document.getElementById('set-model');
+    const pastePreviewArea = document.getElementById('paste-preview-area');
+    const searchModal = document.getElementById('search-modal');
 
     let history = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gemini-3-pro' };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
     let attachedFiles = [];
 
     const detectUI = () => {
@@ -44,6 +44,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         notif.classList.add('fade');
         setTimeout(() => { notif.classList.remove('show', 'fade'); sessionStorage.setItem('notif_shown', 'true'); }, 800);
+    };
+
+    const initUI = async () => {
+        const mode = detectUI();
+        await showNotif(["detecting the user device..", `user is on ${mode}`, `switching site to ${mode}`, `switch to ${mode}`]);
     };
 
     const loadCloud = async () => {
@@ -79,13 +84,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
 
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
-        if (state.hideSidebar) { 
-            sidebar.classList.add('hidden'); 
-            restoreBtn.style.display = 'block'; 
-        } else { 
-            sidebar.classList.remove('hidden'); 
-            restoreBtn.style.display = 'none'; 
-        }
+        if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
+        else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
     };
 
     const updateImaginePrompts = () => {
@@ -109,42 +109,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const refreshPreviews = () => {
-        previewBar.innerHTML = attachedFiles.map((f, i) => `
-            <div class="media-preview">
-                <img src="${f.data}">
-                <div class="remove-media" onclick="removeMedia(${i})">&times;</div>
-            </div>
-        `).join('');
-        previewBar.style.display = attachedFiles.length > 0 ? 'flex' : 'none';
-    };
-
-    window.removeMedia = (i) => {
-        attachedFiles.splice(i, 1);
-        refreshPreviews();
-    };
-
-    const handleFiles = (files) => {
-        for (let file of files) {
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                attachedFiles.push({ name: file.name, data: e.target.result }); 
-                refreshPreviews(); 
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    input.onpaste = (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let item of items) {
-            if (item.type.indexOf("image") !== -1) {
-                const file = item.getAsFile();
-                handleFiles([file]);
-            }
-        }
-    };
-
     const saveCloud = async () => {
         try {
             let data = await puter.kv.get('copilot_accounts');
@@ -159,13 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
             .replace(/\*(.*?)\*/g, '<i>$1</i>')
             .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
-        
         html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
             const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            const lineCount = code.trim().split('\n').length;
-            let gutter = '';
-            for(let i=1; i<=lineCount; i++) gutter += `<div>${i}</div>`;
-            return `<div class="code-panel"><div class="code-header"><div class="header-left"><div class="dots"><span class="dot-ui r"></span><span class="dot-ui y"></span><span class="dot-ui g"></span></div><span class="pill">${lang || 'code'}</span></div><button class="copy-btn" onclick="copyCode('${id}')">Copy Code</button></div><div class="code-body"><div class="gutter">${gutter}</div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div></div>`;
+            return `<div class="code-panel"><div class="code-header"><button class="copy-btn" onclick="copyCode('${id}')">Copy</button></div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
         });
         return html;
     };
@@ -173,9 +133,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.copyCode = (id) => {
         const text = document.getElementById(id).innerText;
         navigator.clipboard.writeText(text);
-        const btn = document.querySelector(`[onclick="copyCode('${id}')"]`);
-        btn.innerText = 'Copied!';
-        setTimeout(() => btn.innerText = 'Copy Code', 2000);
+    };
+
+    const renderPastePreviews = () => {
+        pastePreviewArea.innerHTML = '';
+        attachedFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'paste-preview-item';
+            item.innerHTML = `<img src="${file.data}"><div class="remove-paste" onclick="removeAttached(${index})">×</div>`;
+            pastePreviewArea.appendChild(item);
+        });
+    };
+
+    window.removeAttached = (index) => {
+        attachedFiles.splice(index, 1);
+        renderPastePreviews();
+    };
+
+    input.onpaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) {
+            if (item.type.indexOf("image") !== -1) {
+                const file = item.getAsFile();
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    attachedFiles.push({ name: 'pasted-img', data: event.target.result });
+                    renderPastePreviews();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
     };
 
     const runAI = async () => {
@@ -195,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         input.value = '';
         attachedFiles = [];
-        refreshPreviews();
+        renderPastePreviews();
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
@@ -203,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>`;
+        reasonBox.innerHTML = `Thinking...`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -218,8 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error: Connection lost. Ensure you are signed into Puter.";
-            aiBox.style.color = "#ef4444";
+            aiBox.innerText = "Error reaching AI.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -227,16 +213,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateHistoryUI = () => {
         document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const actualIndex = history.length - 1 - i;
-            return `<div class="hist-item" data-idx="${actualIndex}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${actualIndex})"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div></div>`;
+            return `<div class="hist-item" data-idx="${actualIndex}">${h.q}</div>`;
         }).join('');
         document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
-    };
-
-    window.deleteHistory = async (e, index) => { 
-        e.stopPropagation(); 
-        history.splice(index, 1); 
-        updateHistoryUI(); 
-        await saveCloud(); 
     };
 
     window.loadChat = (i) => {
@@ -248,67 +227,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     genBtn.onclick = runAI;
-    mediaBtn.onclick = () => mediaInput.click();
-    mediaInput.onchange = (e) => handleFiles(e.target.files);
-
-    document.getElementById('select-pfp-btn').onclick = (e) => { e.stopPropagation(); pfpInput.click(); };
-    pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                state.pfp = ev.target.result;
-                syncUI();
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; };
-    dropZone.ondragleave = () => { dropZone.style.borderColor = '#1a1a1e'; };
-    dropZone.ondrop = (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = '#1a1a1e';
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
-    };
-    input.oninput = () => {
-        input.style.height = 'auto';
-        input.style.height = input.scrollHeight + 'px';
-    };
+    input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
+    input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.addEventListener('click', () => dropdown.classList.remove('active'));
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
-    
-    document.querySelectorAll('.modal').forEach(m => { 
-        m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; 
-    });
-
-    document.getElementById('save-all').onclick = async (e) => {
-        e.stopPropagation();
+    document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
+        state.pfp = document.getElementById('set-pfp').value;
         state.aiModel = modelSelect.value;
         await saveCloud();
         syncUI();
         settingsModal.style.display = 'none';
     };
 
+    document.getElementById('select-pfp').onclick = () => pfpInput.click();
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
+            reader.readAsDataURL(file);
+        }
+    };
+
     document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
     document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
-    document.getElementById('clear-history').onclick = async () => { if(confirm('Clear history?')) { history = []; updateHistoryUI(); await saveCloud(); } };
-    document.getElementById('puter-reauth').onclick = () => puter.auth.signIn();
-    document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); };
@@ -321,16 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
-        if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    };
-
-    document.getElementById('search-q').oninput = (e) => {
-        const q = e.target.value.toLowerCase();
-        const matches = history.filter(h => h.q.toLowerCase().includes(q));
-        document.getElementById('search-results').innerHTML = matches.map(m => `<div class="hist-item" onclick="loadChat(${history.indexOf(m)})">${m.q}</div>`).join('');
-    };
+    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
     detectUI();
     window.onresize = detectUI;
