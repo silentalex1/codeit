@@ -250,14 +250,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('new-chat').onclick = () => location.reload();
     
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
-    
     document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = (e) => {
-            e.preventDefault();
+        link.onclick = () => {
             document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
             link.classList.add('active');
-            const targetTab = document.getElementById(link.getAttribute('data-tab'));
-            if(targetTab) targetTab.classList.add('active');
+            document.getElementById(link.dataset.tab).classList.add('active');
         };
     });
 
