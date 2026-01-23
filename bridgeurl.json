@@ -1,0 +1,8 @@
+{
+  "connected": true,
+  "ts": 1700000001,
+  "prompt": "Create folders + scripts",
+  "ops": [
+    { "type": "create_folder", "parent": "ReplicatedStorage", "name": "Modules" }
+  ]
+}
