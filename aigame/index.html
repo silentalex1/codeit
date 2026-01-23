@@ -13,7 +13,7 @@
     <div id="ui-notifier" class="ui-notification">
         <div class="notif-content">
             <div class="notif-loader"></div>
-            <span id="notif-text">detecting device..</span>
+            <span id="notif-text">detecting the user device..</span>
         </div>
     </div>
 
@@ -46,14 +46,12 @@
     <div id="settings-modal" class="modal">
         <div class="settings-card">
             <div class="s-nav">
-                <div class="s-top">
-                    <div class="s-link active" data-tab="u-set">User Settings</div>
-                    <div class="s-link" data-tab="a-set">AI Settings</div>
-                </div>
+                <div class="s-link active" data-tab="u-set">User Settings</div>
+                <div class="s-link" data-tab="a-set">AI Settings</div>
                 <div class="s-bottom">
-                    <button id="puter-reauth" class="puter-auth-btn">login with puterjs</button>
-                    <button id="clear-history" class="danger-btn">Clear Chat History</button>
                     <button id="save-all" class="save-btn">Save Settings</button>
+                    <button id="clear-history" class="danger-btn">Clear Chat History</button>
+                    <button id="puter-reauth" class="puter-auth-btn">login with puterjs</button>
                 </div>
             </div>
             <div class="s-body">
@@ -81,18 +79,9 @@
                     </div>
                 </div>
                 <div id="a-set" class="tab">
-                    <div class="title-wrap"><h3>AI Engine Settings</h3><div class="v-line"></div></div>
-                    <div class="f-grp">
-                        <label>Active AI Model</label>
-                        <select id="ai-model-select" class="s-input aesthetic-select">
-                            <option value="gemini-1.5-pro">Gemini 3 Pro</option>
-                            <option value="gpt-4o">ChatGPT-5.2</option>
-                            <option value="claude-3-5-sonnet">Claude 4.5</option>
-                            <option value="grok-beta">Grok-4.1</option>
-                        </select>
-                    </div>
+                    <div class="title-wrap"><h3>AI Settings</h3><div class="v-line"></div></div>
                     <div class="lever-row">
-                        <span>Work Mode (Code Focus)</span>
+                        <span>Turn AI to work mode</span>
                         <div class="lever" id="work-lever"><div class="dot"></div></div>
                     </div>
                 </div>
@@ -117,9 +106,9 @@
                 <div class="logo">codeit copilot</div>
             </div>
             <div class="nav-r">
-                <button id="conn-plugin" class="plugin-btn pc-only">connect plugin</button>
-                <button class="nav-item pc-only">donate here</button>
-                <button class="nav-item pc-only">our community</button>
+                <button id="conn-plugin" class="plugin-btn">connect plugin</button>
+                <button class="nav-item">donate here</button>
+                <button class="nav-item">our community</button>
                 <div class="pfp-container">
                     <div id="u-avatar" class="avatar"></div>
                     <div id="u-dropdown" class="dropdown">
@@ -137,7 +126,7 @@
                 <h1>codeit copilot imagine anything.</h1>
                 <div class="premade" id="premade-container"></div>
             </div>
-            <div id="media-preview-container" class="media-preview-container"></div>
+            <div id="media-preview-bar" class="media-preview-container"></div>
             <div class="input-hub-container">
                 <div class="input-hub-pill">
                     <button id="media-btn" class="media-add-btn">+</button>
