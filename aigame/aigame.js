@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notif = document.getElementById('ui-notifier');
     const notifText = document.getElementById('notif-text');
     const mediaInput = document.getElementById('media-input');
-    const mediaBtn = document.getElementById('media-btn');
     const previewBar = document.getElementById('media-preview-bar');
     const modelSelect = document.getElementById('set-model');
     const searchModal = document.getElementById('search-modal');
@@ -45,11 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { notif.classList.remove('show', 'fade'); }, 800);
     };
 
-    const initUI = async () => {
-        const mode = detectUI();
-        await showNotif(["detecting the user device..", `user is on ${mode}`, `switching site to ${mode}`, `switch to ${mode}`]);
-    };
-
     const loadCloud = async () => {
         try {
             let data = await puter.kv.get('copilot_accounts');
@@ -67,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        if (state.aiModel) modelSelect.value = state.aiModel;
+        modelSelect.value = state.aiModel;
         
         if (state.pfp) { 
             pfpPreview.src = state.pfp; 
@@ -128,20 +122,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshPreviews();
     };
 
-    const handlePaste = (e) => {
-        const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
-                const blob = items[i].getAsFile();
+    const handleFiles = (files) => {
+        for(let file of files) {
+            if(file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    attachedFiles.push({ data: event.target.result });
-                    refreshPreviews();
-                };
-                reader.readAsDataURL(blob);
+                reader.onload = (e) => { attachedFiles.push({ data: e.target.result }); refreshPreviews(); };
+                reader.readAsDataURL(file);
             }
         }
     };
+
+    input.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let item of items) {
+            if (item.kind === 'file') handleFiles([item.getAsFile()]);
+        }
+    });
 
     const formatMsg = (text) => {
         let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
@@ -152,9 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return html;
     };
 
-    window.copyCode = (id) => {
-        navigator.clipboard.writeText(document.getElementById(id).innerText);
-    };
+    window.copyCode = (id) => navigator.clipboard.writeText(document.getElementById(id).innerText);
 
     const runAI = async () => {
         const val = input.value.trim();
@@ -194,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Connection Error.";
+            aiBox.innerText = "Error interacting with " + state.aiModel;
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -216,14 +210,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     genBtn.onclick = runAI;
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
-    input.onpaste = handlePaste;
     input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.addEventListener('click', () => dropdown.classList.remove('active'));
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('select-pfp-btn').onclick = () => pfpInput.click();
-    
+    document.getElementById('media-btn').onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
+
     pfpInput.onchange = (e) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -237,7 +232,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
         state.aiModel = modelSelect.value;
         await saveCloud();
         syncUI();
