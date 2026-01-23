@@ -7,20 +7,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hub = document.getElementById('hub');
     const scroller = document.getElementById('chat-scroller');
     const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('restore-tab');
     const avatar = document.getElementById('u-avatar');
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
+    const searchModal = document.getElementById('search-modal');
     const modelSelect = document.getElementById('ai-model-select');
-    const mediaInput = document.getElementById('media-input');
-    const mediaBtn = document.getElementById('media-btn');
-    const previewContainer = document.getElementById('media-preview-container');
     const premadeContainer = document.getElementById('premade-container');
     const notif = document.getElementById('ui-notifier');
     const notifText = document.getElementById('notif-text');
+    const historyList = document.getElementById('chat-history');
 
     let history = [];
-    let attachedFiles = [];
     let state = { 
         nickname: session.name, 
         pfp: '', 
@@ -55,13 +52,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
         modelSelect.value = state.model || 'gemini-1.5-pro';
-        
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
-
         if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
-        if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
-        else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
+        if (state.hideSidebar) sidebar.classList.add('hidden'); else sidebar.classList.remove('hidden');
     };
 
     const updateImaginePrompts = () => {
@@ -91,41 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) {}
     };
 
-    const refreshPreviews = () => {
-        previewContainer.innerHTML = '';
-        attachedFiles.forEach((file, i) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'preview-item';
-            const img = document.createElement('img');
-            img.src = file.data;
-            const rm = document.createElement('button');
-            rm.className = 'remove-preview';
-            rm.innerText = '×';
-            rm.onclick = () => { attachedFiles.splice(i, 1); refreshPreviews(); };
-            wrap.appendChild(img);
-            wrap.appendChild(rm);
-            previewContainer.appendChild(wrap);
-        });
-    };
-
-    const handleFiles = (files) => {
-        for (let file of files) {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => { attachedFiles.push({ type: file.type, data: e.target.result }); refreshPreviews(); };
-                reader.readAsDataURL(file);
-            }
-        }
-    };
-
-    window.onpaste = (e) => {
-        const items = e.clipboardData.items;
-        for (let item of items) { if (item.type.indexOf('image') !== -1) handleFiles([item.getAsFile()]); }
-    };
-
     const runAI = async () => {
         const val = input.value.trim();
-        if (!val && attachedFiles.length === 0) return;
+        if (!val) return;
         
         hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
@@ -135,53 +97,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         userDiv.innerText = val;
         scroller.appendChild(userDiv);
         
-        const currentFiles = [...attachedFiles];
-        attachedFiles = [];
-        refreshPreviews();
         input.value = '';
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
         aiBox.className = 'msg-ai';
-        const reasonBox = document.createElement('div');
-        reasonBox.className = 'reasoning-box';
-        reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div>Analyzing with ${state.model}...</div>`;
-        aiBox.appendChild(reasonBox);
+        aiBox.innerHTML = `<div>Thinking with ${state.model}...</div>`;
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
 
         try {
-            let promptContent = val;
-            if (currentFiles.length > 0) {
-                promptContent = [{ type: "text", text: val || "Analyze this image." }];
-                currentFiles.forEach(f => { promptContent.push({ type: "image_url", image_url: { url: f.data } }); });
-            }
-
-            const response = await puter.ai.chat(promptContent, { model: state.model });
-            let content = response?.message?.content || response || "Error: No response";
-
-            reasonBox.style.display = 'none';
+            const response = await puter.ai.chat(val, { model: state.model });
+            let content = response?.message?.content || response || "Error";
             aiBox.innerHTML = content.replace(/\n/g, '<br>');
             history.push({ q: val, a: content });
             updateHistoryUI();
             saveCloud();
         } catch (e) {
-            reasonBox.style.display = 'none';
-            aiBox.innerHTML = `<span style="color:#ef4444">Connection lost. Ensure you are signed into Puter.</span>`;
+            aiBox.innerHTML = `<span style="color:#ef4444">Connection lost.</span>`;
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
 
     const updateHistoryUI = () => {
-        document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
+        historyList.innerHTML = history.slice().reverse().map((h, i) => {
             const idx = history.length - 1 - i;
             return `<div class="hist-item" data-idx="${idx}">${h.q}<div class="trash-btn" onclick="deleteHistory(event, ${idx})">🗑️</div></div>`;
         }).join('');
         document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
     };
 
-    window.deleteHistory = async (e, index) => { e.stopPropagation(); history.splice(index, 1); updateHistoryUI(); saveCloud(); };
+    window.deleteHistory = async (e, idx) => { e.stopPropagation(); history.splice(idx, 1); updateHistoryUI(); saveCloud(); };
 
     window.loadChat = (i) => {
         hub.classList.add('hidden-hub');
@@ -192,42 +138,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     genBtn.onclick = runAI;
-    mediaBtn.onclick = () => mediaInput.click();
-    mediaInput.onchange = (e) => handleFiles(e.target.files);
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
     input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
-
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
-    
-    document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = () => {
-            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(link.dataset.tab).classList.add('active');
-        };
-    });
-
     document.getElementById('save-all').onclick = async () => { 
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value;
         state.model = modelSelect.value;
-        await saveCloud(); 
-        location.reload();
+        await saveCloud(); location.reload();
     };
-
-    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
-    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
-    document.getElementById('puter-reauth').onclick = async () => { await puter.auth.signIn(); location.reload(); };
+    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); saveCloud(); };
     document.getElementById('mob-toggle').onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
-    document.getElementById('new-chat').onclick = () => location.reload();
-
+    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
-
     loadCloud();
+    showNotif("System Loaded Successfully");
 });
