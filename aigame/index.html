@@ -68,7 +68,7 @@
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
                         <div id="drop-content">
-                            <button id="select-pfp-btn" class="aesthetic-btn-mini">select pfp</button>
+                            <button id="select-pfp" class="aesthetic-btn-mini">select pfp</button>
                             <p class="drop-text">drop image here</p>
                         </div>
                         <img id="pfp-preview" src="" style="display:none;">
@@ -137,11 +137,14 @@
             </div>
             <div id="media-preview-bar" class="media-preview-container"></div>
             <div class="input-hub-container">
-                <div class="input-hub-pill">
-                    <button id="media-btn" class="media-add-btn">+</button>
-                    <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
-                    <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
-                    <button id="gen-action" class="fancy-gen">Ask</button>
+                <div class="input-hub-pill-wrapper">
+                    <div id="paste-preview-area" class="paste-preview-area"></div>
+                    <div class="input-hub-pill">
+                        <button id="media-btn" class="media-add-btn">+</button>
+                        <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
+                        <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
+                        <button id="gen-action" class="fancy-gen">Ask</button>
+                    </div>
                 </div>
             </div>
         </div>
