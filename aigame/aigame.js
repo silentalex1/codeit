@@ -1,268 +1,90 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    let session = JSON.parse(sessionStorage.getItem('copilot_session'));
-    if (!session) { window.location.href = "../"; return; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
 
-    const input = document.getElementById('ai-query');
-    const genBtn = document.getElementById('gen-action');
-    const hub = document.getElementById('hub');
-    const scroller = document.getElementById('chat-scroller');
-    const sidebar = document.getElementById('sidebar');
-    const restoreBtn = document.getElementById('restore-tab');
-    const avatar = document.getElementById('u-avatar');
-    const dropdown = document.getElementById('u-dropdown');
-    const settingsModal = document.getElementById('settings-modal');
-    const pfpInput = document.getElementById('pfp-file');
-    const pfpPreview = document.getElementById('pfp-preview');
-    const dropContent = document.getElementById('drop-content');
-    const premadeContainer = document.getElementById('premade-container');
-    const notif = document.getElementById('ui-notifier');
-    const notifText = document.getElementById('notif-text');
-    const mediaInput = document.getElementById('media-input');
-    const mediaBtn = document.getElementById('media-btn');
-    const previewBar = document.getElementById('media-preview-bar');
-    const modelSelect = document.getElementById('set-model');
-    const searchModal = document.getElementById('search-modal');
+:root { 
+    --primary: #3b82f6; 
+    --bg: #050505; 
+    --accent: #10b981;
+    --card: #0c0c0e;
+}
 
-    let history = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gemini-3-pro' };
-    let attachedFiles = [];
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+body { background: var(--bg); color: white; height: 100vh; overflow: hidden; display: flex; }
 
-    const detectUI = () => {
-        const w = window.innerWidth;
-        const isTouch = navigator.maxTouchPoints > 0;
-        let mode = (w <= 600) ? "mobile" : (w <= 1024) ? "tablet" : (w <= 1440 && isTouch) ? "laptop" : "pc";
-        document.documentElement.dataset.ui = mode;
-        return mode;
-    };
+.grid-bg { position: fixed; inset: 0; z-index: 1; background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; }
 
-    const showNotif = async (steps) => {
-        notif.classList.add('show');
-        for (const step of steps) {
-            notifText.innerText = step;
-            await new Promise(r => setTimeout(r, 1100));
-        }
-        notif.classList.add('fade');
-        setTimeout(() => { notif.classList.remove('show', 'fade'); }, 800);
-    };
+.main { flex: 1; position: relative; z-index: 10; display: flex; flex-direction: column; min-width: 0; }
 
-    const initUI = async () => {
-        const mode = detectUI();
-        await showNotif(["detecting the user device..", `user is on ${mode}`, `switching site to ${mode}`, `switch to ${mode}`]);
-    };
+.ui-notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px 24px; border-radius: 100px; z-index: 9999; backdrop-filter: blur(15px); transition: 0.8s; opacity: 0; }
+.ui-notification.show { top: 85px; opacity: 1; }
+.ui-notification.fade { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 
-    const loadCloud = async () => {
-        try {
-            let data = await puter.kv.get('copilot_accounts');
-            let db = data ? JSON.parse(data) : {};
-            if (db[session.name]) {
-                state = { ...state, ...db[session.name].settings };
-                history = db[session.name].history || [];
-                syncUI();
-                updateHistoryUI();
-            }
-        } catch(e) {}
-    };
+.sidebar { width: 280px; background: #08080a; border-right: 1px solid #1a1a1e; z-index: 1000; transition: 0.4s; }
+.sidebar.hidden { transform: translateX(-280px); width: 0; visibility: hidden; }
+.side-inner { height: 100%; display: flex; flex-direction: column; padding: 20px; }
+.history { flex: 1; overflow-y: auto; margin: 20px 0; }
+.hist-item { padding: 12px; border-radius: 10px; font-size: 13px; color: #4b5563; cursor: pointer; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item:hover { background: #111; color: white; }
 
-    const syncUI = () => {
-        if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
-        document.getElementById('set-name').value = state.nickname;
-        document.getElementById('set-pfp').value = state.pfp;
-        if (state.aiModel) modelSelect.value = state.aiModel;
-        
-        if (state.pfp) { 
-            pfpPreview.src = state.pfp; 
-            pfpPreview.style.display = 'block'; 
-            dropContent.style.display = 'none'; 
-        }
-        
-        genBtn.innerText = state.workMode ? "Ask" : "Generate";
-        document.getElementById('work-lever').classList.toggle('on', state.workMode);
-        document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
+.navbar { height: 75px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; border-bottom: 1px solid #1a1a1e; background: rgba(5, 5, 5, 0.8); backdrop-filter: blur(15px); }
+.logo { font-weight: 800; color: var(--primary); font-size: 20px; }
+.nav-r { display: flex; align-items: center; gap: 20px; }
+.avatar { width: 40px; height: 40px; background: #111; border-radius: 50%; cursor: pointer; border: 1px solid #1a1a1e; background-size: cover; background-position: center; }
 
-        if (state.workMode) updateWorkPrompts(); else updateImaginePrompts();
-        if (state.hideSidebar) { sidebar.classList.add('hidden'); restoreBtn.style.display = 'block'; }
-        else { sidebar.classList.remove('hidden'); restoreBtn.style.display = 'none'; }
-    };
+.hub { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.4s; }
+.hub.hidden-hub { opacity: 0; transform: translateY(20px); pointer-events: none; position: absolute; }
+.hub h1 { font-size: 38px; margin-bottom: 40px; text-align: center; }
+.premade { display: flex; gap: 15px; }
+.sq-opt { width: 220px; height: 120px; background: #0c0c0e; border: 1px solid #1a1a1e; border-radius: 24px; color: #4b5563; cursor: pointer; padding: 20px; font-size: 13px; font-weight: 700; text-align: left; transition: 0.3s; }
+.sq-opt:hover { border-color: var(--primary); color: white; background: #111; }
 
-    const updateImaginePrompts = () => {
-        premadeContainer.innerHTML = `<button class="sq-opt" data-p="create me a obby that ">create me a obby that ___</button><button class="sq-opt" data-p="make me a horror scene that does ">make me a horror scene that does ___</button><button class="sq-opt" data-p="create me a map that looks like ">create me a map that looks like ___</button>`;
-        attachPromptEvents();
-    };
+.hub-input-sticky { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: min(800px, 92%); z-index: 100; display: flex; flex-direction: column; align-items: center; }
+.input-hub-pill { background: rgba(12, 12, 14, 0.9); border: 1px solid #1a1a1e; border-radius: 30px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+textarea { flex: 1; background: transparent; border: none; color: white; resize: none; min-height: 24px; max-height: 200px; outline: none; font-size: 16px; padding: 8px 4px; }
+.fancy-gen { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 20px; font-weight: 800; cursor: pointer; }
 
-    const updateWorkPrompts = () => {
-        premadeContainer.innerHTML = `<button class="sq-opt" data-p="solve this math question: ">solve this math question: ___</button><button class="sq-opt" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button><button class="sq-opt" data-p="fix this code: ">fix this code: ___</button>`;
-        attachPromptEvents();
-    };
+.media-preview-container { display: flex; gap: 10px; margin-bottom: 12px; overflow-x: auto; width: 100%; justify-content: center; }
+.preview-item { position: relative; width: 65px; height: 65px; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary); background: #000; }
+.preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.remove-preview { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 800; }
 
-    const attachPromptEvents = () => {
-        document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { 
-                input.value = btn.dataset.p; 
-                input.focus(); 
-                input.dispatchEvent(new Event('input'));
-            };
-        });
-    };
+.chat-viewport { width: min(850px, 94%); margin: 0 auto; overflow-y: auto; height: calc(100vh - 180px); display: none; padding: 40px 20px 150px; }
+.msg-u { font-weight: 800; font-size: 22px; border-left: 4px solid var(--primary); padding-left: 24px; margin-bottom: 40px; }
+.msg-ai { background: var(--card); padding: 30px; border-radius: 28px; color: #94a3b8; margin-bottom: 50px; border: 1px solid #1a1a1e; white-space: pre-wrap; line-height: 1.6; }
 
-    const saveCloud = async () => {
-        try {
-            let data = await puter.kv.get('copilot_accounts');
-            let db = data ? JSON.parse(data) : {};
-            db[session.name] = { ...db[session.name], settings: state, history: history };
-            await puter.kv.set('copilot_accounts', JSON.stringify(db));
-        } catch(e) {}
-    };
+.reasoning-box { padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; text-align: center; font-size: 14px; color: var(--primary); font-weight: 700; }
+.thought-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
+.thought-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-    const refreshPreviews = () => {
-        previewBar.innerHTML = '';
-        attachedFiles.forEach((file, index) => {
-            const item = document.createElement('div');
-            item.className = 'preview-item';
-            item.innerHTML = `<img src="${file.data}"><div class="remove-preview" onclick="removeFile(${index})">×</div>`;
-            previewBar.appendChild(item);
-        });
-    };
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); display: none; justify-content: center; align-items: center; z-index: 5000; }
+.settings-card { width: min(850px, 95%); height: 600px; background: var(--card); display: flex; border-radius: 32px; border: 1px solid #1a1a1e; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+.s-nav { width: 240px; background: #08080a; padding: 40px 25px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #151518; }
+.s-link { padding: 14px 20px; color: #4b5563; cursor: pointer; border-radius: 12px; font-weight: 700; transition: 0.2s; }
+.s-link:hover { color: white; background: rgba(255,255,255,0.02); }
+.s-link.active { background: #111; color: white; }
+.save-btn { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 800; cursor: pointer; margin-top: auto; }
 
-    window.removeFile = (index) => {
-        attachedFiles.splice(index, 1);
-        refreshPreviews();
-    };
+.s-body { flex: 1; padding: 45px; overflow-y: auto; position: relative; }
+.tab { display: none; pointer-events: auto; }
+.tab.active { display: block; }
+.s-input { width: 100%; padding: 14px; background: #050507; border: 1px solid #1a1a1e; border-radius: 14px; color: white; margin-top: 8px; margin-bottom: 20px; outline: none; }
+.s-input:focus { border-color: var(--primary); }
 
-    const handlePaste = (e) => {
-        const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
-                const blob = items[i].getAsFile();
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    attachedFiles.push({ data: event.target.result });
-                    refreshPreviews();
-                };
-                reader.readAsDataURL(blob);
-            }
-        }
-    };
+.drop-zone { width: 100%; height: 140px; border: 2px dashed #1a1a1e; border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-direction: column; margin-bottom: 20px; background: rgba(255,255,255,0.01); transition: 0.3s; }
+.aesthetic-btn-mini { background: #111; border: 1.5px solid #1a1a1e; color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; }
+.drop-text { color: #4b5563; font-size: 13px; margin-top: 10px; }
 
-    const formatMsg = (text) => {
-        let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
-        html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-            const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `<div class="code-panel"><div class="code-header"><span>${lang || 'code'}</span><button class="copy-btn" onclick="copyCode('${id}')">Copy</button></div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
-        });
-        return html;
-    };
+.lever-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; color: #4b5563; font-weight: 700; }
+.lever { width: 48px; height: 26px; background: #1a1a1e; border-radius: 100px; position: relative; cursor: pointer; }
+.lever.on { background: var(--primary); }
+.dot { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 4px; left: 4px; transition: 0.3s; }
+.lever.on .dot { left: 26px; }
 
-    window.copyCode = (id) => {
-        navigator.clipboard.writeText(document.getElementById(id).innerText);
-    };
+.burger { display: none; background: #111; border: 1px solid #1a1a1e; color: white; padding: 10px; border-radius: 10px; cursor: pointer; }
 
-    const runAI = async () => {
-        const val = input.value.trim();
-        if (!val && attachedFiles.length === 0) return;
-        if (!(await puter.auth.isSignedIn())) { await puter.auth.signIn(); return; }
-
-        hub.classList.add('hidden-hub');
-        scroller.style.display = 'block';
-        
-        const userDiv = document.createElement('div');
-        userDiv.className = 'msg-u';
-        userDiv.innerHTML = formatMsg(val);
-        scroller.appendChild(userDiv);
-        
-        input.value = '';
-        attachedFiles = [];
-        refreshPreviews();
-        input.style.height = '24px';
-
-        const aiBox = document.createElement('div');
-        aiBox.className = 'msg-ai';
-        const reasonBox = document.createElement('div');
-        reasonBox.className = 'reasoning-box';
-        reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>${state.workMode ? 'Processing...' : 'Imagining...'}</div>`;
-        aiBox.appendChild(reasonBox);
-        scroller.appendChild(aiBox);
-        scroller.scrollTop = scroller.scrollHeight;
-
-        try {
-            const response = await puter.ai.chat(val, { model: state.aiModel });
-            const content = response.message ? response.message.content : response;
-            reasonBox.style.display = 'none';
-            aiBox.innerHTML = formatMsg(String(content));
-            history.push({ q: val, a: String(content) });
-            updateHistoryUI();
-            await saveCloud();
-        } catch (e) {
-            reasonBox.style.display = 'none';
-            aiBox.innerText = "Connection Error.";
-        }
-        scroller.scrollTop = scroller.scrollHeight;
-    };
-
-    const updateHistoryUI = () => {
-        document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
-            const actualIndex = history.length - 1 - i;
-            return `<div class="hist-item" onclick="loadChat(${actualIndex})">${h.q}</div>`;
-        }).join('');
-    };
-
-    window.loadChat = (i) => {
-        hub.classList.add('hidden-hub');
-        scroller.style.display = 'block';
-        scroller.innerHTML = '';
-        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
-        scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: formatMsg(history[i].a) }));
-    };
-
-    genBtn.onclick = runAI;
-    input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
-    input.onpaste = handlePaste;
-    input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
-
-    avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.addEventListener('click', () => dropdown.classList.remove('active'));
-    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('select-pfp-btn').onclick = () => pfpInput.click();
-    
-    pfpInput.onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            state.pfp = ev.target.result;
-            pfpPreview.src = state.pfp;
-            pfpPreview.style.display = 'block';
-            dropContent.style.display = 'none';
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    };
-
-    document.getElementById('save-all').onclick = async () => {
-        state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value || state.pfp;
-        state.aiModel = modelSelect.value;
-        await saveCloud();
-        syncUI();
-        settingsModal.style.display = 'none';
-    };
-
-    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
-    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
-    document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
-    document.getElementById('new-chat').onclick = () => location.reload();
-    
-    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
-    
-    document.querySelectorAll('.s-link').forEach(link => {
-        link.onclick = (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
-            link.classList.add('active');
-            const targetTab = document.getElementById(link.getAttribute('data-tab'));
-            if(targetTab) targetTab.classList.add('active');
-        };
-    });
-
-    detectUI();
-    window.onresize = detectUI;
-    await initUI();
-    await loadCloud();
-});
+@media (max-width: 1024px) {
+    .sidebar { position: fixed; left: -280px; height: 100%; }
+    .sidebar.open { left: 0; }
+    .burger { display: block; }
+    .hub-input-sticky { width: 95%; bottom: 20px; }
+}
