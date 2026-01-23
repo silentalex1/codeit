@@ -19,9 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notifText = document.getElementById('notif-text');
     const mediaInput = document.getElementById('media-input');
     const mediaBtn = document.getElementById('media-btn');
+    const previewBar = document.getElementById('media-preview-bar');
     const modelSelect = document.getElementById('set-model');
-    const pastePreviewArea = document.getElementById('paste-preview-area');
-    const searchModal = document.getElementById('search-modal');
 
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
@@ -36,14 +35,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const showNotif = async (steps) => {
-        if (sessionStorage.getItem('notif_shown')) return;
         notif.classList.add('show');
         for (const step of steps) {
             notifText.innerText = step;
             await new Promise(r => setTimeout(r, 1100));
         }
         notif.classList.add('fade');
-        setTimeout(() => { notif.classList.remove('show', 'fade'); sessionStorage.setItem('notif_shown', 'true'); }, 800);
+        setTimeout(() => { notif.classList.remove('show', 'fade'); }, 800);
     };
 
     const initUI = async () => {
@@ -68,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        if (state.aiModel) modelSelect.value = state.aiModel;
+        modelSelect.value = state.aiModel || 'gpt-5.2';
         
         if (state.pfp) { 
             pfpPreview.src = state.pfp; 
@@ -113,66 +111,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let data = await puter.kv.get('copilot_accounts');
             let db = data ? JSON.parse(data) : {};
-            db[session.name] = { ...db[session.name], settings: state, history: history };
+            db[session.name] = { settings: state, history: history };
             await puter.kv.set('copilot_accounts', JSON.stringify(db));
         } catch(e) {}
     };
 
-    const formatMsg = (text) => {
-        let html = text
-            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-            .replace(/\*(.*?)\*/g, '<i>$1</i>')
-            .replace(/^[*\+] (.*$)/gim, '<li>$1</li>');
-        html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-            const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `<div class="code-panel"><div class="code-header"><button class="copy-btn" onclick="copyCode('${id}')">Copy</button></div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
-        });
-        return html;
-    };
-
-    window.copyCode = (id) => {
-        const text = document.getElementById(id).innerText;
-        navigator.clipboard.writeText(text);
-    };
-
-    const renderPastePreviews = () => {
-        pastePreviewArea.innerHTML = '';
-        attachedFiles.forEach((file, index) => {
-            const item = document.createElement('div');
-            item.className = 'paste-preview-item';
-            item.innerHTML = `<img src="${file.data}"><div class="remove-paste" onclick="removeAttached(${index})">×</div>`;
-            pastePreviewArea.appendChild(item);
+    const refreshPreviews = () => {
+        previewBar.innerHTML = '';
+        attachedFiles.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = 'media-preview-item';
+            div.innerHTML = `<img src="${f.data}"><div class="remove-media" onclick="removeMedia(${i})">×</div>`;
+            previewBar.appendChild(div);
         });
     };
 
-    window.removeAttached = (index) => {
-        attachedFiles.splice(index, 1);
-        renderPastePreviews();
-    };
+    window.removeMedia = (i) => { attachedFiles.splice(i, 1); refreshPreviews(); };
 
-    input.onpaste = (e) => {
-        const items = e.clipboardData.items;
+    window.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let item of items) {
-            if (item.type.indexOf("image") !== -1) {
-                const file = item.getAsFile();
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const blob = item.getAsFile();
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    attachedFiles.push({ name: 'pasted-img', data: event.target.result });
-                    renderPastePreviews();
+                    attachedFiles.push({ name: 'pasted_image.png', data: event.target.result });
+                    refreshPreviews();
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(blob);
             }
         }
+    });
+
+    const formatMsg = (text) => {
+        return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
     };
 
     const runAI = async () => {
         const val = input.value.trim();
         if (!val && attachedFiles.length === 0) return;
         
-        const isAuthed = await puter.auth.isSignedIn();
-        if(!isAuthed) { await puter.auth.signIn(); return; }
-
-        hub.classList.add('hidden-hub');
+        hub.style.display = 'none';
         scroller.style.display = 'block';
         
         const userDiv = document.createElement('div');
@@ -182,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         input.value = '';
         attachedFiles = [];
-        renderPastePreviews();
+        refreshPreviews();
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
@@ -190,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `Thinking...`;
+        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>Thinking...</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -205,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error reaching AI.";
+            aiBox.innerText = "Error: Check your connection.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -213,13 +192,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateHistoryUI = () => {
         document.getElementById('chat-history').innerHTML = history.slice().reverse().map((h, i) => {
             const actualIndex = history.length - 1 - i;
-            return `<div class="hist-item" data-idx="${actualIndex}">${h.q}</div>`;
+            return `<div class="hist-item" onclick="loadChat(${actualIndex})">${h.q}</div>`;
         }).join('');
-        document.querySelectorAll('.hist-item').forEach(item => { item.onclick = () => loadChat(parseInt(item.dataset.idx)); });
     };
 
     window.loadChat = (i) => {
-        hub.classList.add('hidden-hub');
+        hub.style.display = 'none';
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
@@ -232,6 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.addEventListener('click', () => dropdown.classList.remove('active'));
+    
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
@@ -244,12 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('select-pfp').onclick = () => pfpInput.click();
     pfpInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
-            reader.readAsDataURL(file);
-        }
+        const reader = new FileReader();
+        reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
+        reader.readAsDataURL(e.target.files[0]);
     };
 
     document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
@@ -258,6 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('new-chat').onclick = () => location.reload();
     restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); };
 
+    document.querySelectorAll('.modal').forEach(m => m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; });
     document.querySelectorAll('.s-link').forEach(link => {
         link.onclick = () => {
             document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
@@ -266,10 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
-
-    detectUI();
-    window.onresize = detectUI;
     await initUI();
     await loadCloud();
 });
