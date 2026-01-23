@@ -68,7 +68,7 @@
                     <div class="drop-zone" id="pfp-drop-zone">
                         <input type="file" id="pfp-file" hidden accept="image/*">
                         <div id="drop-content">
-                            <button id="select-pfp" class="aesthetic-btn-mini">select pfp</button>
+                            <button id="select-pfp-btn" class="aesthetic-btn-mini">select pfp</button>
                             <p class="drop-text">drop image here</p>
                         </div>
                         <img id="pfp-preview" src="" style="display:none;">
@@ -81,11 +81,11 @@
                 <div id="a-set" class="tab">
                     <div class="title-wrap"><h3>AI Settings</h3><div class="v-line"></div></div>
                     <div class="f-grp">
-                        <label>AI Model</label>
+                        <label>AI Model Selection</label>
                         <select id="set-model" class="s-input">
                             <option value="gemini-3-pro">Gemini 3 Pro</option>
                             <option value="gpt-5.2">ChatGPT 5.2</option>
-                            <option value="claude-opus-4.5">Claude 4.5 Opus</option>
+                            <option value="claude-4.5-opus">Claude 4.5 Opus</option>
                             <option value="grok-4.1-fast">Grok 4.1 Fast</option>
                         </select>
                     </div>
@@ -137,7 +137,7 @@
             </div>
         </div>
 
-        <div class="input-master-container">
+        <div class="hub-input-sticky">
             <div id="media-preview-bar" class="media-preview-container"></div>
             <div class="input-hub-container">
                 <div class="input-hub-pill">
