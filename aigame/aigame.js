@@ -24,9 +24,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const previewBar = document.getElementById('media-preview-bar');
     const canvas = document.getElementById('editor-canvas');
     const ctx = canvas.getContext('2d');
+    const modelSelect = document.getElementById('set-model');
 
     let history = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
     let attachedFiles = [];
     let isDrawing = false;
     let lastX = 0, lastY = 0;
@@ -61,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let data = await puter.kv.get('copilot_accounts');
             let db = data ? JSON.parse(data) : {};
             if (db[session.name]) {
-                state = db[session.name].settings || state;
+                state = { ...state, ...db[session.name].settings };
                 history = db[session.name].history || [];
                 syncUI();
                 updateHistoryUI();
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
+        modelSelect.value = state.aiModel;
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
         
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
@@ -138,26 +140,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => btn.innerText = 'Copy Code', 2000);
     };
 
-    const openDrawing = (index) => {
-        editingIndex = index;
-        const img = new Image();
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            drawModal.style.display = 'flex';
-        };
-        img.src = attachedFiles[index].data;
-    };
-
-    const handleFiles = (files) => {
-        for (let file of files) {
-            const reader = new FileReader();
-            reader.onload = (e) => { attachedFiles.push({ name: file.name, data: e.target.result }); refreshPreviews(); };
-            reader.readAsDataURL(file);
-        }
-    };
-
     const runAI = async () => {
         const val = input.value.trim();
         if (!val && attachedFiles.length === 0) return;
@@ -188,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.scrollTop = scroller.scrollHeight;
 
         try {
-            const response = await puter.ai.chat(val);
+            const response = await puter.ai.chat(val, { model: state.aiModel });
             const content = response.message ? response.message.content : response;
             reasonBox.style.display = 'none';
             aiBox.innerHTML = formatMsg(String(content));
@@ -236,6 +218,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
     
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
+
+    document.getElementById('save-all').onclick = async () => {
+        state.nickname = document.getElementById('set-name').value;
+        state.pfp = document.getElementById('set-pfp').value;
+        state.aiModel = modelSelect.value;
+        await saveCloud();
+        syncUI();
+        settingsModal.style.display = 'none';
+    };
+
+    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
+    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
