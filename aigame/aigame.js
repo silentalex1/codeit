@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const previewBar = document.getElementById('media-preview-bar');
     const canvas = document.getElementById('editor-canvas');
     const ctx = canvas.getContext('2d');
-    const modelSelect = document.getElementById('set-model');
+    const modelSelect = document.getElementById('ai-model-select');
 
     let history = [];
     let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
@@ -74,7 +74,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        modelSelect.value = state.aiModel;
+        modelSelect.value = state.aiModel || 'gpt-5.2';
+        
         if (state.pfp) { pfpPreview.src = state.pfp; pfpPreview.style.display = 'block'; dropContent.style.display = 'none'; }
         
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
@@ -99,7 +100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attachPromptEvents = () => {
         document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { 
+            btn.onclick = (e) => { 
+                e.stopPropagation();
                 input.value = btn.dataset.p; 
                 input.focus(); 
                 input.dispatchEvent(new Event('input'));
@@ -203,7 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-ai', innerHTML: formatMsg(history[i].a) }));
     };
 
-    genBtn.onclick = runAI;
+    genBtn.onclick = (e) => { e.stopPropagation(); runAI(); };
     input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
     };
@@ -214,12 +216,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.onclick = () => dropdown.classList.remove('active');
-    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
+    
+    document.getElementById('trigger-settings').onclick = (e) => { e.stopPropagation(); settingsModal.style.display = 'flex'; };
+    document.getElementById('open-search').onclick = (e) => { e.stopPropagation(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
     
     document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
 
-    document.getElementById('save-all').onclick = async () => {
+    document.querySelectorAll('.s-link').forEach(link => {
+        link.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.s-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById(link.dataset.tab).classList.add('active');
+        };
+    });
+
+    document.getElementById('save-all').onclick = async (e) => {
+        e.stopPropagation();
         state.nickname = document.getElementById('set-name').value;
         state.pfp = document.getElementById('set-pfp').value;
         state.aiModel = modelSelect.value;
@@ -228,8 +242,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         settingsModal.style.display = 'none';
     };
 
-    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
-    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
+    document.getElementById('work-lever').onclick = (e) => { e.stopPropagation(); state.workMode = !state.workMode; syncUI(); };
+    document.getElementById('side-lever').onclick = (e) => { e.stopPropagation(); state.hideSidebar = !state.hideSidebar; syncUI(); };
+    document.getElementById('restore-tab').onclick = (e) => { e.stopPropagation(); state.hideSidebar = false; syncUI(); };
 
     window.onkeydown = (e) => {
         if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
@@ -242,8 +257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('search-results').innerHTML = matches.map(m => `<div class="hist-item" onclick="loadChat(${history.indexOf(m)})">${m.q}</div>`).join('');
     };
 
-    document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
-    document.getElementById('new-chat').onclick = () => location.reload();
+    document.getElementById('mob-toggle').onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
+    document.getElementById('new-chat').onclick = (e) => { e.stopPropagation(); location.reload(); };
 
     detectUI();
     window.onresize = detectUI;
