@@ -21,9 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mediaBtn = document.getElementById('media-btn');
     const previewBar = document.getElementById('media-preview-bar');
     const modelSelect = document.getElementById('set-model');
+    const searchModal = document.getElementById('search-modal');
 
     let history = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gemini-3-pro' };
     let attachedFiles = [];
 
     const detectUI = () => {
@@ -66,15 +67,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (avatar && state.pfp) avatar.style.backgroundImage = `url(${state.pfp})`;
         document.getElementById('set-name').value = state.nickname;
         document.getElementById('set-pfp').value = state.pfp;
-        modelSelect.value = state.aiModel || 'gpt-5.2';
+        if (state.aiModel) modelSelect.value = state.aiModel;
         
         if (state.pfp) { 
             pfpPreview.src = state.pfp; 
             pfpPreview.style.display = 'block'; 
             dropContent.style.display = 'none'; 
-        } else {
-            pfpPreview.style.display = 'none';
-            dropContent.style.display = 'flex';
         }
         
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
@@ -98,8 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attachPromptEvents = () => {
         document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = (e) => { 
-                e.stopPropagation();
+            btn.onclick = () => { 
                 input.value = btn.dataset.p; 
                 input.focus(); 
                 input.dispatchEvent(new Event('input'));
@@ -111,47 +108,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let data = await puter.kv.get('copilot_accounts');
             let db = data ? JSON.parse(data) : {};
-            db[session.name] = { settings: state, history: history };
+            db[session.name] = { ...db[session.name], settings: state, history: history };
             await puter.kv.set('copilot_accounts', JSON.stringify(db));
         } catch(e) {}
     };
 
     const refreshPreviews = () => {
         previewBar.innerHTML = '';
-        attachedFiles.forEach((f, i) => {
-            const div = document.createElement('div');
-            div.className = 'media-preview-item';
-            div.innerHTML = `<img src="${f.data}"><div class="remove-media" onclick="removeMedia(${i})">×</div>`;
-            previewBar.appendChild(div);
+        attachedFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+            item.innerHTML = `<img src="${file.data}"><div class="remove-preview" onclick="removeFile(${index})">×</div>`;
+            previewBar.appendChild(item);
         });
     };
 
-    window.removeMedia = (i) => { attachedFiles.splice(i, 1); refreshPreviews(); };
+    window.removeFile = (index) => {
+        attachedFiles.splice(index, 1);
+        refreshPreviews();
+    };
 
-    window.addEventListener('paste', (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let item of items) {
-            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                const blob = item.getAsFile();
+    const handlePaste = (e) => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    attachedFiles.push({ name: 'pasted_image.png', data: event.target.result });
+                    attachedFiles.push({ data: event.target.result });
                     refreshPreviews();
                 };
                 reader.readAsDataURL(blob);
             }
         }
-    });
+    };
 
     const formatMsg = (text) => {
-        return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+        let html = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+        html = html.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `<div class="code-panel"><div class="code-header"><span>${lang || 'code'}</span><button class="copy-btn" onclick="copyCode('${id}')">Copy</button></div><pre><code id="${id}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
+        });
+        return html;
+    };
+
+    window.copyCode = (id) => {
+        navigator.clipboard.writeText(document.getElementById(id).innerText);
     };
 
     const runAI = async () => {
         const val = input.value.trim();
         if (!val && attachedFiles.length === 0) return;
-        
-        hub.style.display = 'none';
+        if (!(await puter.auth.isSignedIn())) { await puter.auth.signIn(); return; }
+
+        hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
         
         const userDiv = document.createElement('div');
@@ -169,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>Thinking...</div>`;
+        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>${state.workMode ? 'Processing...' : 'Imagining...'}</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -184,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCloud();
         } catch (e) {
             reasonBox.style.display = 'none';
-            aiBox.innerText = "Error: Check your connection.";
+            aiBox.innerText = "Connection Error.";
         }
         scroller.scrollTop = scroller.scrollHeight;
     };
@@ -197,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.loadChat = (i) => {
-        hub.style.display = 'none';
+        hub.classList.add('hidden-hub');
         scroller.style.display = 'block';
         scroller.innerHTML = '';
         scroller.appendChild(Object.assign(document.createElement('div'), { className: 'msg-u', innerHTML: formatMsg(history[i].q) }));
@@ -206,35 +216,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     genBtn.onclick = runAI;
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
+    input.onpaste = handlePaste;
     input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.addEventListener('click', () => dropdown.classList.remove('active'));
-    
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
+    document.getElementById('select-pfp-btn').onclick = () => pfpInput.click();
+    
+    pfpInput.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            state.pfp = ev.target.result;
+            pfpPreview.src = state.pfp;
+            pfpPreview.style.display = 'block';
+            dropContent.style.display = 'none';
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
     document.getElementById('save-all').onclick = async () => {
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value;
+        state.pfp = document.getElementById('set-pfp').value || state.pfp;
         state.aiModel = modelSelect.value;
         await saveCloud();
         syncUI();
         settingsModal.style.display = 'none';
     };
 
-    document.getElementById('select-pfp').onclick = () => pfpInput.click();
-    pfpInput.onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
-        reader.readAsDataURL(e.target.files[0]);
-    };
-
     document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
     document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
-    restoreBtn.onclick = () => { state.hideSidebar = false; syncUI(); };
-
-    document.querySelectorAll('.modal').forEach(m => m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; });
+    
+    document.querySelectorAll('.modal').forEach(m => { m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; });
     document.querySelectorAll('.s-link').forEach(link => {
         link.onclick = () => {
             document.querySelectorAll('.s-link, .tab').forEach(el => el.classList.remove('active'));
@@ -243,6 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
+    detectUI();
+    window.onresize = detectUI;
     await initUI();
     await loadCloud();
 });
