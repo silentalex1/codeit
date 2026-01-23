@@ -85,12 +85,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const updateImaginePrompts = () => {
-        premadeContainer.innerHTML = `<button class="sq-opt" data-p="create me a obby that ">create me a obby that ___</button><button class="sq-opt" data-p="make me a horror scene that does ">make me a horror scene that does ___</button><button class="sq-opt" data-p="create me a map that looks like ">create me a map that looks like ___</button>`;
+        premadeContainer.innerHTML = `
+            <button class="sq-opt" data-p="create me a obby that ">create me a obby that ___</button>
+            <button class="sq-opt" data-p="make me a horror scene that does ">make me a horror scene that does ___</button>
+            <button class="sq-opt" data-p="create me a map that looks like ">create me a map that looks like ___</button>`;
         attachPromptEvents();
     };
 
     const updateWorkPrompts = () => {
-        premadeContainer.innerHTML = `<button class="sq-opt" data-p="solve this math question: ">solve this math question: ___</button><button class="sq-opt" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button><button class="sq-opt" data-p="fix this code: ">fix this code: ___</button>`;
+        premadeContainer.innerHTML = `
+            <button class="sq-opt" data-p="solve this math question: ">solve this math question: ___</button>
+            <button class="sq-opt" data-p="who would win godzilla vs thor?">who would win godzilla vs thor?</button>
+            <button class="sq-opt" data-p="fix this code: ">fix this code: ___</button>`;
         attachPromptEvents();
     };
 
@@ -172,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.value = '';
         attachedFiles = [];
         refreshPreviews();
-        input.style.height = '24px';
+        input.style.height = '48px';
 
         const aiBox = document.createElement('div');
         aiBox.className = 'msg-ai';
@@ -217,11 +223,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     genBtn.onclick = runAI;
     input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); } };
     input.onpaste = handlePaste;
-    input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
+    input.oninput = () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; };
 
     avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
-    document.addEventListener('click', () => dropdown.classList.remove('active'));
-    document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
+    document.addEventListener('click', (e) => { if(!avatar.contains(e.target)) dropdown.classList.remove('active'); });
+    
+    document.getElementById('trigger-settings').onclick = () => { settingsModal.style.display = 'flex'; dropdown.classList.remove('active'); };
+    document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
     document.getElementById('select-pfp-btn').onclick = () => pfpInput.click();
     
     pfpInput.onchange = (e) => {
