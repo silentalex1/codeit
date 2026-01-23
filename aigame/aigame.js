@@ -11,10 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const avatar = document.getElementById('u-avatar');
     const dropdown = document.getElementById('u-dropdown');
     const settingsModal = document.getElementById('settings-modal');
-    const drawModal = document.getElementById('draw-modal');
-    const searchModal = document.getElementById('search-modal');
     const pfpInput = document.getElementById('pfp-file');
     const pfpPreview = document.getElementById('pfp-preview');
+    const dropZone = document.getElementById('pfp-drop-zone');
     const dropContent = document.getElementById('drop-content');
     const premadeContainer = document.getElementById('premade-container');
     const notif = document.getElementById('ui-notifier');
@@ -22,16 +21,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mediaInput = document.getElementById('media-input');
     const mediaBtn = document.getElementById('media-btn');
     const previewBar = document.getElementById('media-preview-bar');
-    const canvas = document.getElementById('editor-canvas');
-    const ctx = canvas.getContext('2d');
     const modelSelect = document.getElementById('set-model');
 
     let history = [];
-    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gpt-5.2' };
+    let state = { nickname: session.name, pfp: '', workMode: false, hideSidebar: false, aiModel: 'gemini-3-pro' };
     let attachedFiles = [];
-    let isDrawing = false;
-    let lastX = 0, lastY = 0;
-    let editingIndex = -1;
 
     const detectUI = () => {
         const w = window.innerWidth;
@@ -50,11 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         notif.classList.add('fade');
         setTimeout(() => { notif.classList.remove('show', 'fade'); sessionStorage.setItem('notif_shown', 'true'); }, 800);
-    };
-
-    const initUI = async () => {
-        const mode = detectUI();
-        await showNotif(["detecting the user device..", `user is on ${mode}`, `switching site to ${mode}`, `switch to ${mode}`]);
     };
 
     const loadCloud = async () => {
@@ -80,10 +69,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             pfpPreview.src = state.pfp; 
             pfpPreview.style.display = 'block'; 
             dropContent.style.display = 'none'; 
+        } else {
+            pfpPreview.style.display = 'none';
+            dropContent.style.display = 'flex';
         }
         
         genBtn.innerText = state.workMode ? "Ask" : "Generate";
-        genBtn.className = state.workMode ? 'fancy-gen work-mode-btn' : 'fancy-gen';
         document.getElementById('work-lever').classList.toggle('on', state.workMode);
         document.getElementById('side-lever').classList.toggle('on', state.hideSidebar);
 
@@ -109,12 +100,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const attachPromptEvents = () => {
         document.querySelectorAll('.sq-opt').forEach(btn => {
-            btn.onclick = () => { 
+            btn.onclick = (e) => { 
+                e.stopPropagation();
                 input.value = btn.dataset.p; 
                 input.focus(); 
                 input.dispatchEvent(new Event('input'));
             };
         });
+    };
+
+    const refreshPreviews = () => {
+        previewBar.innerHTML = attachedFiles.map((f, i) => `
+            <div class="media-preview">
+                <img src="${f.data}">
+                <div class="remove-media" onclick="removeMedia(${i})">&times;</div>
+            </div>
+        `).join('');
+        previewBar.style.display = attachedFiles.length > 0 ? 'flex' : 'none';
+    };
+
+    window.removeMedia = (i) => {
+        attachedFiles.splice(i, 1);
+        refreshPreviews();
+    };
+
+    const handleFiles = (files) => {
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => { 
+                attachedFiles.push({ name: file.name, data: e.target.result }); 
+                refreshPreviews(); 
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    input.onpaste = (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let item of items) {
+            if (item.type.indexOf("image") !== -1) {
+                const file = item.getAsFile();
+                handleFiles([file]);
+            }
+        }
     };
 
     const saveCloud = async () => {
@@ -167,6 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         input.value = '';
         attachedFiles = [];
+        refreshPreviews();
         input.style.height = '24px';
 
         const aiBox = document.createElement('div');
@@ -174,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reasonBox = document.createElement('div');
         reasonBox.className = 'reasoning-box';
         reasonBox.style.display = 'block';
-        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div class="grammarly-pulse">${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>`;
+        reasonBox.innerHTML = `<div class="thought-dots"><div class="thought-dot"></div><div class="thought-dot"></div><div class="thought-dot"></div></div><div>${state.workMode ? 'Answering your question...' : 'Analyzing your imagination...'}</div>`;
         aiBox.appendChild(reasonBox);
         scroller.appendChild(aiBox);
         scroller.scrollTop = scroller.scrollHeight;
@@ -219,61 +248,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     genBtn.onclick = runAI;
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            runAI(); 
+    mediaBtn.onclick = () => mediaInput.click();
+    mediaInput.onchange = (e) => handleFiles(e.target.files);
+
+    document.getElementById('select-pfp-btn').onclick = (e) => { e.stopPropagation(); pfpInput.click(); };
+    pfpInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.pfp = ev.target.result;
+                syncUI();
+            };
+            reader.readAsDataURL(file);
         }
+    };
+
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; };
+    dropZone.ondragleave = () => { dropZone.style.borderColor = '#1a1a1e'; };
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#1a1a1e';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { state.pfp = ev.target.result; syncUI(); };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAI(); }
     };
     input.oninput = () => {
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
     };
 
-    avatar.onclick = (e) => { 
-        e.stopPropagation(); 
-        dropdown.classList.toggle('active'); 
-    };
-    
+    avatar.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); };
     document.addEventListener('click', () => dropdown.classList.remove('active'));
-    
     document.getElementById('trigger-settings').onclick = () => settingsModal.style.display = 'flex';
-    document.getElementById('open-search').onclick = () => { 
-        searchModal.style.display = 'flex'; 
-        document.getElementById('search-q').focus(); 
-    };
+    document.getElementById('open-search').onclick = () => { searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); };
     
     document.querySelectorAll('.modal').forEach(m => { 
         m.onclick = (e) => { if (e.target === m) m.style.display = 'none'; }; 
     });
 
-    document.getElementById('save-all').onclick = async () => {
+    document.getElementById('save-all').onclick = async (e) => {
+        e.stopPropagation();
         state.nickname = document.getElementById('set-name').value;
-        state.pfp = document.getElementById('set-pfp').value;
+        state.pfp = document.getElementById('set-pfp').value || state.pfp;
         state.aiModel = modelSelect.value;
         await saveCloud();
         syncUI();
         settingsModal.style.display = 'none';
     };
 
-    document.getElementById('work-lever').onclick = () => { 
-        state.workMode = !state.workMode; 
-        syncUI(); 
-    };
-    
-    document.getElementById('side-lever').onclick = () => { 
-        state.hideSidebar = !state.hideSidebar; 
-        syncUI(); 
-    };
-
-    document.getElementById('clear-history').onclick = async () => {
-        if(confirm('Clear all chat history?')) {
-            history = [];
-            updateHistoryUI();
-            await saveCloud();
-        }
-    };
-
+    document.getElementById('work-lever').onclick = () => { state.workMode = !state.workMode; syncUI(); };
+    document.getElementById('side-lever').onclick = () => { state.hideSidebar = !state.hideSidebar; syncUI(); };
+    document.getElementById('clear-history').onclick = async () => { if(confirm('Clear history?')) { history = []; updateHistoryUI(); await saveCloud(); } };
     document.getElementById('puter-reauth').onclick = () => puter.auth.signIn();
     document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
     document.getElementById('mob-toggle').onclick = () => sidebar.classList.toggle('open');
@@ -289,11 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     window.onkeydown = (e) => {
-        if (e.ctrlKey && e.key === 'k') { 
-            e.preventDefault(); 
-            searchModal.style.display = 'flex'; 
-            document.getElementById('search-q').focus(); 
-        }
+        if (e.ctrlKey && e.key === 'k') { e.preventDefault(); searchModal.style.display = 'flex'; document.getElementById('search-q').focus(); }
         if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     };
 
