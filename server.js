@@ -1,81 +1,69 @@
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
+import express from "express";
 
 const app = express();
-
-const PORT = Number(process.env.PORT || 3000);
-const EXTENSION_ID = process.env.EXTENSION_ID || "edfbngkhlmkolckogoigjmkellhokgeo";
-
-const DB_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DB_DIR, "sync.json");
-
-const ensureDir = (p) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); };
-const nowTs = () => Math.floor(Date.now() / 1000);
-
-const readDb = () => {
-  try {
-    ensureDir(DB_DIR);
-    if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify({ last: {} }, null, 2));
-    const data = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
-    if (!data.last || typeof data.last !== "object") return { last: {} };
-    return data;
-  } catch {
-    return { last: {} };
-  }
-};
-
-const writeDb = (db) => {
-  ensureDir(DB_DIR);
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-};
-
-const getExtId = (req, bodyOrQuery) => {
-  const h = req.headers["x-extension-id"];
-  const b = bodyOrQuery && bodyOrQuery.extension_id;
-  const v = String(h || b || "").trim();
-  return v;
-};
-
 app.use(express.json({ limit: "2mb" }));
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://codeit.rest");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Extension-Id");
-  if (req.method === "OPTIONS") return res.status(204).end();
-  next();
-});
+const state = new Map();
+
+function now() { return Date.now(); }
+function getState(id) {
+  if (!state.has(id)) state.set(id, { studio_ts: 0, lastPacket: null });
+  return state.get(id);
+}
 
 app.post("/sync", (req, res) => {
-  const extId = getExtId(req, req.body);
-  if (extId !== EXTENSION_ID) return res.status(403).json({ ok: false });
+  const b = req.body || {};
+  const type = b.type;
+  const extension_id = String(b.extension_id || "");
+  const ts = Number(b.ts || now());
 
-  const prompt = typeof req.body?.prompt === "string" ? req.body.prompt : "";
-  const ops = Array.isArray(req.body?.ops) ? req.body.ops : [];
+  if (!extension_id) return res.status(400).json({ ok: false });
 
-  const db = readDb();
-  db.last[extId] = { ts: nowTs(), prompt, ops };
-  writeDb(db);
+  const s = getState(extension_id);
 
-  res.json({ ok: true, ts: db.last[extId].ts });
+  if (type === "heartbeat") {
+    s.studio_ts = ts;
+    return res.json({ ok: true });
+  }
+
+  if (type === "connect") {
+    s.lastPacket = { ts, prompt: "", ops: [] };
+    return res.json({ ok: true });
+  }
+
+  if (type === "prompt") {
+    s.lastPacket = { ts, prompt: String(b.prompt || ""), ops: Array.isArray(b.ops) ? b.ops : [] };
+    return res.json({ ok: true });
+  }
+
+  if (type === "ack") {
+    if (s.lastPacket && s.lastPacket.ts === ts) s.lastPacket = null;
+    return res.json({ ok: true });
+  }
+
+  res.status(400).json({ ok: false });
 });
 
 app.get("/sync", (req, res) => {
-  const extId = getExtId(req, req.query);
-  if (extId !== EXTENSION_ID) return res.status(403).json({ connected: false });
-
+  const extension_id = String(req.query.extension_id || "");
   const since = Number(req.query.since || 0);
-  const db = readDb();
-  const payload = db.last[extId];
+  if (!extension_id) return res.status(400).json({ ok: false });
 
-  if (!payload) return res.json({ connected: true, ts: since, prompt: "", ops: [] });
-  if (Number(payload.ts) <= since) return res.json({ connected: true, ts: since, prompt: "", ops: [] });
+  const s = getState(extension_id);
+  const connected = now() - (s.studio_ts || 0) < 5000;
 
-  res.json({ connected: true, ts: payload.ts, prompt: payload.prompt || "", ops: payload.ops || [] });
+  if (s.lastPacket && s.lastPacket.ts > since) {
+    return res.json({
+      ok: true,
+      connected,
+      studio_ts: s.studio_ts || 0,
+      ts: s.lastPacket.ts,
+      prompt: s.lastPacket.prompt,
+      ops: s.lastPacket.ops
+    });
+  }
+
+  res.json({ ok: true, connected, studio_ts: s.studio_ts || 0 });
 });
 
-const publicDir = path.join(process.cwd(), "public");
-app.use("/", express.static(publicDir));
-
-app.listen(PORT, () => process.stdout.write("ok\n"));
+app.listen(8080);
