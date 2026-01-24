@@ -1,251 +1,242 @@
-local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Codeit Sync</title>
+  <style>
+    html,body{margin:0;padding:0;background:#0a0a0a;color:#eaeaea;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:980px;margin:28px auto;padding:0 16px}
+    .card{background:#121212;border:1px solid #1f1f1f;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 10px 25px rgba(0,0,0,.25)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:240px}
+    label{display:block;font-size:12px;color:#b5b5b5;margin:0 0 6px 2px}
+    input,textarea,select,button{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid #262626;background:#0f0f0f;color:#eaeaea;padding:12px;font-size:14px;outline:none}
+    textarea{min-height:220px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    button{cursor:pointer;border:1px solid #2a2a2a;background:#151515;transition:.15s}
+    button:hover{transform:translateY(-1px);background:#191919}
+    .btnPrimary{background:#2563eb;border-color:#1d4ed8}
+    .btnPrimary:hover{background:#2b6ff0}
+    .btnPurple{background:#a855f7;border-color:#9333ea}
+    .btnPurple:hover{background:#b06bff}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap}
+    .btnRow button{flex:1;min-width:160px}
+    .status{display:flex;gap:10px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:999px;background:#ff3c3c}
+    .ok .dot{background:#00ff88}
+    .muted{color:#9a9a9a;font-size:12px;line-height:1.4}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .small{font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div class="col">
+          <div class="status" id="connStatus">
+            <div class="dot"></div>
+            <div>
+              <div class="mono" id="connText">NOT SENT</div>
+              <div class="muted small" id="connSub">Waiting</div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <label>Bridge URL</label>
+          <input id="bridgeUrl" value="https://codeit.rest/sync" />
+        </div>
+        <div class="col">
+          <label>Extension ID</label>
+          <input id="extId" value="edfbngkhlmkolckogoigjmkellhokgeo" />
+        </div>
+        <div class="col">
+          <label>API Key</label>
+          <input id="apiKey" type="password" placeholder="Bearer token used by server.js + plugin" />
+          <div class="muted small" style="margin-top:6px">Must match the API_KEY used by your server and Studio plugin.</div>
+        </div>
+      </div>
+    </div>
 
-local SYNC_URL = "https://codeit.rest/sync"
-local EXTENSION_ID = "edfbngkhlmkolckogoigjmkellhokgeo"
-local API_KEY = "YOUR_SECRET"
-local POLL_INTERVAL = 0.45
+    <div class="card">
+      <div class="row">
+        <div class="col">
+          <label>Prompt (shown in Studio plugin UI)</label>
+          <input id="prompt" placeholder="Create folders, add scripts, build UI..." />
+        </div>
+      </div>
 
-local widgetInfo = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, true, false, 320, 500, 250, 400)
-local widget = plugin:CreateDockWidgetPluginGui("CodeitCopilot", widgetInfo)
-widget.Title = "Codeit Copilot"
+      <div style="height:12px"></div>
 
-local main = Instance.new("Frame")
-main.Size = UDim2.new(1, 0, 1, 0)
-main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-main.BorderSizePixel = 0
-main.Parent = widget
+      <label>Ops JSON (array)</label>
+      <textarea id="ops" spellcheck="false"></textarea>
 
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, -20, 0, 45)
-header.Position = UDim2.new(0, 10, 0, 10)
-header.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-header.BorderSizePixel = 0
-local hc = Instance.new("UICorner")
-hc.CornerRadius = UDim.new(0, 8)
-hc.Parent = header
-header.Parent = main
+      <div style="height:12px"></div>
 
-local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 10, 0, 10)
-dot.Position = UDim2.new(0, 15, 0.5, -5)
-dot.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-dot.BorderSizePixel = 0
-local dc = Instance.new("UICorner")
-dc.CornerRadius = UDim.new(1, 0)
-dc.Parent = dot
-dot.Parent = header
+      <div class="btnRow">
+        <button class="btnPurple" id="tplFolders">Template: Folders</button>
+        <button class="btnPurple" id="tplScript">Template: Script</button>
+        <button class="btnPurple" id="tplUi">Template: UI Folder + Values</button>
+        <button class="btnPrimary" id="send">SEND TO STUDIO</button>
+      </div>
 
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -40, 1, 0)
-status.Position = UDim2.new(0, 35, 0, 0)
-status.BackgroundTransparency = 1
-status.Text = "NOT CONNECTED"
-status.TextColor3 = Color3.fromRGB(255, 60, 60)
-status.Font = Enum.Font.GothamBold
-status.TextSize = 13
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.Parent = header
+      <div style="height:12px"></div>
 
-local box = Instance.new("ScrollingFrame")
-box.Size = UDim2.new(1, -20, 0, 200)
-box.Position = UDim2.new(0, 10, 0, 70)
-box.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-box.BorderSizePixel = 0
-box.CanvasSize = UDim2.new(0, 0, 0, 0)
-box.ScrollBarThickness = 4
-local bc = Instance.new("UICorner")
-bc.CornerRadius = UDim.new(0, 10)
-bc.Parent = box
-box.Parent = main
+      <div class="muted">
+        Your Studio plugin pulls with: <span class="mono">GET /sync?since=&lt;ts&gt;</span> and will show your prompt + wait for APPLY.
+      </div>
+    </div>
 
-local pText = Instance.new("TextLabel")
-pText.Size = UDim2.new(1, -20, 1, -20)
-pText.Position = UDim2.new(0, 10, 0, 10)
-pText.BackgroundTransparency = 1
-pText.Text = "Waiting for extension..."
-pText.TextColor3 = Color3.fromRGB(100, 100, 100)
-pText.Font = Enum.Font.Gotham
-pText.TextSize = 12
-pText.TextWrapped = true
-pText.TextXAlignment = Enum.TextXAlignment.Left
-pText.TextYAlignment = Enum.TextYAlignment.Top
-pText.Parent = box
+    <div class="card">
+      <label>Server Response</label>
+      <textarea id="resp" class="mono" readonly spellcheck="false" style="min-height:140px"></textarea>
+    </div>
+  </div>
 
-local confirm = Instance.new("TextButton")
-confirm.Size = UDim2.new(1, -20, 0, 50)
-confirm.Position = UDim2.new(0, 10, 0, 280)
-confirm.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-confirm.Text = "APPLY UPDATE"
-confirm.TextColor3 = Color3.fromRGB(120, 120, 120)
-confirm.Font = Enum.Font.GothamBlack
-confirm.TextSize = 15
-local cc = Instance.new("UICorner")
-cc.CornerRadius = UDim.new(0, 12)
-cc.Parent = confirm
-confirm.Parent = main
+  <script>
+    const $ = (id) => document.getElementById(id);
 
-local connected = false
-local lastTs = 0
-local pending = nil
+    const connStatus = $("connStatus");
+    const connText = $("connText");
+    const connSub = $("connSub");
+    const resp = $("resp");
 
-local function setStatus(val)
-	connected = val
-	status.Text = val and "CONNECTED" or "NOT CONNECTED"
-	status.TextColor3 = val and Color3.fromRGB(0, 255, 136) or Color3.fromRGB(255, 60, 60)
-	dot.BackgroundColor3 = val and Color3.fromRGB(0, 255, 136) or Color3.fromRGB(255, 60, 60)
-	confirm.BackgroundColor3 = val and Color3.fromRGB(59, 130, 246) or Color3.fromRGB(40, 40, 40)
-	confirm.TextColor3 = val and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(120, 120, 120)
-end
+    const bridgeUrl = $("bridgeUrl");
+    const extId = $("extId");
+    const apiKey = $("apiKey");
+    const prompt = $("prompt");
+    const ops = $("ops");
 
-local function pulse()
-	TweenService:Create(dot, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 1, true), {Size = UDim2.new(0, 14, 0, 14)}):Play()
-end
+    const k = {
+      bridgeUrl: "codeit_bridge_url",
+      extId: "codeit_ext_id",
+      apiKey: "codeit_api_key",
+      prompt: "codeit_prompt",
+      ops: "codeit_ops"
+    };
 
-local ROOTS = {
-	Workspace = workspace,
-	ReplicatedStorage = game:GetService("ReplicatedStorage"),
-	ServerScriptService = game:GetService("ServerScriptService"),
-	ServerStorage = game:GetService("ServerStorage"),
-	StarterGui = game:GetService("StarterGui"),
-	StarterPlayer = game:GetService("StarterPlayer"),
-	StarterPack = game:GetService("StarterPack"),
-	SoundService = game:GetService("SoundService"),
-	Lighting = game:GetService("Lighting"),
-}
+    const load = () => {
+      bridgeUrl.value = localStorage.getItem(k.bridgeUrl) || bridgeUrl.value;
+      extId.value = localStorage.getItem(k.extId) || extId.value;
+      apiKey.value = localStorage.getItem(k.apiKey) || "";
+      prompt.value = localStorage.getItem(k.prompt) || "";
+      ops.value = localStorage.getItem(k.ops) || "";
+      if (!ops.value) ops.value = JSON.stringify([], null, 2);
+    };
 
-local function splitPath(path)
-	local out = {}
-	for _, p in ipairs(string.split(path, "/")) do
-		if p and p ~= "" then table.insert(out, p) end
-	end
-	return out
-end
+    const save = () => {
+      localStorage.setItem(k.bridgeUrl, bridgeUrl.value.trim());
+      localStorage.setItem(k.extId, extId.value.trim());
+      localStorage.setItem(k.apiKey, apiKey.value);
+      localStorage.setItem(k.prompt, prompt.value);
+      localStorage.setItem(k.ops, ops.value);
+    };
 
-local function resolvePath(path)
-	if type(path) ~= "string" or path == "" then return nil end
-	local parts = splitPath(path)
-	local root = ROOTS[parts[1]]
-	if not root then return nil end
-	local obj = root
-	for i = 2, #parts do
-		obj = obj:FindFirstChild(parts[i])
-		if not obj then return nil end
-	end
-	return obj
-end
+    const setConn = (ok, title, sub) => {
+      connStatus.classList.toggle("ok", !!ok);
+      connText.textContent = title || (ok ? "CONNECTED" : "NOT CONNECTED");
+      connSub.textContent = sub || "";
+    };
 
-local function ensureFolder(parentObj, name)
-	local f = parentObj:FindFirstChild(name)
-	if f and f:IsA("Folder") then return f end
-	local nf = Instance.new("Folder")
-	nf.Name = name
-	nf.Parent = parentObj
-	return nf
-end
+    const headers = () => {
+      const h = {
+        "Content-Type": "application/json",
+        "X-Extension-Id": extId.value.trim()
+      };
+      const token = apiKey.value.trim();
+      if (token) h["Authorization"] = "Bearer " + token;
+      return h;
+    };
 
-local function ensureContainerPath(path)
-	local parts = splitPath(path)
-	local root = ROOTS[parts[1]]
-	if not root then return nil end
-	local cur = root
-	for i = 2, #parts do
-		cur = ensureFolder(cur, parts[i])
-	end
-	return cur
-end
+    const sendPayload = async () => {
+      save();
+      let parsed;
+      try {
+        parsed = JSON.parse(ops.value);
+        if (!Array.isArray(parsed)) throw new Error("Ops must be an array");
+      } catch (e) {
+        setConn(false, "INVALID OPS JSON", String(e.message || e));
+        resp.value = String(e.stack || e);
+        return;
+      }
 
-local function applyOps(ops)
-	if type(ops) ~= "table" then return end
-	for _, op in ipairs(ops) do
-		if type(op) ~= "table" then continue end
-		local t = op.type
-		if t == "create_folder" then
-			local parentObj = ensureContainerPath(op.parent)
-			if parentObj and type(op.name) == "string" and op.name ~= "" then
-				ensureFolder(parentObj, op.name)
-			end
-		elseif t == "create_instance" then
-			local parentObj = ensureContainerPath(op.parent)
-			if parentObj and type(op.class) == "string" and op.class ~= "" then
-				local inst = Instance.new(op.class)
-				if type(op.name) == "string" and op.name ~= "" then inst.Name = op.name end
-				if type(op.props) == "table" then
-					for k, v in pairs(op.props) do
-						pcall(function() inst[k] = v end)
-					end
-				end
-				inst.Parent = parentObj
-			end
-		elseif t == "set_script_source" then
-			local obj = resolvePath(op.path)
-			if obj and (obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript")) and type(op.source) == "string" then
-				obj.Source = op.source
-			end
-		elseif t == "delete" then
-			local obj = resolvePath(op.path)
-			if obj then obj:Destroy() end
-		elseif t == "rename" then
-			local obj = resolvePath(op.path)
-			if obj and type(op.newName) == "string" and op.newName ~= "" then
-				obj.Name = op.newName
-			end
-		end
-	end
-end
+      const payload = {
+        extension_id: extId.value.trim(),
+        prompt: prompt.value || "",
+        ops: parsed
+      };
 
-local function request(method, url, bodyTbl)
-	local req = {
-		Url = url,
-		Method = method,
-		Headers = {
-			["Content-Type"] = "application/json",
-			["Authorization"] = "Bearer " .. API_KEY,
-			["X-Extension-Id"] = EXTENSION_ID,
-		},
-	}
-	if bodyTbl then
-		req.Body = HttpService:JSONEncode(bodyTbl)
-	end
-	return HttpService:RequestAsync(req)
-end
+      setConn(false, "SENDING...", "Posting to /sync");
+      resp.value = "";
 
-confirm.MouseButton1Click:Connect(function()
-	if connected and pending and pending.ops then
-		applyOps(pending.ops)
-		pText.Text = "Applied update lively."
-		pending = nil
-	end
-end)
+      try {
+        const r = await fetch(bridgeUrl.value.trim(), {
+          method: "POST",
+          headers: headers(),
+          body: JSON.stringify(payload)
+        });
 
-task.spawn(function()
-	while true do
-		local ok, res = pcall(function()
-			return request("GET", SYNC_URL .. "?since=" .. tostring(lastTs), nil)
-		end)
+        const text = await r.text();
+        resp.value = text;
 
-		if ok and res and res.Success and res.Body and res.Body ~= "" then
-			local decodedOk, data = pcall(function()
-				return HttpService:JSONDecode(res.Body)
-			end)
+        if (!r.ok) {
+          setConn(false, "FAILED", "HTTP " + r.status);
+          return;
+        }
 
-			if decodedOk and type(data) == "table" then
-				setStatus(true)
-				if type(data.ts) == "number" and data.ts > lastTs then
-					lastTs = data.ts
-					pending = data
-					pText.Text = data.prompt or "Update received."
-					pulse()
-				end
-			else
-				setStatus(false)
-			end
-		else
-			setStatus(false)
-		end
+        let j;
+        try { j = JSON.parse(text); } catch { j = null; }
+        const ts = j && j.ts ? j.ts : "ok";
+        setConn(true, "SENT", "ts: " + ts);
+      } catch (e) {
+        setConn(false, "FAILED", String(e.message || e));
+        resp.value = String(e.stack || e);
+      }
+    };
 
-		task.wait(POLL_INTERVAL)
-	end
-end)
+    const setTemplate = (which) => {
+      if (which === "folders") {
+        prompt.value = "Create standard folder structure";
+        ops.value = JSON.stringify([
+          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "Modules" },
+          { "type": "create_folder", "parent": "ReplicatedStorage/Modules", "name": "Systems" },
+          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "UI" },
+          { "type": "create_folder", "parent": "ServerScriptService", "name": "GameLogic" }
+        ], null, 2);
+      } else if (which === "script") {
+        prompt.value = "Insert Main script and module";
+        ops.value = JSON.stringify([
+          { "type": "create_instance", "parent": "ServerScriptService", "class": "Script", "name": "Main" },
+          { "type": "set_script_source", "path": "ServerScriptService/Main", "source": "print('Codeit connected')" },
+          { "type": "create_instance", "parent": "ReplicatedStorage/Modules", "class": "ModuleScript", "name": "Init" },
+          { "type": "set_script_source", "path": "ReplicatedStorage/Modules/Init", "source": "local M={}\nfunction M.Start()\n\tprint('Init.Start')\nend\nreturn M" }
+        ], null, 2);
+      } else if (which === "ui") {
+        prompt.value = "Create UI config values";
+        ops.value = JSON.stringify([
+          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "Config" },
+          { "type": "create_instance", "parent": "ReplicatedStorage/Config", "class": "BoolValue", "name": "EnableUI", "props": { "Value": true } },
+          { "type": "create_instance", "parent": "ReplicatedStorage/Config", "class": "NumberValue", "name": "UIScale", "props": { "Value": 1 } }
+        ], null, 2);
+      }
+      save();
+    };
 
-setStatus(false)
+    $("send").addEventListener("click", sendPayload);
+    $("tplFolders").addEventListener("click", () => setTemplate("folders"));
+    $("tplScript").addEventListener("click", () => setTemplate("script"));
+    $("tplUi").addEventListener("click", () => setTemplate("ui"));
+
+    ["input", "change"].forEach(ev => {
+      bridgeUrl.addEventListener(ev, save);
+      extId.addEventListener(ev, save);
+      apiKey.addEventListener(ev, save);
+      prompt.addEventListener(ev, save);
+      ops.addEventListener(ev, save);
+    });
+
+    load();
+    setConn(false, "READY", "Fill ops and send");
+  </script>
+</body>
+</html>
