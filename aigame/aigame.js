@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return identifiedMode;
     };
     const triggerSystemNotification = async (hardwareType) => {
-        if (sessionStorage.getItem('notified_device_session_v4')) return;
+        if (sessionStorage.getItem('notified_device_v8_final')) return;
         notificationBox.classList.add('show');
         const sequenceList = [
             "detecting the user device..",
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationBox.classList.add('fade');
         setTimeout(() => {
             notificationBox.classList.remove('show', 'fade');
-            sessionStorage.setItem('notified_device_session_v4', 'true');
+            sessionStorage.setItem('notified_device_v8_final', 'true');
         }, 600);
     };
     const fetchCloudData = async () => {
@@ -267,16 +267,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const thinkingIndicator = document.createElement('div');
         thinkingIndicator.className = 'ai-reasoning-wrap';
         thinkingIndicator.innerHTML = `
-            <div class="thinking-dots">
-                <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
-            </div>
-            <span>${localState.workMode ? 'Logic Engine computing...' : 'Creativity Matrix synthesizing...'}</span>
+            <div class="grammarly-loading-circle"></div>
+            <span class="fade-thinking-text">${localState.workMode ? 'Reviewing Context...' : 'Formulating Response...'}</span>
         `;
         aiNode.appendChild(thinkingIndicator);
         chatScroller.appendChild(aiNode);
         chatScroller.scrollTop = chatScroller.scrollHeight;
+        let aiMessagePayload = queryVal;
+        if (snapshotUploads.length > 0) {
+            aiMessagePayload = [
+                { type: "text", text: queryVal || "Analyze this image." },
+                ...snapshotUploads.map(img => ({ type: "image_url", image_url: { url: img.data } }))
+            ];
+        }
         try {
-            const aiResponse = await puter.ai.chat(queryVal, { model: localState.aiModel });
+            const aiResponse = await puter.ai.chat(aiMessagePayload, { model: localState.aiModel });
             const outputText = aiResponse.message ? aiResponse.message.content : aiResponse;
             thinkingIndicator.style.display = 'none';
             aiNode.innerHTML = convertMarkdown(String(outputText));
@@ -390,6 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     document.getElementById('mob-toggle').onclick = () => sidebarElement.classList.toggle('open');
     document.getElementById('new-chat').onclick = () => location.reload();
+    document.getElementById('logout-btn').onclick = () => { sessionStorage.clear(); window.location.href = "../"; };
     uploadButton.onclick = () => uploadInput.click();
     uploadInput.onchange = (e) => {
         const list = Array.from(e.target.files);
@@ -409,9 +415,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     pluginYes.onclick = async () => {
         try {
             await fetch("http://localhost:21342/connect", { mode: 'no-cors' });
-            alert("Sent connection handshake to Roblox Studio.");
+            alert("Handshake sent to Roblox Studio.");
         } catch(e) {
-            alert("No plugin detected on port 21342. Ensure Studio is open.");
+            alert("Handshake failed. Ensure Studio is open.");
         }
         pluginModal.style.display = 'none';
     };
@@ -443,6 +449,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.modal').forEach(activeModal => activeModal.style.display = 'none');
         }
     });
+    searchInputField.oninput = (e) => {
+        const val = e.target.value.toLowerCase();
+        const matches = chatMemory.filter(b => (b.q || "").toLowerCase().includes(val));
+        const resultsBox = document.getElementById('search-results');
+        resultsBox.innerHTML = matches.map(b => {
+            const idx = chatMemory.indexOf(b);
+            return `<div class="history-item-aesthetic" onclick="pullSpecificConversation(${idx})"><span>${b.q || 'Multimedia'}</span></div>`;
+        }).join('');
+    };
     sidebarElement.addEventListener('dblclick', () => {
         if (localState.hideSidebar && !sidebarElement.classList.contains('hidden')) {
             sidebarElement.classList.add('hidden');
@@ -457,6 +472,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             commitToCloud();
         }
     });
+    document.getElementById('clear-history').onclick = async () => {
+        if (confirm("Reset conversation logs?")) {
+            chatMemory = [];
+            renderChatLogs();
+            await commitToCloud();
+        }
+    };
     const observer = new MutationObserver(() => {
         const btns = document.querySelectorAll('.copy-action-btn');
         btns.forEach(b => {
