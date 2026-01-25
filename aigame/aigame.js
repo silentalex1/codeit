@@ -1,15 +1,16 @@
 if (typeof puter === 'undefined') {
     window.puter = {
-        auth: { 
-            isSignedIn: async () => false, 
-            signIn: async () => { alert("Puter.js not loaded. Please allow it or check internet."); } 
+        auth: {
+            isSignedIn: async () => false,
+            signIn: async () => { console.log("Puter not loaded"); },
+            signOut: async () => {}
         },
-        ai: { 
-            chat: async () => ({ message: { content: "Puter service unavailable." } }) 
+        ai: {
+            chat: async () => ({ message: { content: "System offline." } })
         },
-        kv: { 
-            get: async () => null, 
-            set: async () => {} 
+        kv: {
+            get: async () => null,
+            set: async () => {}
         }
     };
 }
@@ -47,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pluginYes = document.getElementById('plugin-yes');
     const pluginNo = document.getElementById('plugin-no');
     const pluginClose = document.getElementById('close-plugin-modal');
+    const overlaySpinner = document.querySelector('.loading-overlay-aesthetic');
+    if (overlaySpinner) overlaySpinner.style.display = 'none';
+
     let chatMemory = [];
     let localState = {
         nickname: sessionData.name,
@@ -56,11 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         aiModel: 'gemini-3-pro'
     };
     let currentUploads = [];
-    
-    // Hide loading overlay if it exists from previous state (though removed from HTML, just in case)
-    const spinner = document.querySelector('.loading-overlay-aesthetic');
-    if(spinner) spinner.style.display = 'none';
-
     const getHardwareProfile = () => {
         const viewportWidth = window.innerWidth;
         const isTactile = navigator.maxTouchPoints > 0;
@@ -76,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return identifiedMode;
     };
     const triggerSystemNotification = async (hardwareType) => {
-        if (sessionStorage.getItem('notified_device_v12')) return;
+        if (sessionStorage.getItem('notified_device_v13')) return;
         notificationBox.classList.add('show');
         const sequenceList = [
             "detecting the user device..",
@@ -91,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationBox.classList.add('fade');
         setTimeout(() => {
             notificationBox.classList.remove('show', 'fade');
-            sessionStorage.setItem('notified_device_v12', 'true');
+            sessionStorage.setItem('notified_device_v13', 'true');
         }, 600);
     };
     const fetchCloudData = async () => {
@@ -108,9 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateSystemUI();
                 renderChatLogs();
             }
-        } catch (error) {
-            console.warn("Cloud Sync skipped or failed");
-        }
+        } catch (error) {}
     };
     const updateSystemUI = () => {
         if (userAvatar && localState.pfp) {
@@ -192,9 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 history: chatMemory
             };
             await puter.kv.set('copilot_accounts', JSON.stringify(parsedStore));
-        } catch (error) {
-            console.warn("Save failed");
-        }
+        } catch (error) {}
     };
     const buildUploadPreviews = () => {
         filePreviewBar.innerHTML = '';
@@ -249,6 +244,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         return transformed;
     };
+    const sendToRoblox = async (promptText) => {
+        try {
+            await fetch("http://localhost:21342/generate", {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: promptText })
+            });
+        } catch(e) {}
+    };
+    const createPluginPrompt = (promptText) => {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'plugin-prompt-card';
+        promptDiv.innerHTML = `
+            <span>Ready to publish this prompt to plugin?</span>
+            <div class="pp-actions">
+                <button class="pp-btn pp-yes">Yes</button>
+                <button class="pp-btn pp-no">No</button>
+                <button class="pp-btn pp-wait">Not Ready</button>
+            </div>
+        `;
+        chatScroller.appendChild(promptDiv);
+        chatScroller.scrollTop = chatScroller.scrollHeight;
+        
+        promptDiv.querySelector('.pp-yes').onclick = () => {
+            sendToRoblox(promptText);
+            promptDiv.remove();
+        };
+        promptDiv.querySelector('.pp-no').onclick = () => {
+            promptDiv.remove();
+        };
+        promptDiv.querySelector('.pp-wait').onclick = () => {
+            promptDiv.remove();
+        };
+    };
     const runInferenceTask = async () => {
         const queryVal = inputElement.value.trim();
         if (!queryVal && currentUploads.length === 0) return;
@@ -260,7 +290,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
         } catch(e) {
-            console.warn("Auth check failed", e);
             return;
         }
         
@@ -293,7 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const aiNode = document.createElement('div');
         aiNode.className = 'msg-bubble-ai';
         
-        // Grammarly-like animation structure
         const thinkingIndicator = document.createElement('div');
         thinkingIndicator.className = 'grammarly-think-container';
         thinkingIndicator.innerHTML = `
@@ -320,9 +348,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatMemory.push({ q: queryVal, a: String(outputText), images: snapshotUploads });
             renderChatLogs();
             await commitToCloud();
+            if (!localState.workMode) {
+                createPluginPrompt(queryVal);
+            }
         } catch (error) {
             thinkingIndicator.style.display = 'none';
-            aiNode.innerHTML = `<span class="error-text">Request aborted. Verify Puter availability.</span>`;
+            aiNode.innerHTML = `<span class="error-text">${error.message || "Connection Error."}</span>`;
         }
         chatScroller.scrollTop = chatScroller.scrollHeight;
     };
