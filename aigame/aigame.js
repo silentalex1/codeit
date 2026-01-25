@@ -1,3 +1,20 @@
+// Ensure puter mock if undefined to prevent errors
+if (typeof puter === 'undefined') {
+    window.puter = {
+        auth: { 
+            isSignedIn: async () => false, 
+            signIn: async () => { alert("Puter.js not loaded. Please allow it or check internet."); } 
+        },
+        ai: { 
+            chat: async () => ({ message: { content: "Puter service unavailable." } }) 
+        },
+        kv: { 
+            get: async () => null, 
+            set: async () => {} 
+        }
+    };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     let sessionData = JSON.parse(sessionStorage.getItem('copilot_session'));
     if (!sessionData) {
@@ -40,6 +57,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         aiModel: 'gemini-3-pro'
     };
     let currentUploads = [];
+    
+    // Hide loading overlay if it exists from previous state (though removed from HTML, just in case)
+    const spinner = document.querySelector('.loading-overlay-aesthetic');
+    if(spinner) spinner.style.display = 'none';
+
     const getHardwareProfile = () => {
         const viewportWidth = window.innerWidth;
         const isTactile = navigator.maxTouchPoints > 0;
@@ -55,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return identifiedMode;
     };
     const triggerSystemNotification = async (hardwareType) => {
-        if (sessionStorage.getItem('notified_device_v8_final')) return;
+        if (sessionStorage.getItem('notified_device_v12')) return;
         notificationBox.classList.add('show');
         const sequenceList = [
             "detecting the user device..",
@@ -70,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationBox.classList.add('fade');
         setTimeout(() => {
             notificationBox.classList.remove('show', 'fade');
-            sessionStorage.setItem('notified_device_v8_final', 'true');
+            sessionStorage.setItem('notified_device_v12', 'true');
         }, 600);
     };
     const fetchCloudData = async () => {
@@ -88,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderChatLogs();
             }
         } catch (error) {
-            console.error("Cloud Access Denied", error);
+            console.warn("Cloud Sync skipped or failed");
         }
     };
     const updateSystemUI = () => {
@@ -172,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             await puter.kv.set('copilot_accounts', JSON.stringify(parsedStore));
         } catch (error) {
-            console.error("Cloud Transaction Failed", error);
+            console.warn("Save failed");
         }
     };
     const buildUploadPreviews = () => {
@@ -231,11 +253,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runInferenceTask = async () => {
         const queryVal = inputElement.value.trim();
         if (!queryVal && currentUploads.length === 0) return;
-        const verification = await puter.auth.isSignedIn();
-        if (!verification) {
-            await puter.auth.signIn();
+        
+        try {
+            const verification = await puter.auth.isSignedIn();
+            if (!verification) {
+                await puter.auth.signIn();
+                return;
+            }
+        } catch(e) {
+            console.warn("Auth check failed", e);
             return;
         }
+        
         centralHub.classList.add('vanished');
         chatScroller.style.display = 'block';
         const userNode = document.createElement('div');
@@ -264,24 +293,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputElement.style.height = '48px';
         const aiNode = document.createElement('div');
         aiNode.className = 'msg-bubble-ai';
+        
+        // Grammarly-like animation structure
         const thinkingIndicator = document.createElement('div');
-        thinkingIndicator.className = 'ai-reasoning-wrap';
+        thinkingIndicator.className = 'grammarly-think-container';
         thinkingIndicator.innerHTML = `
-            <div class="grammarly-loading-circle"></div>
-            <span class="fade-thinking-text">${localState.workMode ? 'Reviewing Context...' : 'Formulating Response...'}</span>
+            <div class="g-spinner"></div>
+            <span class="g-text">Thinking...</span>
         `;
+        
         aiNode.appendChild(thinkingIndicator);
         chatScroller.appendChild(aiNode);
         chatScroller.scrollTop = chatScroller.scrollHeight;
-        let aiMessagePayload = queryVal;
+        
+        let aiPayload = queryVal;
         if (snapshotUploads.length > 0) {
-            aiMessagePayload = [
-                { type: "text", text: queryVal || "Analyze this image." },
-                ...snapshotUploads.map(img => ({ type: "image_url", image_url: { url: img.data } }))
-            ];
+             aiPayload = [
+                 { type: 'text', text: queryVal || "Analyze this image." },
+                 ...snapshotUploads.map(i => ({ type: 'image_url', image_url: { url: i.data } }))
+             ];
         }
         try {
-            const aiResponse = await puter.ai.chat(aiMessagePayload, { model: localState.aiModel });
+            const aiResponse = await puter.ai.chat(aiPayload, { model: localState.aiModel });
             const outputText = aiResponse.message ? aiResponse.message.content : aiResponse;
             thinkingIndicator.style.display = 'none';
             aiNode.innerHTML = convertMarkdown(String(outputText));
@@ -414,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     pluginNo.onclick = () => { window.open("https://www.roblox.com/library/placeholder", "_blank"); pluginModal.style.display = 'none'; };
     pluginYes.onclick = async () => {
         try {
-            await fetch("http://localhost:21342/connect", { mode: 'no-cors' });
+            await fetch("http://localhost:21342/connect", { mode: 'no-cors', method: 'POST' });
             alert("Handshake sent to Roblox Studio.");
         } catch(e) {
             alert("Handshake failed. Ensure Studio is open.");
@@ -449,6 +482,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.modal').forEach(activeModal => activeModal.style.display = 'none');
         }
     });
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.copy-action-btn')) {
+            const btn = e.target.closest('.copy-action-btn');
+            const id = btn.dataset.id;
+            const codeBlock = document.getElementById(id);
+            if(codeBlock) {
+                navigator.clipboard.writeText(codeBlock.innerText).then(() => {
+                    const original = btn.innerText;
+                    btn.innerText = "Copied!";
+                    setTimeout(() => btn.innerText = original, 2000);
+                });
+            }
+        }
+    });
     searchInputField.oninput = (e) => {
         const val = e.target.value.toLowerCase();
         const matches = chatMemory.filter(b => (b.q || "").toLowerCase().includes(val));
@@ -479,18 +526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await commitToCloud();
         }
     };
-    const observer = new MutationObserver(() => {
-        const btns = document.querySelectorAll('.copy-action-btn');
-        btns.forEach(b => {
-            b.onclick = () => {
-                const id = b.dataset.id;
-                const source = document.getElementById(id).innerText;
-                navigator.clipboard.writeText(source);
-                b.innerText = "Copied!";
-                setTimeout(() => b.innerText = "Copy", 2000);
-            };
-        });
-    });
+    const observer = new MutationObserver(() => {});
     observer.observe(chatScroller, { childList: true });
     const hardwareIdentity = getHardwareProfile();
     await triggerSystemNotification(hardwareIdentity);
