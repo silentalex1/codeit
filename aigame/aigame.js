@@ -1,4 +1,3 @@
-// Ensure puter mock if undefined to prevent errors
 if (typeof puter === 'undefined') {
     window.puter = {
         auth: { 
