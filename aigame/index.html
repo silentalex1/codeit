@@ -1,154 +1,305 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="codeit copilot">
+    <meta name="apple-mobile-web-app-title" content="codeit copilot">
+    <meta name="msapplication-TileColor" content="#050505">
+    <meta name="msapplication-navbutton-color" content="#050505">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="HandheldFriendly" content="true">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>codeit copilot | Workspace</title>
     <link rel="stylesheet" href="aigame.css">
     <script src="https://js.puter.com/v2/"></script>
 </head>
-<body>
-    <div class="grid-bg"></div>
-
-    <div id="ui-notifier" class="ui-notification">
-        <div class="notif-content">
-            <div class="notif-loader"></div>
-            <span id="notif-text">detecting the user device..</span>
-        </div>
-    </div>
-
-    <div id="draw-modal" class="modal">
-        <div class="draw-container">
-            <div class="draw-header">
-                <span>Drawing Editor</span>
-                <div class="draw-actions">
-                    <button id="clear-canvas" class="draw-btn-tool">Clear</button>
-                    <button id="close-draw" class="draw-btn-tool primary">Done</button>
-                </div>
-            </div>
-            <div class="canvas-wrapper">
-                <canvas id="editor-canvas"></canvas>
+<body class="theme-dark vsc-initialized">
+    <div class="site-wrapper">
+        <div class="grid-bg"></div>
+        <div class="radial-glow"></div>
+        <div class="ambient-light"></div>
+        <div class="top-bar-shine"></div>
+        <div class="dynamic-background-overlay"></div>
+        <div class="visual-engine-layer"></div>
+        <div class="grain-overlay"></div>
+        <div class="vignette-effect"></div>
+        <div class="ui-layer-base"></div>
+        <div id="ui-notifier" class="ui-notification">
+            <div class="notif-content">
+                <div class="notif-loader"></div>
+                <span id="notif-text">detecting the user device..</span>
             </div>
         </div>
-    </div>
-
-    <div id="search-modal" class="modal">
-        <div class="search-card">
-            <div class="search-header">
-                <svg class="search-glyph" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="search-q" placeholder="Search your chats..." autocomplete="off">
-                <div class="search-hint">ESC</div>
-            </div>
-            <div id="search-results" class="search-body"></div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal">
-        <div class="settings-card">
-            <div class="s-nav">
-                <div class="s-link active" data-tab="u-set">User Settings</div>
-                <div class="s-link" data-tab="a-set">AI Settings</div>
-                <div class="s-bottom">
-                    <button id="save-all" class="save-btn">Save Settings</button>
-                    <button id="clear-history" class="danger-btn">Clear Chat History</button>
-                    <button id="puter-reauth" class="puter-auth-btn">login with puterjs</button>
-                </div>
-            </div>
-            <div class="s-body">
-                <div id="u-set" class="tab active">
-                    <div class="title-wrap"><h3>Profile Settings</h3><div class="v-line"></div></div>
-                    <div class="f-grp">
-                        <label>Display Name</label>
-                        <input type="text" id="set-name" class="s-input" placeholder="Your name">
+        <div id="plugin-modal" class="modal">
+            <div class="plugin-card-aesthetic">
+                <div class="plugin-header">
+                    <div class="plugin-icon-ring">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
                     </div>
-                    <div class="f-grp">
-                        <label>Profile Image URL</label>
-                        <input type="text" id="set-pfp" class="s-input" placeholder="https://...">
+                    <h3>Connect to Studio</h3>
+                </div>
+                <div class="plugin-body">
+                    <p>do you got the plugin installed?</p>
+                </div>
+                <div class="plugin-actions">
+                    <button id="plugin-yes" class="plugin-btn-confirm">Yes</button>
+                    <button id="plugin-no" class="plugin-btn-cancel">No</button>
+                </div>
+                <button id="close-plugin-modal" class="modal-close-x">×</button>
+            </div>
+        </div>
+        <div id="search-modal" class="modal">
+            <div class="search-card">
+                <div class="search-header">
+                    <div class="search-icon-box">
+                        <svg class="search-glyph" viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
                     </div>
-                    <div class="drop-zone" id="pfp-drop-zone">
-                        <input type="file" id="pfp-file" hidden accept="image/*">
-                        <div id="drop-content">
-                            <button id="select-pfp-btn" class="aesthetic-btn-mini">select pfp</button>
-                            <p class="drop-text">drop image here</p>
+                    <input type="text" id="search-q" placeholder="Search your chats..." autocomplete="off">
+                    <div class="search-hint">ESC</div>
+                </div>
+                <div id="search-results" class="search-body"></div>
+            </div>
+        </div>
+        <div id="settings-modal" class="modal">
+            <div class="settings-card">
+                <div class="s-nav">
+                    <div class="s-nav-header">
+                        <span class="s-nav-title">Workspace</span>
+                        <div class="s-nav-indicator"></div>
+                    </div>
+                    <div class="s-link-container">
+                        <div class="s-link active" data-tab="u-set">
+                            <div class="s-link-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <span>User Settings</span>
                         </div>
-                        <img id="pfp-preview" src="" style="display:none;">
+                        <div class="s-link" data-tab="a-set">
+                            <div class="s-link-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                            <span>AI Settings</span>
+                        </div>
                     </div>
-                    <div class="lever-row">
-                        <span>Double click to hide sidebar</span>
-                        <div class="lever" id="side-lever"><div class="dot"></div></div>
+                    <div class="s-spacer"></div>
+                    <div class="s-bottom">
+                        <button id="save-all" class="save-btn-aesthetic">Save Settings</button>
+                        <button id="clear-history" class="danger-btn-aesthetic">Clear Chat History</button>
+                        <button id="puter-reauth" class="sync-btn-aesthetic">Sync with Puter</button>
                     </div>
                 </div>
-                <div id="a-set" class="tab">
-                    <div class="title-wrap"><h3>AI Settings</h3><div class="v-line"></div></div>
-                    <div class="f-grp">
-                        <label>AI Model Selection</label>
-                        <select id="set-model" class="s-input">
-                            <option value="gemini-3-pro">Gemini 3 Pro</option>
-                            <option value="gpt-5.2">ChatGPT 5.2</option>
-                            <option value="claude-4.5-opus">Claude 4.5 Opus</option>
-                            <option value="grok-4.1-fast">Grok 4.1 Fast</option>
-                        </select>
+                <div class="s-body">
+                    <div id="u-set" class="tab active">
+                        <div class="title-wrap">
+                            <h3>Profile Settings</h3>
+                            <div class="v-line"></div>
+                        </div>
+                        <div class="f-grp">
+                            <label>Display Name</label>
+                            <input type="text" id="set-name" class="s-input" placeholder="Your name">
+                        </div>
+                        <div class="f-grp">
+                            <label>Profile Image URL</label>
+                            <input type="text" id="set-pfp" class="s-input" placeholder="https://...">
+                        </div>
+                        <div class="drop-zone-aesthetic" id="pfp-drop-zone">
+                            <input type="file" id="pfp-file" hidden accept="image/*">
+                            <div id="drop-content" class="drop-content-wrap">
+                                <button id="select-pfp-btn" class="aesthetic-action-mini">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    <span>select pfp</span>
+                                </button>
+                                <p class="drop-text-hint">drop image here</p>
+                            </div>
+                            <img id="pfp-preview" src="" alt="Preview" style="display:none;">
+                        </div>
+                        <div class="lever-row-wrap">
+                            <div class="lever-info-box">
+                                <span class="lever-label">Hide Sidebar</span>
+                                <span class="lever-desc">Double click on sidebar to hide, double click handle to restore</span>
+                            </div>
+                            <div class="lever-action-box">
+                                <div class="lever" id="side-lever">
+                                    <div class="dot"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="lever-row">
-                        <span>Turn AI to work mode</span>
-                        <div class="lever" id="work-lever"><div class="dot"></div></div>
+                    <div id="a-set" class="tab">
+                        <div class="title-wrap">
+                            <h3>AI models</h3>
+                            <div class="v-line"></div>
+                        </div>
+                        <div class="f-grp">
+                            <div class="custom-select-wrap">
+                                <select id="set-model" class="s-input">
+                                    <option value="gemini-3-pro">Gemini 3 Pro</option>
+                                    <option value="gpt-5.2">ChatGPT 5.2</option>
+                                    <option value="claude-4.5-opus">Claude 4.5 Opus</option>
+                                    <option value="grok-4.1-fast">Grok 4.1 Fast</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="lever-row-wrap">
+                            <div class="lever-info-box">
+                                <span class="lever-label">Work Mode</span>
+                                <span class="lever-desc">enable work mode / ask mode for ai</span>
+                            </div>
+                            <div class="lever-action-box">
+                                <div class="lever" id="work-lever">
+                                    <div class="dot"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        <aside id="sidebar" class="sidebar">
+            <div class="side-inner">
+                <div class="side-top-nav">
+                    <div class="search-box-trigger-aesthetic" id="open-search">
+                        <div class="search-trigger-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                            </svg>
+                        </div>
+                        <span>press ctrl+k to search</span>
+                    </div>
+                </div>
+                <div id="chat-history" class="history-list-aesthetic"></div>
+                <div class="side-footer">
+                    <div class="footer-btn-wrap">
+                        <button id="new-chat" class="new-chat-btn-aesthetic">
+                            <span class="plus-icon">+</span>
+                            <span>New Chat</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <div id="restore-tab" class="side-restore-handle"></div>
+        <main class="main-container">
+            <nav class="navbar-aesthetic">
+                <div class="nav-left-section">
+                    <button id="mob-toggle" class="burger-menu-btn">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div class="logo-aesthetic">codeit copilot</div>
+                </div>
+                <div class="nav-right-section">
+                    <div class="nav-actions-container">
+                        <button id="conn-plugin" class="plugin-action-btn">connect plugin</button>
+                        <button class="nav-link-btn" id="donate-btn">donate here</button>
+                        <button class="nav-link-btn" id="community-btn">our community</button>
+                    </div>
+                    <div class="user-profile-anchor">
+                        <div id="u-avatar" class="avatar-circle"></div>
+                        <div id="u-dropdown" class="profile-dropdown-card">
+                            <div class="dropdown-inner">
+                                <button id="trigger-settings" class="drop-item">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                    <span>settings</span>
+                                </button>
+                                <div class="drop-divider"></div>
+                                <button id="logout-btn" class="drop-item logout-red">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9"/></svg>
+                                    <span>logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            <div id="chat-scroller" class="chat-viewport-aesthetic"></div>
+            <div id="hub" class="central-hub">
+                <div class="hub-container-inner">
+                    <div class="hub-header-wrap">
+                        <h1 class="glow-title-aesthetic">codeit copilot imagine anything.</h1>
+                    </div>
+                    <div class="premade-options-grid" id="premade-container"></div>
+                </div>
+            </div>
+            <div class="sticky-footer-wrap">
+                <div id="media-preview-bar" class="media-preview-row"></div>
+                <div class="input-container-aesthetic">
+                    <div class="pill-wrapper-aesthetic">
+                        <div class="input-side-actions">
+                            <button id="media-btn" class="add-media-action">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3">
+                                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <input type="file" id="media-input" hidden multiple accept="image/*">
+                        <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
+                        <div class="input-right-actions">
+                            <button id="gen-action" class="gen-trigger-btn">Ask</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-
-    <aside id="sidebar" class="sidebar">
-        <div class="side-inner">
-            <div class="search-box-trigger" id="open-search">press ctrl+k to search</div>
-            <div id="chat-history" class="history"></div>
-            <div class="side-bottom"><button id="new-chat" class="new-btn">+ New Chat</button></div>
-        </div>
-    </aside>
-
-    <div id="restore-tab" class="side-restore"></div>
-
-    <main class="main">
-        <nav class="navbar">
-            <div class="nav-l">
-                <button id="mob-toggle" class="burger">=</button>
-                <div class="logo">codeit copilot</div>
-            </div>
-            <div class="nav-r">
-                <button id="conn-plugin" class="plugin-btn">connect plugin</button>
-                <button class="nav-item">donate here</button>
-                <button class="nav-item">our community</button>
-                <div class="pfp-container">
-                    <div id="u-avatar" class="avatar"></div>
-                    <div id="u-dropdown" class="dropdown">
-                        <button id="trigger-settings">settings</button>
-                        <button id="logout-btn">logout</button>
-                    </div>
-                </div>
-            </div>
-        </nav>
-
-        <div id="chat-scroller" class="chat-viewport"></div>
-
-        <div id="hub" class="hub">
-            <div class="hub-center">
-                <h1>codeit copilot imagine anything.</h1>
-                <div class="premade" id="premade-container"></div>
-            </div>
-        </div>
-
-        <div class="hub-input-sticky">
-            <div id="media-preview-bar" class="media-preview-container"></div>
-            <div class="input-hub-container">
-                <div class="input-hub-pill">
-                    <button id="media-btn" class="media-add-btn">+</button>
-                    <input type="file" id="media-input" hidden multiple accept="image/*,video/*">
-                    <textarea id="ai-query" placeholder="Write your imagination..." rows="1"></textarea>
-                    <button id="gen-action" class="fancy-gen">Ask</button>
-                </div>
-            </div>
-        </div>
-    </main>
+    <div class="loading-overlay-aesthetic">
+        <div class="aesthetic-spinner"></div>
+    </div>
+    <div class="visual-engine-stabilizer"></div>
+    <div class="footer-safety-gap"></div>
+    <div class="interactive-shimmer"></div>
+    <div class="global-overlay-blocker"></div>
+    <div class="render-buffer-layer"></div>
+    <div class="ui-layer-depth"></div>
+    <div class="data-stream-indicator"></div>
+    <div class="viewport-mask"></div>
+    <div class="system-status-anchor"></div>
+    <div class="ux-optimization-buffer"></div>
+    <div class="legacy-browser-support-shim"></div>
+    <div class="dom-integrity-guard"></div>
+    <div class="event-listener-cleanup-hook"></div>
+    <div class="animation-context-provider"></div>
+    <div class="style-override-manager"></div>
+    <div class="performance-optimization-layer"></div>
+    <div class="texture-overlay"></div>
+    <div class="noise-distort"></div>
+    <div class="chromatic-aberration-filter"></div>
+    <div class="motion-blur-container"></div>
+    <div class="particle-engine-root"></div>
+    <div class="z-index-manager"></div>
+    <div class="dom-recycler-bin"></div>
+    <div class="state-hydration-ghost"></div>
+    <div class="layout-reflow-trigger"></div>
+    <div class="accessibility-announcer" aria-live="assertive"></div>
+    <div class="font-rendering-patch"></div>
+    <div class="input-focus-trap"></div>
+    <div class="scrollbar-gutter-fix"></div>
+    <div class="network-latency-monitor"></div>
+    <div class="resource-prefetcher-hidden"></div>
+    <div class="dom-observer-hook"></div>
+    <div class="ui-state-bridge"></div>
+    <div class="visual-feedback-layer"></div>
+    <div class="animation-timeline-anchor"></div>
+    <div class="component-registry-ghost"></div>
+    <div class="theme-provider-wrapper"></div>
+    <div class="interaction-proxy-container"></div>
     <script src="aigame.js"></script>
 </body>
 </html>
