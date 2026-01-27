@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             "detecting the user device..",
             `user is on ${hardwareType}`,
             `switching site to ${hardwareType}`,
-            `switch to ${hardwareType}`
+            `switched to ${hardwareType}`
         ];
         for (const phase of sequenceList) {
             notificationSpan.innerText = phase;
@@ -107,7 +107,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateSystemUI();
                 renderChatLogs();
             }
-        } catch (error) {}
+        } catch (error) {
+            console.warn("Cloud Sync skipped or failed");
+        }
     };
     const updateSystemUI = () => {
         if (userAvatar && localState.pfp) {
@@ -189,7 +191,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 history: chatMemory
             };
             await puter.kv.set('copilot_accounts', JSON.stringify(parsedStore));
-        } catch (error) {}
+        } catch (error) {
+            console.warn("Save failed");
+        }
     };
     const buildUploadPreviews = () => {
         filePreviewBar.innerHTML = '';
