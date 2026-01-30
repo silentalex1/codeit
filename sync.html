@@ -2,16 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bridge</title><!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
     <title>Bridge</title>
     <style>
         html,body{margin:0;width:100%;height:100%;background:#0a0a0a;font-family:sans-serif;color:#eaeaea;overflow:hidden}
         .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
         .card{background:#121212;border:1px solid #1f1f1f;border-radius:16px;padding:40px 60px;font-size:28px}
-        #notif {
+        #notification-bar {
             position: fixed;
             top: -100px;
             left: 50%;
@@ -26,92 +22,37 @@
             z-index: 1000;
             opacity: 0;
         }
-        #notif.show { top: 30px; opacity: 1; }
+        #notification-bar.active { top: 30px; opacity: 1; }
     </style>
 </head>
 <body>
-    <div id="notif">plugin connected.</div>
+    <div id="notification-bar">plugin connected.</div>
     <div class="center">
-        <div class="card" id="status-text">Awaiting Request...</div>
+        <div class="card" id="display-text">Awaiting Request...</div>
     </div>
     <script>
-        const statusText = document.getElementById("status-text");
-        const notif = document.getElementById("notif");
-        let active = false;
+        (function() {
+            const elStatus = document.getElementById("display-text");
+            const elNotif = document.getElementById("notification-bar");
+            let isConnected = false;
 
-        async function poll() {
-            try {
-                const res = await fetch('/sync');
-                const data = await res.json();
-                
-                if (data.status === 'connected' && !active) {
-                    active = true;
-                    statusText.innerText = "Plugin Linked";
-                    notif.classList.add("show");
-                    console.log("codedit copilot plugin connected.");
-                    setTimeout(() => { notif.classList.remove("show"); }, 4000);
-                }
-            } catch (e) {}
-        }
+            async function fetchUpdate() {
+                try {
+                    const res = await fetch('/sync');
+                    const data = await res.json();
+                    
+                    if (data.status === 'connected' && !isConnected) {
+                        isConnected = true;
+                        elStatus.innerText = "Plugin Linked";
+                        elNotif.classList.add("active");
+                        console.log("codedit copilot plugin connected.");
+                        setTimeout(() => { elNotif.classList.remove("active"); }, 4000);
+                    }
+                } catch (err) {}
+            }
 
-        setInterval(poll, 1000);
-    </script>
-</body>
-</html>
-    <style>
-        html,body{margin:0;width:100%;height:100%;background:#0a0a0a;font-family:sans-serif;color:#eaeaea;overflow:hidden}
-        .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-        .card{background:#121212;border:1px solid #1f1f1f;border-radius:16px;padding:40px 60px;font-size:28px}
-        
-        #notif {
-            position: fixed;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #22c55e;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: top 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-        #notif.show { top: 20px; }
-    </style>
-</head>
-<body>
-    <div id="notif">plugin connected.</div>
-    <div class="center">
-        <div class="card" id="ui">Awaiting...</div>
-    </div>
-
-    <script>
-        const ui = document.getElementById("ui");
-        const notif = document.getElementById("notif");
-        let connected = false;
-
-        async function checkConnection() {
-            try {
-                const res = await fetch('https://codeit.rest/sync');
-                const data = await res.json();
-                
-                if (data.status === "connected" && !connected) {
-                    connected = true;
-                    ui.innerText = "Connected";
-                    
-                    
-                    notif.classList.add("show");
-                    
-                
-                    console.log("codedit copilot plugin connected.");
-                    
-                    
-                    setTimeout(() => { notif.classList.remove("show"); }, 3000);
-                }
-            } catch(e){}
-        }
-        setInterval(checkConnection, 1000);
+            setInterval(fetchUpdate, 1000);
+        })();
     </script>
 </body>
 </html>
