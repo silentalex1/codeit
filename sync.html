@@ -4,25 +4,59 @@
     <meta charset="utf-8">
     <title>Bridge</title>
     <style>
-        html,body{margin:0;width:100%;height:100%;background:#0a0a0a;font-family:sans-serif;color:#eaeaea}
+        html,body{margin:0;width:100%;height:100%;background:#0a0a0a;font-family:sans-serif;color:#eaeaea;overflow:hidden}
         .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
         .card{background:#121212;border:1px solid #1f1f1f;border-radius:16px;padding:40px 60px;font-size:28px}
+        
+        #notif {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #22c55e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: top 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        #notif.show { top: 20px; }
     </style>
 </head>
 <body>
+    <div id="notif">plugin connected.</div>
     <div class="center">
         <div class="card" id="ui">Awaiting...</div>
     </div>
+
     <script>
         const ui = document.getElementById("ui");
-        async function update() {
+        const notif = document.getElementById("notif");
+        let connected = false;
+
+        async function checkConnection() {
             try {
-                const res = await fetch('/sync');
+                const res = await fetch('https://codeit.rest/sync');
                 const data = await res.json();
-                ui.innerText = data.msg;
+                
+                if (data.status === "connected" && !connected) {
+                    connected = true;
+                    ui.innerText = "Connected";
+                    
+                    
+                    notif.classList.add("show");
+                    
+                
+                    console.log("codedit copilot plugin connected.");
+                    
+                    
+                    setTimeout(() => { notif.classList.remove("show"); }, 3000);
+                }
             } catch(e){}
         }
-        setInterval(update, 1000);
+        setInterval(checkConnection, 1000);
     </script>
 </body>
 </html>
