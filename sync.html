@@ -1,242 +1,42 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Codeit Sync</title>
-  <style>
-    html,body{margin:0;padding:0;background:#0a0a0a;color:#eaeaea;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:980px;margin:28px auto;padding:0 16px}
-    .card{background:#121212;border:1px solid #1f1f1f;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 10px 25px rgba(0,0,0,.25)}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .col{flex:1;min-width:240px}
-    label{display:block;font-size:12px;color:#b5b5b5;margin:0 0 6px 2px}
-    input,textarea,select,button{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid #262626;background:#0f0f0f;color:#eaeaea;padding:12px;font-size:14px;outline:none}
-    textarea{min-height:220px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    button{cursor:pointer;border:1px solid #2a2a2a;background:#151515;transition:.15s}
-    button:hover{transform:translateY(-1px);background:#191919}
-    .btnPrimary{background:#2563eb;border-color:#1d4ed8}
-    .btnPrimary:hover{background:#2b6ff0}
-    .btnPurple{background:#a855f7;border-color:#9333ea}
-    .btnPurple:hover{background:#b06bff}
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap}
-    .btnRow button{flex:1;min-width:160px}
-    .status{display:flex;gap:10px;align-items:center}
-    .dot{width:10px;height:10px;border-radius:999px;background:#ff3c3c}
-    .ok .dot{background:#00ff88}
-    .muted{color:#9a9a9a;font-size:12px;line-height:1.4}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .small{font-size:12px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bridge</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#0a0a0a;font-family:system-ui,Segoe UI,Roboto,Arial;color:#eaeaea}
+.center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.card{background:#121212;border:1px solid #1f1f1f;border-radius:16px;padding:40px 60px;font-size:28px;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="row">
-        <div class="col">
-          <div class="status" id="connStatus">
-            <div class="dot"></div>
-            <div>
-              <div class="mono" id="connText">NOT SENT</div>
-              <div class="muted small" id="connSub">Waiting</div>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <label>Bridge URL</label>
-          <input id="bridgeUrl" value="https://codeit.rest/sync" />
-        </div>
-        <div class="col">
-          <label>Extension ID</label>
-          <input id="extId" value="edfbngkhlmkolckogoigjmkellhokgeo" />
-        </div>
-        <div class="col">
-          <label>API Key</label>
-          <input id="apiKey" type="password" placeholder="Bearer token used by server.js + plugin" />
-          <div class="muted small" style="margin-top:6px">Must match the API_KEY used by your server and Studio plugin.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row">
-        <div class="col">
-          <label>Prompt (shown in Studio plugin UI)</label>
-          <input id="prompt" placeholder="Create folders, add scripts, build UI..." />
-        </div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <label>Ops JSON (array)</label>
-      <textarea id="ops" spellcheck="false"></textarea>
-
-      <div style="height:12px"></div>
-
-      <div class="btnRow">
-        <button class="btnPurple" id="tplFolders">Template: Folders</button>
-        <button class="btnPurple" id="tplScript">Template: Script</button>
-        <button class="btnPurple" id="tplUi">Template: UI Folder + Values</button>
-        <button class="btnPrimary" id="send">SEND TO STUDIO</button>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="muted">
-        Your Studio plugin pulls with: <span class="mono">GET /sync?since=&lt;ts&gt;</span> and will show your prompt + wait for APPLY.
-      </div>
-    </div>
-
-    <div class="card">
-      <label>Server Response</label>
-      <textarea id="resp" class="mono" readonly spellcheck="false" style="min-height:140px"></textarea>
-    </div>
-  </div>
-
-  <script>
-    const $ = (id) => document.getElementById(id);
-
-    const connStatus = $("connStatus");
-    const connText = $("connText");
-    const connSub = $("connSub");
-    const resp = $("resp");
-
-    const bridgeUrl = $("bridgeUrl");
-    const extId = $("extId");
-    const apiKey = $("apiKey");
-    const prompt = $("prompt");
-    const ops = $("ops");
-
-    const k = {
-      bridgeUrl: "codeit_bridge_url",
-      extId: "codeit_ext_id",
-      apiKey: "codeit_api_key",
-      prompt: "codeit_prompt",
-      ops: "codeit_ops"
-    };
-
-    const load = () => {
-      bridgeUrl.value = localStorage.getItem(k.bridgeUrl) || bridgeUrl.value;
-      extId.value = localStorage.getItem(k.extId) || extId.value;
-      apiKey.value = localStorage.getItem(k.apiKey) || "";
-      prompt.value = localStorage.getItem(k.prompt) || "";
-      ops.value = localStorage.getItem(k.ops) || "";
-      if (!ops.value) ops.value = JSON.stringify([], null, 2);
-    };
-
-    const save = () => {
-      localStorage.setItem(k.bridgeUrl, bridgeUrl.value.trim());
-      localStorage.setItem(k.extId, extId.value.trim());
-      localStorage.setItem(k.apiKey, apiKey.value);
-      localStorage.setItem(k.prompt, prompt.value);
-      localStorage.setItem(k.ops, ops.value);
-    };
-
-    const setConn = (ok, title, sub) => {
-      connStatus.classList.toggle("ok", !!ok);
-      connText.textContent = title || (ok ? "CONNECTED" : "NOT CONNECTED");
-      connSub.textContent = sub || "";
-    };
-
-    const headers = () => {
-      const h = {
-        "Content-Type": "application/json",
-        "X-Extension-Id": extId.value.trim()
-      };
-      const token = apiKey.value.trim();
-      if (token) h["Authorization"] = "Bearer " + token;
-      return h;
-    };
-
-    const sendPayload = async () => {
-      save();
-      let parsed;
-      try {
-        parsed = JSON.parse(ops.value);
-        if (!Array.isArray(parsed)) throw new Error("Ops must be an array");
-      } catch (e) {
-        setConn(false, "INVALID OPS JSON", String(e.message || e));
-        resp.value = String(e.stack || e);
-        return;
-      }
-
-      const payload = {
-        extension_id: extId.value.trim(),
-        prompt: prompt.value || "",
-        ops: parsed
-      };
-
-      setConn(false, "SENDING...", "Posting to /sync");
-      resp.value = "";
-
-      try {
-        const r = await fetch(bridgeUrl.value.trim(), {
-          method: "POST",
-          headers: headers(),
-          body: JSON.stringify(payload)
-        });
-
-        const text = await r.text();
-        resp.value = text;
-
-        if (!r.ok) {
-          setConn(false, "FAILED", "HTTP " + r.status);
-          return;
-        }
-
-        let j;
-        try { j = JSON.parse(text); } catch { j = null; }
-        const ts = j && j.ts ? j.ts : "ok";
-        setConn(true, "SENT", "ts: " + ts);
-      } catch (e) {
-        setConn(false, "FAILED", String(e.message || e));
-        resp.value = String(e.stack || e);
-      }
-    };
-
-    const setTemplate = (which) => {
-      if (which === "folders") {
-        prompt.value = "Create standard folder structure";
-        ops.value = JSON.stringify([
-          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "Modules" },
-          { "type": "create_folder", "parent": "ReplicatedStorage/Modules", "name": "Systems" },
-          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "UI" },
-          { "type": "create_folder", "parent": "ServerScriptService", "name": "GameLogic" }
-        ], null, 2);
-      } else if (which === "script") {
-        prompt.value = "Insert Main script and module";
-        ops.value = JSON.stringify([
-          { "type": "create_instance", "parent": "ServerScriptService", "class": "Script", "name": "Main" },
-          { "type": "set_script_source", "path": "ServerScriptService/Main", "source": "print('Codeit connected')" },
-          { "type": "create_instance", "parent": "ReplicatedStorage/Modules", "class": "ModuleScript", "name": "Init" },
-          { "type": "set_script_source", "path": "ReplicatedStorage/Modules/Init", "source": "local M={}\nfunction M.Start()\n\tprint('Init.Start')\nend\nreturn M" }
-        ], null, 2);
-      } else if (which === "ui") {
-        prompt.value = "Create UI config values";
-        ops.value = JSON.stringify([
-          { "type": "create_folder", "parent": "ReplicatedStorage", "name": "Config" },
-          { "type": "create_instance", "parent": "ReplicatedStorage/Config", "class": "BoolValue", "name": "EnableUI", "props": { "Value": true } },
-          { "type": "create_instance", "parent": "ReplicatedStorage/Config", "class": "NumberValue", "name": "UIScale", "props": { "Value": 1 } }
-        ], null, 2);
-      }
-      save();
-    };
-
-    $("send").addEventListener("click", sendPayload);
-    $("tplFolders").addEventListener("click", () => setTemplate("folders"));
-    $("tplScript").addEventListener("click", () => setTemplate("script"));
-    $("tplUi").addEventListener("click", () => setTemplate("ui"));
-
-    ["input", "change"].forEach(ev => {
-      bridgeUrl.addEventListener(ev, save);
-      extId.addEventListener(ev, save);
-      apiKey.addEventListener(ev, save);
-      prompt.addEventListener(ev, save);
-      ops.addEventListener(ev, save);
-    });
-
-    load();
-    setConn(false, "READY", "Fill ops and send");
-  </script>
+<div class="center">
+<div class="card" id="ui">test</div>
+</div>
+<script>
+const endpoint="/bridge"
+window.addEventListener("load",()=>{
+fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ready:true})}).catch(()=>{})
+})
+async function handle(req){
+const body=await req.json()
+console.log(body.msg)
+return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json"}})
+}
+if("serviceWorker"in navigator){
+navigator.serviceWorker.register(URL.createObjectURL(new Blob([`
+self.addEventListener("fetch",e=>{
+if(new URL(e.request.url).pathname==="/bridge"){
+e.respondWith((async()=>{
+const data=await e.request.json()
+console.log(data.msg)
+return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json"}})
+})())
+}
+})
+`],{type:"text/javascript"})))
+}
+</script>
 </body>
 </html>
