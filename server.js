@@ -14,7 +14,26 @@ const server = http.createServer((req, res) => {
                     const data = JSON.parse(body);
                     latestMsg = data.msg;
                     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-                    res.end(JSON.stringify({ ok: true }));
+                    res.end(JSON.stringify({ ok: true }));const http = require('http');
+let state = { status: "idle" };
+
+const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'POST' && req.url === '/sync') {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', () => {
+            state = JSON.parse(body);
+            res.end(JSON.stringify({ok: true}));
+        });
+    } else {
+        res.end(JSON.stringify(state));
+    }
+});
+
+server.listen(80);
                 } catch (e) {const http = require('http');
 const fs = require('fs');
 const path = require('path');
