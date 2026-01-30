@@ -3,20 +3,22 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-let db = { status: "idle" };
+let store = { status: "idle" };
 
 const server = http.createServer((req, res) => {
-    const parsed = url.parse(req.url, true);
+    const parsedUrl = url.parse(req.url, true);
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    if (parsed.pathname === '/sync') {
-        if (parsed.query.status) {
-            db.status = parsed.query.status;
+    if (parsedUrl.pathname === '/sync') {
+        if (parsedUrl.query.status) {
+            store.status = parsedUrl.query.status;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
         } else {
-            res.end(JSON.stringify(db));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(store));
         }
-    } else if (parsed.pathname === '/sync.html') {
+    } else if (parsedUrl.pathname === '/sync.html' || parsedUrl.pathname === '/') {
         fs.readFile(path.join(__dirname, 'sync.html'), (err, data) => {
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(data);
