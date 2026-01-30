@@ -15,7 +15,37 @@ const server = http.createServer((req, res) => {
                     latestMsg = data.msg;
                     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
                     res.end(JSON.stringify({ ok: true }));
-                } catch (e) {
+                } catch (e) {const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+let storage = { msg: "No data yet" };
+
+const server = http.createServer((req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    
+    if (url.pathname === '/sync') {
+        if (req.method === 'POST') {
+            let body = '';
+            req.on('data', c => body += c);
+            req.on('end', () => {
+                storage = JSON.parse(body);
+                res.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+                res.end(JSON.stringify({ok: true}));
+            });
+        } else {
+            res.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            res.end(JSON.stringify(storage));
+        }
+    } else if (url.pathname === '/sync.html') {
+        fs.readFile(path.join(__dirname, 'sync.html'), (err, data) => {
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end(data);
+        });
+    }
+});
+
+server.listen(80);
                     res.writeHead(400);
                     res.end();
                 }
