@@ -3,27 +3,27 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-let store = { status: "idle" };
+let bridgeState = { status: "idle" };
 
 const server = http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url, true);
+    const queryData = url.parse(req.url, true);
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    if (parsedUrl.pathname === '/sync') {
-        if (parsedUrl.query.status) {
-            store.status = parsedUrl.query.status;
+    if (queryData.pathname === '/sync') {
+        if (queryData.query.status) {
+            bridgeState.status = queryData.query.status;
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
         } else {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(store));
+            res.end(JSON.stringify(bridgeState));
         }
-    } else if (parsedUrl.pathname === '/sync.html' || parsedUrl.pathname === '/') {
-        fs.readFile(path.join(__dirname, 'sync.html'), (err, data) => {
+    } else {
+        fs.readFile(path.join(__dirname, 'sync.html'), (err, content) => {
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(data);
+            res.end(content);
         });
     }
 });
 
-server.listen(80);
+server.listen(process.env.PORT || 80);
