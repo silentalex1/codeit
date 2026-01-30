@@ -25,7 +25,7 @@ const server = http.createServer((req, res) => {
     const queryData = url.parse(req.url, true);
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    if (queryData.pathname === '/sync') {
+    if (queryData.pathname === '/sync.html') {
         if (queryData.query.status) {
             bridgeState.status = queryData.query.status;
             res.writeHead(200, { 'Content-Type': 'application/json' });
