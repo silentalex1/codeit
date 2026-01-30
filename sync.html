@@ -8,7 +8,7 @@
         .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
         .card{background:#121212;border:1px solid #1f1f1f;border-radius:16px;padding:40px 60px;font-size:28px;text-align:center}
         
-        #green-alert {
+        #green-alert-box {
             position: fixed;
             top: -100px;
             left: 50%;
@@ -23,40 +23,40 @@
             z-index: 9999;
             opacity: 0;
         }
-        #green-alert.visible { top: 30px; opacity: 1; }
+        #green-alert-box.active { top: 30px; opacity: 1; }
     </style>
 </head>
 <body>
-    <div id="green-alert">plugin connected.</div>
+    <div id="green-alert-box">plugin connected.</div>
     <div class="center">
-        <div class="card" id="status-display">Awaiting Request...</div>
+        <div class="card" id="main-status">Awaiting Request...</div>
     </div>
 
     <script>
         (function() {
-            const uiText = document.getElementById("status-display");
-            const alertBox = document.getElementById("green-alert");
-            let isDone = false;
+            const statusLabel = document.getElementById("main-status");
+            const notification = document.getElementById("green-alert-box");
+            let triggered = false;
 
-            async function checkBridge() {
-                if (isDone) return;
+            async function syncBridge() {
+                if (triggered) return;
                 try {
                     const response = await fetch('/sync');
                     const data = await response.json();
                     
                     if (data.status === 'connected') {
-                        isDone = true;
-                        uiText.innerText = "connection sucess";
-                        alertBox.classList.add("visible");
+                        triggered = true;
+                        statusLabel.innerText = "connection sucess";
+                        notification.classList.add("active");
                         console.log("codedit copilot plugin connected.");
                         
                         setTimeout(() => {
-                            alertBox.classList.remove("visible");
+                            notification.classList.remove("active");
                         }, 4000);
                     }
                 } catch (err) {}
             }
-            setInterval(checkBridge, 1000);
+            setInterval(syncBridge, 1000);
         })();
     </script>
 </body>
