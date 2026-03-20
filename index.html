@@ -248,10 +248,18 @@ select.form-input{cursor:pointer}
       </div>
     </nav>
     <div id="sidebar-bottom">
-      <div id="conn-badge">
+      <div id="conn-badge" style="margin-bottom:8px">
         <div id="conn-dot"></div>
         <span id="conn-text">Disconnected</span>
       </div>
+      <button id="sidebar-connect-btn" onclick="togglePluginConnection()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;background:var(--teal);color:#fff;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;border:none;cursor:pointer;margin-bottom:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        Connect to Plugin
+      </button>
+      <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;text-decoration:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install Plugin
+      </a>
     </div>
   </div>
 
@@ -266,7 +274,14 @@ select.form-input{cursor:pointer}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
             Open Editor
           </button>
-          <button class="btn btn-secondary" style="width:auto" onclick="navigate('projects')">View Projects</button>
+          <button class="btn btn-secondary" style="width:auto" onclick="togglePluginConnection()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            Connect to Plugin
+          </button>
+          <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" class="btn btn-secondary" style="width:auto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Install Plugin
+          </a>
         </div>
       </div>
 
@@ -406,6 +421,14 @@ select.form-input{cursor:pointer}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 Share
               </button>
+              <button id="editor-connect-btn" class="btn btn-secondary btn-sm" onclick="togglePluginConnection()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                Connect to Plugin
+              </button>
+              <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" class="btn btn-secondary btn-sm">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Install Plugin
+              </a>
               <button class="btn btn-primary btn-sm" onclick="sendToStudio()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Send to Studio
@@ -442,7 +465,10 @@ select.form-input{cursor:pointer}
           <div id="ai-panel">
             <div id="ai-panel-header">
               <span>AI Assistant</span>
-              <span id="ai-model-label" class="badge badge-teal" style="font-size:10px">Gemini 3.1</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span id="ai-model-label" class="badge badge-teal" style="font-size:10px">Gemini 3.1</span>
+                <button id="ai-puter-btn" onclick="puterLoginQuick()" style="font-size:10px;padding:3px 8px;background:rgba(20,184,166,.15);color:var(--teal);border:1px solid rgba(20,184,166,.3);border-radius:20px;cursor:pointer;font-weight:600;display:none">Login</button>
+              </div>
             </div>
             <div id="ai-messages">
               <div class="ai-msg assistant">
@@ -480,7 +506,7 @@ select.form-input{cursor:pointer}
           <div class="form-group">
             <label class="form-label">Server URL</label>
             <div style="display:flex;gap:8px">
-              <input type="text" class="form-input" id="ws-url" value="ws://localhost:8080" style="flex:1">
+              <input type="text" class="form-input" id="ws-url" value="wss://codeit.rest" style="flex:1">
               <button class="btn btn-secondary" onclick="testConnection()">Test</button>
             </div>
           </div>
@@ -733,9 +759,12 @@ function navigate(page) {
   if (pageEl) pageEl.classList.add('active');
   if (navEl) navEl.classList.add('active');
   state.currentPage = page;
-  if (page === 'editor' && state.firstVisit) {
-    state.firstVisit = false;
-    setTimeout(showEditorNotif, 400);
+  if (page === 'editor') {
+    if (state.firstVisit) {
+      state.firstVisit = false;
+      if (!state.puterLoggedIn) setTimeout(showEditorNotif, 400);
+    }
+    setTimeout(checkPuterForAI, 200);
   }
   if (page === 'dashboard') updateDashboard();
   if (page === 'projects') renderProjects();
@@ -786,19 +815,47 @@ document.querySelectorAll('.modal-overlay').forEach(function(el) {
   });
 });
 
-function puterLogin() {
+function setPuterLoggedIn(user) {
+  state.puterLoggedIn = true;
+  state.puterUser = user;
+  var label = user ? (user.username || user.email || 'Puter user') : 'Puter user';
+  var statusEl = document.getElementById('puter-status');
+  var userLabelEl = document.getElementById('puter-user-label');
+  var loginBtn = document.getElementById('puter-login-btn');
+  var aiBadgeBtn = document.getElementById('ai-puter-btn');
+  if (statusEl) statusEl.style.display = 'block';
+  if (userLabelEl) userLabelEl.textContent = 'Logged in as ' + label;
+  if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Logged In'; }
+  if (aiBadgeBtn) aiBadgeBtn.style.display = 'none';
+  dismissEditorNotif();
+}
+
+function checkPuterForAI() {
+  var aiBadgeBtn = document.getElementById('ai-puter-btn');
+  if (!state.puterLoggedIn && aiBadgeBtn) aiBadgeBtn.style.display = 'inline-flex';
+}
+
+function puterLoginQuick() {
   if (typeof puter === 'undefined') {
-    toast('Puter.js not loaded', 'Please check your connection.', 'error');
+    toast('Puter.js not loaded', 'Please check your internet connection.', 'error');
     return;
   }
   puter.auth.signIn().then(function(user) {
-    state.puterLoggedIn = true;
-    state.puterUser = user;
-    document.getElementById('puter-status').style.display = 'block';
-    document.getElementById('puter-user-label').textContent = 'Logged in as ' + (user.username || user.email || 'Puter user');
-    document.getElementById('puter-login-btn').textContent = 'Logged In';
-    document.getElementById('puter-login-btn').disabled = true;
-    toast('Logged in to Puter.js', 'AI models are now available.', 'success');
+    setPuterLoggedIn(user);
+    toast('Logged in!', 'All AI models are now available.', 'success');
+  }).catch(function(err) {
+    toast('Login failed', err && err.message ? err.message : 'Authentication cancelled.', 'error');
+  });
+}
+
+function puterLogin() {
+  if (typeof puter === 'undefined') {
+    toast('Puter.js not loaded', 'Please check your internet connection.', 'error');
+    return;
+  }
+  puter.auth.signIn().then(function(user) {
+    setPuterLoggedIn(user);
+    toast('Logged in to Puter.js', 'All AI models are now available.', 'success');
   }).catch(function(err) {
     toast('Login failed', err && err.message ? err.message : 'Authentication cancelled.', 'error');
   });
@@ -809,30 +866,35 @@ function puterLogout() {
     puter.auth.signOut().then(function() {
       state.puterLoggedIn = false;
       state.puterUser = null;
-      document.getElementById('puter-status').style.display = 'none';
+      var statusEl = document.getElementById('puter-status');
       var btn = document.getElementById('puter-login-btn');
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Login to Puter.js';
+      if (statusEl) statusEl.style.display = 'none';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Login to Puter.js';
+      }
       toast('Signed out', 'You have been signed out of Puter.js.', 'info');
-    });
+    }).catch(function(e) { toast('Sign out failed', e && e.message ? e.message : '', 'error'); });
   }
 }
 
-if (typeof puter !== 'undefined') {
+function initPuterSession() {
+  if (typeof puter === 'undefined') return;
   try {
     puter.auth.isSignedIn().then(function(signedIn) {
       if (signedIn) {
         puter.auth.getUser().then(function(user) {
+          setPuterLoggedIn(user);
+        }).catch(function() {
           state.puterLoggedIn = true;
-          state.puterUser = user;
-          document.getElementById('puter-status').style.display = 'block';
-          document.getElementById('puter-user-label').textContent = 'Logged in as ' + (user.username || user.email || 'Puter user');
-          document.getElementById('puter-login-btn').disabled = true;
-        }).catch(function() {});
+          setPuterLoggedIn(null);
+        });
       }
     }).catch(function() {});
   } catch(e) {}
 }
+
+initPuterSession();
 
 function getSelectedModel() {
   return document.getElementById('model-select').value;
@@ -853,18 +915,37 @@ function updateAiModelLabel(val) {
   document.getElementById('ai-model-label').textContent = labels[val] || val;
 }
 
-async function callAI(prompt) {
-  if (typeof puter === 'undefined') throw new Error('Puter.js not available');
-  if (!state.puterLoggedIn) throw new Error('Please login to Puter.js in Settings first');
-  var model = getSelectedModel();
-  var response = await puter.ai.chat(prompt, { model: model });
+function extractPuterText(response) {
   if (typeof response === 'string') return response;
-  if (response && response.message && response.message.content) {
-    if (Array.isArray(response.message.content)) return response.message.content.map(function(c) { return c.text || ''; }).join('');
-    return response.message.content;
+  if (response && response.message) {
+    var msg = response.message;
+    if (typeof msg === 'string') return msg;
+    if (msg.content) {
+      if (typeof msg.content === 'string') return msg.content;
+      if (Array.isArray(msg.content)) return msg.content.map(function(c) { return c.text || c.content || ''; }).join('');
+    }
+  }
+  if (response && response.choices && response.choices[0]) {
+    var choice = response.choices[0];
+    if (choice.message && choice.message.content) return choice.message.content;
+    if (choice.text) return choice.text;
+  }
+  if (response && response.content) {
+    if (typeof response.content === 'string') return response.content;
+    if (Array.isArray(response.content)) return response.content.map(function(c) { return c.text || ''; }).join('');
   }
   if (response && response.text) return response.text;
+  if (response && response.result) return response.result;
   return String(response);
+}
+
+async function callAI(prompt) {
+  if (typeof puter === 'undefined') throw new Error('Puter.js is not loaded. Please check your internet connection.');
+  var model = getSelectedModel();
+  var response = await puter.ai.chat(prompt, { model: model });
+  var text = extractPuterText(response);
+  if (!text || text === '[object Object]') throw new Error('Empty response from AI. Please try again.');
+  return text;
 }
 
 async function generateCode() {
@@ -1102,47 +1183,108 @@ function sendToStudio() {
   }
 }
 
+function togglePluginConnection() {
+  if (state.wsStatus === 'connected') {
+    disconnectWebSocket();
+  } else {
+    var url = document.getElementById('ws-url').value.trim() || 'wss://codeit.rest';
+    connectWebSocket(url);
+  }
+}
+
 function testConnection() {
   var url = document.getElementById('ws-url').value.trim();
   if (!url) { toast('No URL', 'Enter a WebSocket server URL.', 'warning'); return; }
   connectWebSocket(url);
 }
 
+function updateConnectButtons(status) {
+  var labels = { connected: 'Disconnect Plugin', disconnected: 'Connect to Plugin', connecting: 'Connecting...', error: 'Retry Connection' };
+  var label = labels[status] || 'Connect to Plugin';
+  var sidebarBtn = document.getElementById('sidebar-connect-btn');
+  var editorBtn = document.getElementById('editor-connect-btn');
+  var connectedStyle = 'background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)';
+  var defaultStyle = 'background:var(--teal);color:#fff;border:none';
+  if (sidebarBtn) {
+    sidebarBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg> ' + label;
+    sidebarBtn.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;cursor:pointer;margin-bottom:6px;' + (status === 'connected' ? connectedStyle : defaultStyle);
+  }
+  if (editorBtn) {
+    editorBtn.textContent = label;
+    editorBtn.className = 'btn btn-sm ' + (status === 'connected' ? 'btn-danger' : 'btn-secondary');
+  }
+}
+
 function connectWebSocket(url) {
   if (state.wsInstance) {
     try { state.wsInstance.close(); } catch(e) {}
+    state.wsInstance = null;
   }
   setConnStatus('connecting');
-  try {
-    var ws = new WebSocket(url);
-    state.wsInstance = ws;
-    ws.onopen = function() {
-      setConnStatus('connected');
-      toast('Connected', 'Successfully connected to Roblox Studio.', 'success');
-      loadStudioWorkspace();
-    };
-    ws.onclose = function() {
-      setConnStatus('disconnected');
-      if (document.getElementById('auto-reconnect').checked) {
-        var delay = parseInt(document.getElementById('reconnect-delay').value) || 1000;
-        setTimeout(function() { connectWebSocket(url); }, delay);
-      }
-    };
-    ws.onerror = function() {
+  var reconnectCount = 0;
+  var maxReconnects = parseInt((document.getElementById('max-reconnects') && document.getElementById('max-reconnects').value) || 5);
+  var reconnectDelay = parseInt((document.getElementById('reconnect-delay') && document.getElementById('reconnect-delay').value) || 3000);
+  var manualDisconnect = false;
+
+  function doConnect() {
+    try {
+      var ws = new WebSocket(url);
+      state.wsInstance = ws;
+      ws.onopen = function() {
+        reconnectCount = 0;
+        setConnStatus('connected');
+        toast('Connected to Plugin', 'Roblox Studio plugin is now connected.', 'success');
+        loadStudioWorkspace();
+      };
+      ws.onclose = function() {
+        state.wsInstance = null;
+        if (manualDisconnect) return;
+        setConnStatus('disconnected');
+        var autoReconnectEl = document.getElementById('auto-reconnect');
+        if (autoReconnectEl && autoReconnectEl.checked && reconnectCount < maxReconnects) {
+          reconnectCount++;
+          setTimeout(function() {
+            if (!manualDisconnect) doConnect();
+          }, reconnectDelay);
+        }
+      };
+      ws.onerror = function() {
+        if (manualDisconnect) return;
+        setConnStatus('error');
+        toast('Connection error', 'Could not connect to the plugin. Make sure Roblox Studio is open with the plugin running.', 'error');
+      };
+      ws.onmessage = function(e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (data.type === 'workspace_data') updateStudioWorkspace(data.payload && data.payload.Children ? flattenWorkspace(data.payload) : []);
+          if (data.type === 'studio_preview') updateStudioPreview(data.payload && data.payload.dataUrl ? data.payload.dataUrl : null);
+          if (data.type === 'workspace') updateStudioWorkspace(data.files || []);
+          if (data.type === 'preview') updateStudioPreview(data.url || data.image || null);
+          if (data.type === 'code_generated' && data.payload && data.payload.code) {
+            document.getElementById('code-input').value = data.payload.code;
+            highlightCode(data.payload.code);
+            updateLineNumbers(data.payload.code);
+          }
+        } catch(err) {}
+      };
+      state.wsDisconnectFn = function() { manualDisconnect = true; try { ws.close(); } catch(ex) {} state.wsInstance = null; };
+    } catch(e) {
       setConnStatus('error');
-      toast('Connection error', 'Could not connect to Roblox Studio.', 'error');
-    };
-    ws.onmessage = function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'workspace') updateStudioWorkspace(data.files);
-        if (data.type === 'preview') updateStudioPreview(data.url || data.image);
-      } catch(err) {}
-    };
-  } catch(e) {
-    setConnStatus('error');
-    toast('Connection failed', e.message, 'error');
+      toast('Connection failed', e.message, 'error');
+    }
   }
+  doConnect();
+}
+
+function flattenWorkspace(obj) {
+  var result = [];
+  function walk(node) {
+    if (!node) return;
+    result.push({ name: node.Name + ' (' + node.ClassName + ')' });
+    if (node.Children) node.Children.forEach(walk);
+  }
+  if (obj.Children) obj.Children.forEach(walk);
+  return result;
 }
 
 function setConnStatus(status) {
@@ -1150,10 +1292,23 @@ function setConnStatus(status) {
   var dot = document.getElementById('conn-dot');
   var txt = document.getElementById('conn-text');
   dot.className = '';
-  var labels = { connected: 'Connected', disconnected: 'Disconnected', connecting: 'Connecting...', error: 'Error' };
+  var labels = { connected: 'Connected', disconnected: 'Disconnected', connecting: 'Connecting...', error: 'Connection Error' };
   txt.textContent = labels[status] || status;
   if (status === 'connected') dot.classList.add('connected');
   else if (status === 'connecting') dot.classList.add('connecting');
+  updateConnectButtons(status);
+}
+
+function disconnectWebSocket() {
+  if (typeof state.wsDisconnectFn === 'function') {
+    state.wsDisconnectFn();
+    state.wsDisconnectFn = null;
+  } else if (state.wsInstance) {
+    try { state.wsInstance.close(); } catch(e) {}
+    state.wsInstance = null;
+  }
+  setConnStatus('disconnected');
+  toast('Disconnected', 'Plugin connection closed.', 'info');
 }
 
 function loadStudioWorkspace() {
