@@ -510,25 +510,11 @@ select.form-input{cursor:pointer}
               <button class="btn btn-secondary" onclick="testConnection()">Test</button>
             </div>
           </div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Auto Reconnect</h4>
-              <p>Automatically reconnect on connection loss</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="auto-reconnect" checked>
-              <div class="toggle-slider"></div>
-            </label>
-          </div>
           <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Reconnect Delay (ms)</label>
-                <input type="number" class="form-input" id="reconnect-delay" value="1000">
-              </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Max Reconnect Attempts</label>
-                <input type="number" class="form-input" id="max-reconnects" value="5">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.2);border-radius:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">
+                Install the <strong style="color:var(--teal)">CodeEdit Copilot</strong> plugin in Roblox Studio, click Connect in the plugin toolbar, then click <strong>Connect to Plugin</strong> here. Both must connect to the same server URL.
               </div>
             </div>
           </div>
@@ -1184,7 +1170,7 @@ function sendToStudio() {
 }
 
 function togglePluginConnection() {
-  if (state.wsStatus === 'connected') {
+  if (state.wsStatus === 'connected' || state.wsStatus === 'connecting') {
     disconnectWebSocket();
   } else {
     var url = document.getElementById('ws-url').value.trim() || 'wss://codeit.rest';
@@ -1195,23 +1181,31 @@ function togglePluginConnection() {
 function testConnection() {
   var url = document.getElementById('ws-url').value.trim();
   if (!url) { toast('No URL', 'Enter a WebSocket server URL.', 'warning'); return; }
+  disconnectWebSocket();
   connectWebSocket(url);
 }
 
 function updateConnectButtons(status) {
-  var labels = { connected: 'Disconnect Plugin', disconnected: 'Connect to Plugin', connecting: 'Connecting...', error: 'Retry Connection' };
-  var label = labels[status] || 'Connect to Plugin';
+  var configs = {
+    connected:    { label: 'Disconnect Plugin',  icon: 'M18 6L6 18M6 6l12 12', danger: true },
+    disconnected: { label: 'Connect to Plugin',  icon: 'M5 12h14M12 5l7 7-7 7', danger: false },
+    connecting:   { label: 'Cancel',             icon: 'M18 6L6 18M6 6l12 12', danger: false },
+    error:        { label: 'Retry Connection',   icon: 'M5 12h14M12 5l7 7-7 7', danger: false }
+  };
+  var cfg = configs[status] || configs.disconnected;
   var sidebarBtn = document.getElementById('sidebar-connect-btn');
   var editorBtn = document.getElementById('editor-connect-btn');
-  var connectedStyle = 'background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)';
-  var defaultStyle = 'background:var(--teal);color:#fff;border:none';
+  var dangerStyle = 'background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)';
+  var tealStyle = 'background:var(--teal);color:#fff;border:none';
+  var neutralStyle = 'background:var(--bg3);color:var(--text2);border:1px solid var(--border)';
+  var sidebarStyle = cfg.danger ? dangerStyle : (status === 'disconnected' || status === 'error' ? tealStyle : neutralStyle);
   if (sidebarBtn) {
-    sidebarBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg> ' + label;
-    sidebarBtn.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;cursor:pointer;margin-bottom:6px;' + (status === 'connected' ? connectedStyle : defaultStyle);
+    sidebarBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + cfg.icon + '"/></svg> ' + cfg.label;
+    sidebarBtn.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;cursor:pointer;margin-bottom:6px;' + sidebarStyle;
   }
   if (editorBtn) {
-    editorBtn.textContent = label;
-    editorBtn.className = 'btn btn-sm ' + (status === 'connected' ? 'btn-danger' : 'btn-secondary');
+    editorBtn.innerHTML = cfg.label;
+    editorBtn.className = 'btn btn-sm ' + (cfg.danger ? 'btn-danger' : 'btn-secondary');
   }
 }
 
@@ -1220,60 +1214,81 @@ function connectWebSocket(url) {
     try { state.wsInstance.close(); } catch(e) {}
     state.wsInstance = null;
   }
+  state.wsDisconnectFn = null;
   setConnStatus('connecting');
-  var reconnectCount = 0;
-  var maxReconnects = parseInt((document.getElementById('max-reconnects') && document.getElementById('max-reconnects').value) || 5);
-  var reconnectDelay = parseInt((document.getElementById('reconnect-delay') && document.getElementById('reconnect-delay').value) || 3000);
-  var manualDisconnect = false;
 
-  function doConnect() {
-    try {
-      var ws = new WebSocket(url);
-      state.wsInstance = ws;
-      ws.onopen = function() {
-        reconnectCount = 0;
-        setConnStatus('connected');
-        toast('Connected to Plugin', 'Roblox Studio plugin is now connected.', 'success');
-        loadStudioWorkspace();
-      };
-      ws.onclose = function() {
-        state.wsInstance = null;
-        if (manualDisconnect) return;
-        setConnStatus('disconnected');
-        var autoReconnectEl = document.getElementById('auto-reconnect');
-        if (autoReconnectEl && autoReconnectEl.checked && reconnectCount < maxReconnects) {
-          reconnectCount++;
-          setTimeout(function() {
-            if (!manualDisconnect) doConnect();
-          }, reconnectDelay);
-        }
-      };
-      ws.onerror = function() {
-        if (manualDisconnect) return;
-        setConnStatus('error');
-        toast('Connection error', 'Could not connect to the plugin. Make sure Roblox Studio is open with the plugin running.', 'error');
-      };
-      ws.onmessage = function(e) {
-        try {
-          var data = JSON.parse(e.data);
-          if (data.type === 'workspace_data') updateStudioWorkspace(data.payload && data.payload.Children ? flattenWorkspace(data.payload) : []);
-          if (data.type === 'studio_preview') updateStudioPreview(data.payload && data.payload.dataUrl ? data.payload.dataUrl : null);
-          if (data.type === 'workspace') updateStudioWorkspace(data.files || []);
-          if (data.type === 'preview') updateStudioPreview(data.url || data.image || null);
-          if (data.type === 'code_generated' && data.payload && data.payload.code) {
-            document.getElementById('code-input').value = data.payload.code;
-            highlightCode(data.payload.code);
-            updateLineNumbers(data.payload.code);
-          }
-        } catch(err) {}
-      };
-      state.wsDisconnectFn = function() { manualDisconnect = true; try { ws.close(); } catch(ex) {} state.wsInstance = null; };
-    } catch(e) {
-      setConnStatus('error');
-      toast('Connection failed', e.message, 'error');
-    }
+  var settled = false;
+  var intentionalClose = false;
+
+  function settle() {
+    settled = true;
   }
-  doConnect();
+
+  try {
+    var ws = new WebSocket(url);
+    state.wsInstance = ws;
+
+    ws.onopen = function() {
+      settle();
+      setConnStatus('connected');
+      toast('Connected to Plugin', 'Roblox Studio plugin is now connected.', 'success');
+      loadStudioWorkspace();
+    };
+
+    ws.onerror = function() {
+      if (settled) return;
+      settle();
+      intentionalClose = true;
+      state.wsInstance = null;
+      setConnStatus('error');
+      toast('Plugin not found', 'Make sure Roblox Studio is open and the CodeEdit Copilot plugin is running.', 'error');
+    };
+
+    ws.onclose = function() {
+      state.wsInstance = null;
+      if (intentionalClose) return;
+      if (!settled) {
+        settle();
+        setConnStatus('error');
+        toast('Plugin not found', 'Make sure Roblox Studio is open and the CodeEdit Copilot plugin is running.', 'error');
+        return;
+      }
+      setConnStatus('disconnected');
+      toast('Plugin disconnected', 'Lost connection to Roblox Studio.', 'warning');
+    };
+
+    ws.onmessage = function(e) {
+      try {
+        var data = JSON.parse(e.data);
+        if (data.type === 'workspace_data') {
+          updateStudioWorkspace(data.payload && data.payload.Children ? flattenWorkspace(data.payload) : []);
+        }
+        if (data.type === 'studio_preview') {
+          updateStudioPreview(data.payload && data.payload.dataUrl ? data.payload.dataUrl : null);
+        }
+        if (data.type === 'workspace') updateStudioWorkspace(data.files || []);
+        if (data.type === 'preview') updateStudioPreview(data.url || data.image || null);
+        if (data.type === 'code_generated' && data.payload && data.payload.code) {
+          document.getElementById('code-input').value = data.payload.code;
+          highlightCode(data.payload.code);
+          updateLineNumbers(data.payload.code);
+        }
+        if (data.type === 'plugin_connected') {
+          toast('Plugin handshake', 'Roblox Studio plugin confirmed connection.', 'success');
+        }
+      } catch(err) {}
+    };
+
+    state.wsDisconnectFn = function() {
+      intentionalClose = true;
+      try { ws.close(); } catch(ex) {}
+      state.wsInstance = null;
+    };
+
+  } catch(e) {
+    setConnStatus('error');
+    toast('Connection failed', e.message, 'error');
+  }
 }
 
 function flattenWorkspace(obj) {
