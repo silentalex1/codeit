@@ -1,1640 +1,437 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodeEdit AI</title>
-<meta name="description" content="the BEST roblox ai game builder plugin #1 FREE">
-<meta name="author" content="CodeEditor AI">
-<meta property="og:title" content="CodeEdit AI">
-<meta property="og:description" content="the BEST roblox ai game builder plugin #1 FREE">
-<meta property="og:type" content="website">
-<script src="https://js.puter.com/v2/"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#252d40;--teal:#14b8a6;--teal2:#0d9488;--teal3:#99f6e4;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--border:#2d3748;--red:#ef4444;--green:#22c55e;--yellow:#f59e0b;--blue:#3b82f6;--purple:#a855f7}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px}
-a{color:inherit;text-decoration:none}
-button{cursor:pointer;border:none;outline:none;background:none;font-family:inherit;font-size:14px}
-input,textarea,select{font-family:inherit;font-size:14px;outline:none}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
-#app{display:flex;height:100vh;overflow:hidden}
-#sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-#sidebar-logo{padding:20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
-#sidebar-logo svg{color:var(--teal)}
-#sidebar-logo span{font-weight:700;font-size:16px;color:var(--text)}
-#sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--text2);transition:all .15s;cursor:pointer;user-select:none}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:rgba(20,184,166,.15);color:var(--teal)}
-.nav-item svg{width:16px;height:16px;flex-shrink:0}
-#sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border)}
-#conn-badge{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:12px}
-#conn-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
-#conn-dot.connected{background:var(--green)}
-#conn-dot.connecting{background:var(--yellow);animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-#main{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.page{display:none;flex:1;overflow-y:auto;padding:32px}
-.page.active{display:flex;flex-direction:column}
-.page-header{margin-bottom:28px}
-.page-header h1{font-size:28px;font-weight:700;color:var(--text)}
-.page-header p{color:var(--text2);margin-top:6px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
-.card+.card{margin-top:16px}
-.card-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.card-desc{color:var(--text2);font-size:13px;margin-bottom:16px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-weight:500;transition:all .15s;cursor:pointer;border:none;font-size:13px}
-.btn-primary{background:var(--teal);color:#fff}
-.btn-primary:hover{background:var(--teal2)}
-.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
-.btn-secondary:hover{background:var(--bg4)}
-.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.btn-danger:hover{background:rgba(239,68,68,.25)}
-.btn-sm{padding:6px 12px;font-size:12px}
-.btn-lg{padding:12px 24px;font-size:15px;width:100%;justify-content:center}
-.form-group{margin-bottom:16px}
-.form-label{display:block;color:var(--text2);font-size:12px;font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);transition:border-color .15s}
-.form-input:focus{border-color:var(--teal)}
-.form-input::placeholder{color:var(--text3)}
-textarea.form-input{resize:none}
-select.form-input{cursor:pointer}
-.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--bg4);border-radius:11px;transition:.2s;cursor:pointer}
-.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
-.toggle input:checked+.toggle-slider{background:var(--teal)}
-.toggle input:checked+.toggle-slider:before{transform:translateX(18px)}
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-teal{background:rgba(20,184,166,.15);color:var(--teal)}
-.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
-.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
-.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
-#home-page{background:var(--bg)}
-.home-hero{text-align:center;padding:60px 0 40px}
-.home-hero h1{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px}
-.home-hero h1 span{color:var(--teal)}
-.home-hero p{color:var(--text2);font-size:16px;max-width:520px;margin:0 auto 32px}
-.hero-actions{display:flex;gap:12px;justify-content:center}
-.generator-card{max-width:760px;margin:0 auto;width:100%}
-.generator-card .card-title{font-size:18px;margin-bottom:16px}
-.prompt-wrapper{position:relative}
-#prompt-input{width:100%;min-height:140px;background:var(--bg3);border:2px solid var(--border);border-radius:10px;padding:14px;color:var(--text);font-size:14px;line-height:1.6;transition:border-color .2s;resize:none}
-#prompt-input:focus{border-color:var(--teal)}
-#prompt-input::placeholder{color:var(--text3)}
-.prompt-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
-.char-count{font-size:12px;color:var(--text3)}
-#gen-btn{background:var(--teal);color:#fff;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;transition:all .15s}
-#gen-btn:hover{background:var(--teal2)}
-#gen-btn:disabled{opacity:.5;cursor:not-allowed}
-.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:760px;margin:32px auto 0;width:100%}
-.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
-.feature-card svg{color:var(--teal);margin-bottom:10px}
-.feature-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
-.feature-card p{font-size:12px;color:var(--text2);line-height:1.5}
-.steps-list{display:flex;flex-direction:column;gap:12px}
-.step-item{display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--teal);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.step-text h4{font-size:13px;font-weight:600;margin-bottom:3px}
-.step-text p{font-size:12px;color:var(--text2);line-height:1.5}
-#editor-page{padding:0;overflow:hidden}
-#editor-layout{display:flex;height:100%;overflow:hidden}
-#editor-left{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#editor-right{width:320px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-#editor-toolbar{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#editor-toolbar-left{display:flex;align-items:center;gap:8px;flex:1}
-#editor-toolbar-right{display:flex;align-items:center;gap:8px}
-#model-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;cursor:pointer}
-#editor-content{flex:1;display:flex;overflow:hidden;position:relative}
-#code-wrapper{flex:1;position:relative;display:flex;overflow:hidden}
-#code-highlight{position:absolute;inset:0;padding:14px 14px 14px 54px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.6;white-space:pre;overflow:auto;pointer-events:none;background:var(--bg);color:var(--text);tab-size:2}
-#code-lines{position:absolute;left:0;top:0;width:46px;padding:14px 10px;text-align:right;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.6;color:var(--text3);background:var(--bg2);border-right:1px solid var(--border);user-select:none;pointer-events:none;overflow:hidden}
-#code-input{position:absolute;inset:0;padding:14px 14px 14px 54px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;line-height:1.6;background:transparent;color:transparent;caret-color:var(--teal);border:none;resize:none;white-space:pre;tab-size:2;overflow:auto;z-index:2;width:100%;height:100%}
-#code-input::selection{background:rgba(20,184,166,.25)}
-.lua-kw{color:#c678dd}
-.lua-fn{color:#61afef}
-.lua-str{color:#98c379}
-.lua-num{color:#d19a66}
-.lua-cmt{color:#5c6370;font-style:italic}
-.lua-op{color:#56b6c2}
-.lua-builtin{color:#e5c07b}
-.lua-bool{color:#d19a66}
-.lua-self{color:#e06c75}
-#studio-panel{height:280px;border-top:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;flex-shrink:0}
-#studio-panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-#studio-panel-header span{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-#studio-tabs{display:flex;gap:4px}
-.studio-tab{padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;color:var(--text3);transition:all .15s}
-.studio-tab.active{background:var(--bg3);color:var(--teal)}
-#studio-content{flex:1;overflow:hidden;position:relative}
-#studio-preview{width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3)}
-#studio-workspace{display:none;flex:1;overflow-y:auto;padding:8px}
-.ws-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;cursor:pointer;color:var(--text2);font-size:12px}
-.ws-item:hover{background:var(--bg3);color:var(--text)}
-.ws-item svg{width:14px;height:14px;flex-shrink:0}
-#ai-panel{display:flex;flex-direction:column;flex:1;overflow:hidden}
-#ai-panel-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-#ai-panel-header span{font-size:13px;font-weight:600}
-#ai-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.ai-msg{background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;line-height:1.5;color:var(--text2)}
-.ai-msg.user{background:rgba(20,184,166,.1);color:var(--text);align-self:flex-end;max-width:90%}
-.ai-msg.assistant{align-self:flex-start;max-width:90%}
-.ai-msg-label{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;font-weight:600}
-#ai-input-area{padding:10px;border-top:1px solid var(--border)}
-#ai-chat-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:12px;resize:none;min-height:60px;transition:border-color .15s}
-#ai-chat-input:focus{border-color:var(--teal)}
-#ai-send-btn{margin-top:6px;width:100%;background:var(--teal);color:#fff;padding:8px;border-radius:7px;font-size:12px;font-weight:600;transition:background .15s}
-#ai-send-btn:hover{background:var(--teal2)}
-#dashboard-page .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
-.stat-card .stat-num{font-size:28px;font-weight:700;color:var(--teal);margin-bottom:4px}
-.stat-card .stat-label{font-size:12px;color:var(--text2)}
-#projects-page .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.project-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s;position:relative}
-.project-card:hover{border-color:var(--teal)}
-.project-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
-.project-card p{font-size:12px;color:var(--text2);margin-bottom:12px}
-.project-card-footer{display:flex;align-items:center;justify-content:space-between}
-.project-actions{display:flex;gap:6px}
-#settings-page .settings-tabs{display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:4px;margin-bottom:20px;width:fit-content}
-.settings-tab{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
-.settings-tab.active{background:var(--bg2);color:var(--text)}
-.settings-section{display:none}
-.settings-section.active{display:block}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
-.settings-row:last-child{border-bottom:none}
-.settings-row-left h4{font-size:13px;font-weight:500;margin-bottom:2px}
-.settings-row-left p{font-size:12px;color:var(--text2)}
-.toast-container{position:fixed;top:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none}
-.toast{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:260px;max-width:360px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:all;animation:toastIn .25s ease;position:relative;overflow:hidden}
-.toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal)}
-.toast.success::before{background:var(--green)}
-.toast.error::before{background:var(--red)}
-.toast.warning::before{background:var(--yellow)}
-@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}
-.toast-icon{width:18px;height:18px;flex-shrink:0;margin-top:1px}
-.toast-body{flex:1}
-.toast-title{font-size:13px;font-weight:600;margin-bottom:2px}
-.toast-msg{font-size:12px;color:var(--text2)}
-.toast-close{color:var(--text3);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0}
-.notification-banner{background:var(--bg2);border:1px solid var(--border);border-bottom:1px solid rgba(20,184,166,.3);padding:12px 20px;display:flex;align-items:center;gap:10px;animation:slideDown .35s cubic-bezier(.34,1.56,.64,1);position:relative;z-index:10}
-@keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
-.notif-icon{width:32px;height:32px;border-radius:8px;background:rgba(20,184,166,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.notif-text{flex:1;font-size:13px;color:var(--text2)}
-.notif-text a{color:var(--teal);text-decoration:underline;cursor:pointer;background:none;border:none;font-size:13px;font-family:inherit}
-.notif-close{color:var(--text3);font-size:18px;cursor:pointer;background:none;border:none;line-height:1;padding:4px}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;animation:modalIn .25s cubic-bezier(.34,1.56,.64,1)}
-@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.modal-header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between}
-.modal-header h2{font-size:18px;font-weight:700}
-.modal-close{color:var(--text3);font-size:22px;cursor:pointer;line-height:1;transition:color .15s}
-.modal-close:hover{color:var(--text)}
-.modal-body{padding:20px}
-.divider{height:1px;background:var(--border);margin:16px 0}
-.collab-item{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:8px}
-.collab-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
-.collab-info{flex:1}
-.collab-info h4{font-size:13px;font-weight:500}
-.collab-info p{font-size:11px;color:var(--text3)}
-.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.perm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:7px;cursor:pointer;user-select:none}
-.perm-item input[type=checkbox]{accent-color:var(--teal);width:14px;height:14px}
-.perm-item label{font-size:12px;cursor:pointer}
-.share-link-box{display:flex;gap:8px;margin-top:8px}
-.share-link-box input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:12px}
-.pin-display{letter-spacing:6px;font-size:22px;font-weight:700;color:var(--teal);text-align:center;padding:12px;background:var(--bg3);border-radius:8px;margin-top:8px}
-#pin-modal .pin-inputs{display:flex;gap:10px;justify-content:center;margin:16px 0}
-#pin-modal .pin-digit{width:50px;height:56px;background:var(--bg3);border:2px solid var(--border);border-radius:10px;text-align:center;font-size:24px;font-weight:700;color:var(--text);transition:border-color .15s}
-#pin-modal .pin-digit:focus{border-color:var(--teal)}
-.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
-.empty-state svg{margin:0 auto 16px;color:var(--border)}
-.empty-state h3{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
-.empty-state p{font-size:13px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT-5.2 • Forever Chat • Powered by Puter.js</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --tw-color-primary: #10a37f;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .chat-container {
+            scrollbar-width: thin;
+            scrollbar-color: #10a37f #1f2937;
+        }
+        
+        .message-bubble {
+            max-width: 75%;
+            padding: 14px 20px;
+            border-radius: 20px;
+            position: relative;
+        }
+        
+        .user-bubble {
+            background: linear-gradient(135deg, #10a37f, #0e8c6b);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-bubble {
+            background: #374151;
+            color: #f3f4f6;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typingBounce 1.2s infinite;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 150ms; }
+        .typing-dot:nth-child(3) { animation-delay: 300ms; }
+        
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+        }
+        
+        .header-gradient {
+            background: linear-gradient(90deg, #10a37f, #0e8c6b);
+        }
+        
+        .proxy-badge {
+            animation: pulse 2s infinite;
+        }
+    </style>
 </head>
-<body>
-<div id="app">
-  <div id="sidebar">
-    <div id="sidebar-logo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      <span>CodeEdit AI</span>
-    </div>
-    <nav id="sidebar-nav">
-      <div class="nav-item active" data-page="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Home
-      </div>
-      <div class="nav-item" data-page="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard
-      </div>
-      <div class="nav-item" data-page="projects">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        Projects
-      </div>
-      <div class="nav-item" data-page="editor">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        Editor
-      </div>
-      <div class="nav-item" data-page="settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.88 2.85l-2.47 1.39a7 7 0 0 0-1.72-2.23l2.31-2.01zM4.93 4.93L7.24 6.94a7 7 0 0 0-1.72 2.23L3.05 7.78A10 10 0 0 1 4.93 4.93zM20.95 16.22l-2.47-1.39A7 7 0 0 0 19 12h2.85a10 10 0 0 1-.9 4.22zM3.05 16.22A10 10 0 0 1 2.15 12H5a7 7 0 0 0 .52 2.83L3.05 16.22zM19.07 19.07l-2.31-2.01a7 7 0 0 0 1.72-2.23l2.47 1.39a10 10 0 0 1-1.88 2.85zM7.24 17.06l-2.31 2.01a10 10 0 0 1-1.88-2.85l2.47-1.39a7 7 0 0 0 1.72 2.23zM12 2.15V5a7 7 0 0 0-2.83.52L7.78 3.05A10 10 0 0 1 12 2.15zM12 21.85a10 10 0 0 1-4.22-.9l1.39-2.47A7 7 0 0 0 12 19v2.85zM16.22 3.05l-1.39 2.47A7 7 0 0 0 12 5V2.15a10 10 0 0 1 4.22.9zM16.22 20.95A10 10 0 0 1 12 21.85V19a7 7 0 0 0 2.83-.52l1.39 2.47z"/></svg>
-        Settings
-      </div>
-    </nav>
-    <div id="sidebar-bottom">
-      <div id="conn-badge" style="margin-bottom:8px">
-        <div id="conn-dot"></div>
-        <span id="conn-text">Disconnected</span>
-      </div>
-      <button id="sidebar-connect-btn" onclick="togglePluginConnection()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;background:var(--teal);color:#fff;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;border:none;cursor:pointer;margin-bottom:6px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-        Connect to Plugin
-      </button>
-      <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;text-decoration:none">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Install Plugin
-      </a>
-    </div>
-  </div>
-
-  <div id="main">
-
-    <div id="home-page" class="page active">
-      <div class="home-hero">
-        <h1>Build <span>Roblox Games</span><br>with AI</h1>
-        <p>Describe your game idea and let CodeEdit AI generate the Lua code. Connect to Roblox Studio for live preview.</p>
-        <div class="hero-actions">
-          <button class="btn btn-primary btn-lg" style="width:auto" onclick="navigate('editor')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            Open Editor
-          </button>
-          <button class="btn btn-secondary" style="width:auto" onclick="togglePluginConnection()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-            Connect to Plugin
-          </button>
-          <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" class="btn btn-secondary" style="width:auto">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Install Plugin
-          </a>
+<body class="bg-gray-950 text-gray-100 flex flex-col h-screen overflow-hidden">
+    <!-- Header -->
+    <div class="header-gradient px-6 py-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-x-3">
+            <div class="w-8 h-8 bg-white rounded-2xl flex items-center justify-center text-[#10a37f] font-bold text-xl shadow-inner">P</div>
+            <div>
+                <h1 class="text-2xl font-semibold tracking-tight">ChatGPT-5.2</h1>
+                <p class="text-xs text-white/70 flex items-center gap-x-1">
+                    <span class="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    Forever Chat • Deep Puter.js Proxy
+                </p>
+            </div>
         </div>
-      </div>
-
-      <div class="generator-card">
-        <div class="card">
-          <div class="card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            AI Game Generator
-          </div>
-          <div class="prompt-wrapper">
-            <textarea id="prompt-input" placeholder="Describe your Roblox game idea in detail... (Cmd/Ctrl + Enter to generate)"></textarea>
-          </div>
-          <div class="prompt-footer">
-            <span class="char-count">unlimited</span>
-            <button id="gen-btn" onclick="generateCode()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Generate Game
+        
+        <div class="flex items-center gap-x-4">
+            <!-- Model badge -->
+            <div class="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-3xl flex items-center gap-x-1.5">
+                <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                gpt-5.2 (Thinking)
+            </div>
+            
+            <!-- Proxy status (deep Puter cloud integration) -->
+            <div onclick="showProxyInfo()" 
+                 class="proxy-badge flex items-center gap-x-2 text-xs font-medium cursor-pointer bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 px-4 py-1 rounded-3xl transition-colors border border-emerald-400/30">
+                <span class="text-emerald-400">🔥</span>
+                DEEP PROXY ACTIVE
+                <span class="text-[10px] bg-emerald-600 px-2 py-px rounded-full">Cloud-synced forever</span>
+            </div>
+            
+            <!-- Clear chat -->
+            <button onclick="clearChat()" 
+                    class="flex items-center gap-x-2 bg-white/10 hover:bg-white/20 transition-colors text-white text-sm font-medium px-4 py-2 rounded-3xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.595 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.595-1.858L5 7m5-4v4m4-4v4m-6 0h6" />
+                </svg>
+                Clear Forever Chat
             </button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:16px">
-          <div class="card-title">Getting Started</div>
-          <div class="steps-list">
-            <div class="step-item">
-              <div class="step-num">1</div>
-              <div class="step-text">
-                <h4>Download the Plugin</h4>
-                <p>Download and install the CodeEditor AI companion plugin in Roblox Studio from the toolbox.</p>
-              </div>
+            
+            <!-- Puter status -->
+            <div id="puter-status" onclick="checkPuterStatus()" 
+                 class="flex items-center gap-x-2 text-xs font-medium cursor-pointer bg-white/10 hover:bg-white/20 px-4 py-2 rounded-3xl transition-colors">
+                <span class="text-emerald-400">●</span>
+                Connected to Puter Deep Proxy
             </div>
-            <div class="step-item">
-              <div class="step-num">2</div>
-              <div class="step-text">
-                <h4>Enable HTTP Requests</h4>
-                <p>Make sure your game has HTTP requests enabled then connect the website to the plugin.</p>
-              </div>
-            </div>
-            <div class="step-item">
-              <div class="step-num">3</div>
-              <div class="step-text">
-                <h4>Generate &amp; Sync</h4>
-                <p>Describe your game, generate code, and watch it sync live to Roblox Studio instantly.</p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <h3>AI-Powered Code</h3>
-          <p>Generate complete Lua scripts from plain English descriptions using advanced AI models.</p>
-        </div>
-        <div class="feature-card">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          <h3>Live Studio Sync</h3>
-          <p>Instantly sync generated code to Roblox Studio via WebSocket for real-time development.</p>
-        </div>
-        <div class="feature-card">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <h3>Collaborative</h3>
-          <p>Share projects with teammates, set permissions, and work together in real-time.</p>
-        </div>
-      </div>
     </div>
 
-    <div id="dashboard-page" class="page">
-      <div class="page-header">
-        <h1>Dashboard</h1>
-        <p>Welcome back. Here's an overview of your projects.</p>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-num" id="stat-total">0</div>
-          <div class="stat-label">Total Projects</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="stat-active">0</div>
-          <div class="stat-label">Active Projects</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="stat-shared">0</div>
-          <div class="stat-label">Shared Projects</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Recent Projects</div>
-        <div class="card-desc">Your most recently modified projects.</div>
-        <div id="dash-recent"></div>
-      </div>
+    <!-- Chat Area -->
+    <div id="chat-container" class="flex-1 overflow-y-auto chat-container p-6 space-y-8 bg-gray-900">
+        <!-- Welcome / messages will be rendered dynamically -->
     </div>
 
-    <div id="projects-page" class="page">
-      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <h1>Projects</h1>
-          <p>Manage your Roblox game projects.</p>
+    <!-- Input Area -->
+    <div class="border-t border-gray-700 bg-gray-900 px-6 py-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-end gap-x-3 bg-gray-800 rounded-3xl p-2 shadow-2xl">
+                <textarea id="user-input" 
+                          rows="1"
+                          onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                          placeholder="Message ChatGPT-5.2... (Press Enter to send)"
+                          class="flex-1 bg-transparent px-5 py-4 outline-none resize-none max-h-[180px] text-base placeholder:text-gray-400"></textarea>
+                
+                <button onclick="sendMessage()" 
+                        class="w-11 h-11 bg-emerald-500 hover:bg-emerald-600 transition-colors rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.874L5.999 12zm0 0h7.07" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="text-center text-[10px] text-gray-500 mt-4 flex items-center justify-center gap-x-4">
+                <div>Deep Puter.js Proxy • Unlimited cloud persistence</div>
+                <div class="w-px h-3 bg-gray-600"></div>
+                <div>ChatGPT-5.2 • Real-time streaming • Forever history</div>
+                <div class="w-px h-3 bg-gray-600"></div>
+                <div>Hit <span class="font-mono bg-gray-800 px-1.5 rounded">Enter</span> to send</div>
+            </div>
         </div>
-        <button class="btn btn-primary" onclick="openNewProjectModal()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Project
-        </button>
-      </div>
-      <div id="projects-grid" class="projects-grid"></div>
     </div>
 
-    <div id="editor-page" class="page">
-      <div id="editor-notif" style="display:none"></div>
-      <div id="editor-layout">
-        <div id="editor-left">
-          <div id="editor-toolbar">
-            <div id="editor-toolbar-left">
-              <span id="editor-proj-name" style="font-size:13px;font-weight:600;color:var(--text2)">No Project Open</span>
-              <select id="model-select">
-                <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
-                <option value="claude-opus-4-6">Claude Opus 4.6</option>
-                <option value="gpt-5-2">ChatGPT 5.2</option>
-              </select>
-              <span class="badge badge-teal" style="font-size:11px" id="editor-status-badge">LUA</span>
-            </div>
-            <div id="editor-toolbar-right">
-              <button class="btn btn-secondary btn-sm" onclick="copyCode()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="downloadCode()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="saveCode()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                Save
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="openShareModal()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                Share
-              </button>
-              <button id="editor-connect-btn" class="btn btn-secondary btn-sm" onclick="togglePluginConnection()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                Connect to Plugin
-              </button>
-              <a href="https://create.roblox.com/store/asset/75310135135098/CodeEdit-Copilot" target="_blank" class="btn btn-secondary btn-sm">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Install Plugin
-              </a>
-              <button class="btn btn-primary btn-sm" onclick="sendToStudio()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Send to Studio
-              </button>
-            </div>
-          </div>
-          <div id="editor-content">
-            <div id="code-wrapper">
-              <div id="code-lines"></div>
-              <div id="code-highlight"></div>
-              <textarea id="code-input" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Start typing or generate code with AI..."></textarea>
-            </div>
-          </div>
-          <div id="studio-panel">
-            <div id="studio-panel-header">
-              <span>Studio</span>
-              <div id="studio-tabs">
-                <div class="studio-tab active" onclick="switchStudioTab('preview')">Preview</div>
-                <div class="studio-tab" onclick="switchStudioTab('workspace')">Workspace</div>
-              </div>
-            </div>
-            <div id="studio-content">
-              <div id="studio-preview">
-                <div style="text-align:center">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;color:var(--text3)"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                  <div>Connect to Roblox Studio to see live preview</div>
-                </div>
-              </div>
-              <div id="studio-workspace" style="display:none;flex-direction:column;gap:2px"></div>
-            </div>
-          </div>
-        </div>
-        <div id="editor-right">
-          <div id="ai-panel">
-            <div id="ai-panel-header">
-              <span>AI Assistant</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                <span id="ai-model-label" class="badge badge-teal" style="font-size:10px">Gemini 3.1</span>
-                <button id="ai-puter-btn" onclick="puterLoginQuick()" style="font-size:10px;padding:3px 8px;background:rgba(20,184,166,.15);color:var(--teal);border:1px solid rgba(20,184,166,.3);border-radius:20px;cursor:pointer;font-weight:600;display:none">Login</button>
-              </div>
-            </div>
-            <div id="ai-messages">
-              <div class="ai-msg assistant">
-                <div class="ai-msg-label">CodeEdit AI</div>
-                Hello! I can help you write Lua code for your Roblox game. Describe what you want to build and I'll generate the code for you.
-              </div>
-            </div>
-            <div id="ai-input-area">
-              <textarea id="ai-chat-input" placeholder="Ask me to generate or modify code..."></textarea>
-              <button id="ai-send-btn" onclick="sendAiMessage()">Generate Code</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="settings-page" class="page">
-      <div class="page-header">
-        <h1>Settings</h1>
-        <p>Configure your CodeEditor AI connection and preferences.</p>
-      </div>
-      <div class="settings-tabs">
-        <div class="settings-tab active" onclick="switchSettingsTab('connection')">Connection</div>
-        <div class="settings-tab" onclick="switchSettingsTab('preferences')">Preferences</div>
-        <div class="settings-tab" onclick="switchSettingsTab('advanced')">Advanced</div>
-      </div>
-
-      <div id="settings-connection" class="settings-section active">
-        <div class="card">
-          <div class="card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-            WebSocket Server
-          </div>
-          <div class="card-desc">Configure the WebSocket server URL for plugin communication.</div>
-          <div class="form-group">
-            <label class="form-label">Server URL</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" class="form-input" id="ws-url" value="wss://codeit.rest" style="flex:1">
-              <button class="btn btn-secondary" onclick="testConnection()">Test</button>
-            </div>
-          </div>
-          <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.2);border-radius:8px">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                Install the <strong style="color:var(--teal)">CodeEdit Copilot</strong> plugin in Roblox Studio, click Connect in the plugin toolbar, then click <strong>Connect to Plugin</strong> here. Both must connect to the same server URL.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-            Puter.js Authentication
-          </div>
-          <div class="card-desc">Login or create a Puter account to access AI models.</div>
-          <button class="btn btn-primary btn-lg" onclick="puterLogin()" id="puter-login-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            Login to Puter.js
-          </button>
-          <p style="font-size:12px;color:var(--text3);margin-top:10px;text-align:center">Will open Puter.js auth — make sure to create or login to your Puter account to use the AI models.</p>
-          <div id="puter-status" style="margin-top:12px;display:none">
-            <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span id="puter-user-label" style="font-size:13px;color:var(--green)">Logged in</span>
-              <button onclick="puterLogout()" style="margin-left:auto;font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none">Sign out</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="settings-preferences" class="settings-section">
-        <div class="card">
-          <div class="card-title">Editor Preferences</div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Auto Save</h4>
-              <p>Automatically save changes while editing</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="auto-save" checked>
-              <div class="toggle-slider"></div>
-            </label>
-          </div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Auto Save Interval</h4>
-              <p>Seconds between automatic saves</p>
-            </div>
-            <input type="number" class="form-input" id="auto-save-interval" value="30" style="width:80px;text-align:center">
-          </div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Default AI Model</h4>
-              <p>Select the default AI model for code generation</p>
-            </div>
-            <select class="form-input" id="default-model" style="width:160px" onchange="syncModelSelects(this.value)">
-              <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
-              <option value="claude-opus-4-6">Claude Opus 4.6</option>
-              <option value="gpt-5-2">ChatGPT 5.2</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div id="settings-advanced" class="settings-section">
-        <div class="card">
-          <div class="card-title">Advanced Settings</div>
-          <div class="card-desc">Advanced settings for developers.</div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Debug Mode</h4>
-              <p>Show verbose WebSocket and AI logs</p>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="debug-mode">
-              <div class="toggle-slider"></div>
-            </label>
-          </div>
-          <div class="settings-row">
-            <div class="settings-row-left">
-              <h4>Clear All Data</h4>
-              <p>Remove all projects and settings from local storage</p>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear Data</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<div class="toast-container" id="toast-container"></div>
-
-<div id="new-project-modal" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>New Project</h2>
-      <button class="modal-close" onclick="closeModal('new-project-modal')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Project Name</label>
-        <input type="text" class="form-input" id="new-proj-name" placeholder="My Roblox Game">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Description (optional)</label>
-        <textarea class="form-input" id="new-proj-desc" placeholder="A short description..." style="min-height:80px"></textarea>
-      </div>
-      <button class="btn btn-primary btn-lg" onclick="createProject()">Create Project</button>
-    </div>
-  </div>
-</div>
-
-<div id="share-modal" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Share Project</h2>
-      <button class="modal-close" onclick="closeModal('share-modal')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Invite Link</label>
-        <div class="share-link-box">
-          <input type="text" id="share-link-input" readonly placeholder="Generate a link...">
-          <button class="btn btn-primary btn-sm" onclick="generateShareLink()">Generate</button>
-          <button class="btn btn-secondary btn-sm" onclick="copyShareLink()">Copy</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Link Expiry</label>
-        <select class="form-input" id="link-expiry">
-          <option value="3600000">1 Hour</option>
-          <option value="86400000">24 Hours</option>
-          <option value="604800000">7 Days</option>
-          <option value="2592000000">30 Days</option>
-          <option value="0">Never</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
-          Pin Code Protection
-          <label class="toggle" style="width:36px;height:20px">
-            <input type="checkbox" id="pin-enabled" onchange="togglePinField()">
-            <div class="toggle-slider"></div>
-          </label>
-        </label>
-        <div id="pin-field" style="display:none;margin-top:8px">
-          <input type="text" class="form-input" id="share-pin" maxlength="6" placeholder="Enter 4-6 digit PIN" oninput="this.value=this.value.replace(/\D/g,'')">
-          <p style="font-size:11px;color:var(--text3);margin-top:4px">Collaborators must enter this PIN to access your project.</p>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="form-group">
-        <label class="form-label">Collaborator Permissions</label>
-        <div class="perm-grid">
-          <div class="perm-item">
-            <input type="checkbox" id="perm-view" checked disabled>
-            <label for="perm-view">View Code</label>
-          </div>
-          <div class="perm-item">
-            <input type="checkbox" id="perm-edit">
-            <label for="perm-edit">Edit Code</label>
-          </div>
-          <div class="perm-item">
-            <input type="checkbox" id="perm-run">
-            <label for="perm-run">Run in Studio</label>
-          </div>
-          <div class="perm-item">
-            <input type="checkbox" id="perm-share">
-            <label for="perm-share">Re-share</label>
-          </div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <label class="form-label" style="margin:0">Active Collaborators</label>
-        </div>
-        <div id="collabs-list">
-          <div class="empty-state" style="padding:20px">
-            <p>No collaborators yet. Share the link to invite others.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="pin-modal" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-header">
-      <h2>Enter PIN Code</h2>
-      <button class="modal-close" onclick="closeModal('pin-modal')">&times;</button>
-    </div>
-    <div class="modal-body" style="text-align:center">
-      <p style="color:var(--text2);font-size:13px;margin-bottom:16px">This project is PIN protected. Enter the access code to continue.</p>
-      <div class="pin-inputs">
-        <input class="pin-digit form-input" maxlength="1" oninput="pinDigitInput(this,0)" onkeydown="pinDigitKey(event,0)" style="text-align:center;font-size:22px;font-weight:700;width:50px;height:56px;padding:0">
-        <input class="pin-digit form-input" maxlength="1" oninput="pinDigitInput(this,1)" onkeydown="pinDigitKey(event,1)" style="text-align:center;font-size:22px;font-weight:700;width:50px;height:56px;padding:0">
-        <input class="pin-digit form-input" maxlength="1" oninput="pinDigitInput(this,2)" onkeydown="pinDigitKey(event,2)" style="text-align:center;font-size:22px;font-weight:700;width:50px;height:56px;padding:0">
-        <input class="pin-digit form-input" maxlength="1" oninput="pinDigitInput(this,3)" onkeydown="pinDigitKey(event,3)" style="text-align:center;font-size:22px;font-weight:700;width:50px;height:56px;padding:0">
-      </div>
-      <button class="btn btn-primary btn-lg" onclick="submitPin()">Access Project</button>
-      <p id="pin-error" style="color:var(--red);font-size:12px;margin-top:8px;display:none">Incorrect PIN. Please try again.</p>
-    </div>
-  </div>
-</div>
-
-<script>
-var state = {
-  currentPage: 'home',
-  projects: JSON.parse(localStorage.getItem('ce_projects') || '[]'),
-  activeProject: null,
-  wsInstance: null,
-  wsStatus: 'disconnected',
-  puterLoggedIn: false,
-  puterUser: null,
-  firstVisit: !localStorage.getItem('ce_visited'),
-  shareData: null,
-  collaborators: [],
-  autoSaveTimer: null
-};
-
-localStorage.setItem('ce_visited', '1');
-
-function navigate(page) {
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-  var pageEl = document.getElementById(page + '-page');
-  var navEl = document.querySelector('[data-page="' + page + '"]');
-  if (pageEl) pageEl.classList.add('active');
-  if (navEl) navEl.classList.add('active');
-  state.currentPage = page;
-  if (page === 'editor') {
-    if (state.firstVisit) {
-      state.firstVisit = false;
-      if (!state.puterLoggedIn) setTimeout(showEditorNotif, 400);
-    }
-    setTimeout(checkPuterForAI, 200);
-  }
-  if (page === 'dashboard') updateDashboard();
-  if (page === 'projects') renderProjects();
-}
-
-document.querySelectorAll('.nav-item').forEach(function(item) {
-  item.addEventListener('click', function() {
-    navigate(this.dataset.page);
-  });
-});
-
-function showEditorNotif() {
-  var notifEl = document.getElementById('editor-notif');
-  notifEl.innerHTML = '<div class="notification-banner"><div class="notif-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="notif-text">Make sure to login to Puter.js in <button onclick="navigate(\'settings\')" style="color:var(--teal);text-decoration:underline;cursor:pointer;background:none;border:none;font-size:13px;font-family:inherit;padding:0">settings</button>.</div><button class="notif-close" onclick="dismissEditorNotif()">&times;</button></div>';
-  notifEl.style.display = 'block';
-}
-
-function dismissEditorNotif() {
-  var notifEl = document.getElementById('editor-notif');
-  notifEl.style.display = 'none';
-}
-
-function toast(title, msg, type) {
-  var icons = {
-    success: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-    error: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-    info: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    warning: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-  };
-  type = type || 'info';
-  var container = document.getElementById('toast-container');
-  var t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.innerHTML = (icons[type] || icons.info) + '<div class="toast-body"><div class="toast-title">' + title + '</div><div class="toast-msg">' + (msg || '') + '</div></div><span class="toast-close" onclick="this.parentElement.remove()">&times;</span>';
-  container.appendChild(t);
-  setTimeout(function() {
-    t.style.animation = 'toastOut .25s ease forwards';
-    setTimeout(function() { t.remove(); }, 250);
-  }, 4000);
-}
-
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-document.querySelectorAll('.modal-overlay').forEach(function(el) {
-  el.addEventListener('click', function(e) {
-    if (e.target === this) closeModal(this.id);
-  });
-});
-
-function setPuterLoggedIn(user) {
-  state.puterLoggedIn = true;
-  state.puterUser = user;
-  var label = user ? (user.username || user.email || 'Puter user') : 'Puter user';
-  var statusEl = document.getElementById('puter-status');
-  var userLabelEl = document.getElementById('puter-user-label');
-  var loginBtn = document.getElementById('puter-login-btn');
-  var aiBadgeBtn = document.getElementById('ai-puter-btn');
-  if (statusEl) statusEl.style.display = 'block';
-  if (userLabelEl) userLabelEl.textContent = 'Logged in as ' + label;
-  if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Logged In'; }
-  if (aiBadgeBtn) aiBadgeBtn.style.display = 'none';
-  dismissEditorNotif();
-}
-
-function checkPuterForAI() {
-  var aiBadgeBtn = document.getElementById('ai-puter-btn');
-  if (!state.puterLoggedIn && aiBadgeBtn) aiBadgeBtn.style.display = 'inline-flex';
-}
-
-function puterLoginQuick() {
-  if (typeof puter === 'undefined') {
-    toast('Puter.js not loaded', 'Please check your internet connection.', 'error');
-    return;
-  }
-  puter.auth.signIn().then(function(user) {
-    setPuterLoggedIn(user);
-    toast('Logged in!', 'All AI models are now available.', 'success');
-  }).catch(function(err) {
-    toast('Login failed', err && err.message ? err.message : 'Authentication cancelled.', 'error');
-  });
-}
-
-function puterLogin() {
-  if (typeof puter === 'undefined') {
-    toast('Puter.js not loaded', 'Please check your internet connection.', 'error');
-    return;
-  }
-  puter.auth.signIn().then(function(user) {
-    setPuterLoggedIn(user);
-    toast('Logged in to Puter.js', 'All AI models are now available.', 'success');
-  }).catch(function(err) {
-    toast('Login failed', err && err.message ? err.message : 'Authentication cancelled.', 'error');
-  });
-}
-
-function puterLogout() {
-  if (typeof puter !== 'undefined') {
-    puter.auth.signOut().then(function() {
-      state.puterLoggedIn = false;
-      state.puterUser = null;
-      var statusEl = document.getElementById('puter-status');
-      var btn = document.getElementById('puter-login-btn');
-      if (statusEl) statusEl.style.display = 'none';
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Login to Puter.js';
-      }
-      toast('Signed out', 'You have been signed out of Puter.js.', 'info');
-    }).catch(function(e) { toast('Sign out failed', e && e.message ? e.message : '', 'error'); });
-  }
-}
-
-function initPuterSession() {
-  if (typeof puter === 'undefined') return;
-  try {
-    puter.auth.isSignedIn().then(function(signedIn) {
-      if (signedIn) {
-        puter.auth.getUser().then(function(user) {
-          setPuterLoggedIn(user);
-        }).catch(function() {
-          state.puterLoggedIn = true;
-          setPuterLoggedIn(null);
-        });
-      }
-    }).catch(function() {});
-  } catch(e) {}
-}
-
-initPuterSession();
-
-function getSelectedModel() {
-  return document.getElementById('model-select').value;
-}
-
-function syncModelSelects(val) {
-  document.getElementById('model-select').value = val;
-  updateAiModelLabel(val);
-}
-
-document.getElementById('model-select').addEventListener('change', function() {
-  updateAiModelLabel(this.value);
-  document.getElementById('default-model').value = this.value;
-});
-
-function updateAiModelLabel(val) {
-  var labels = { 'gemini-3.1-pro': 'Gemini 3.1', 'claude-opus-4-6': 'Claude Opus', 'gpt-5-2': 'ChatGPT 5.2' };
-  document.getElementById('ai-model-label').textContent = labels[val] || val;
-}
-
-function extractPuterText(response) {
-  if (typeof response === 'string') return response;
-  if (response && response.message) {
-    var msg = response.message;
-    if (typeof msg === 'string') return msg;
-    if (msg.content) {
-      if (typeof msg.content === 'string') return msg.content;
-      if (Array.isArray(msg.content)) return msg.content.map(function(c) { return c.text || c.content || ''; }).join('');
-    }
-  }
-  if (response && response.choices && response.choices[0]) {
-    var choice = response.choices[0];
-    if (choice.message && choice.message.content) return choice.message.content;
-    if (choice.text) return choice.text;
-  }
-  if (response && response.content) {
-    if (typeof response.content === 'string') return response.content;
-    if (Array.isArray(response.content)) return response.content.map(function(c) { return c.text || ''; }).join('');
-  }
-  if (response && response.text) return response.text;
-  if (response && response.result) return response.result;
-  return String(response);
-}
-
-async function callAI(prompt) {
-  if (typeof puter === 'undefined') throw new Error('Puter.js is not loaded. Please check your internet connection.');
-  var model = getSelectedModel();
-  var response = await puter.ai.chat(prompt, { model: model });
-  var text = extractPuterText(response);
-  if (!text || text === '[object Object]') throw new Error('Empty response from AI. Please try again.');
-  return text;
-}
-
-async function generateCode() {
-  var prompt = document.getElementById('prompt-input').value.trim();
-  if (!prompt) { toast('Empty prompt', 'Please describe your game idea.', 'warning'); return; }
-  var btn = document.getElementById('gen-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...';
-  try {
-    var fullPrompt = 'Generate Lua code for a Roblox game. Requirements: ' + prompt + '\n\nOutput ONLY the Lua code, no explanations, no markdown code blocks. Just raw Lua code.';
-    var code = await callAI(fullPrompt);
-    code = code.replace(/^```(?:lua)?\n?/,'').replace(/\n?```$/,'').trim();
-    document.getElementById('code-input').value = code;
-    highlightCode(code);
-    updateLineNumbers(code);
-    navigate('editor');
-    toast('Code generated!', 'Your Roblox game code is ready.', 'success');
-  } catch(e) {
-    toast('Generation failed', e.message || 'An error occurred.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate Game';
-  }
-}
-
-document.getElementById('prompt-input').addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generateCode();
-});
-
-async function sendAiMessage() {
-  var input = document.getElementById('ai-chat-input');
-  var msg = input.value.trim();
-  if (!msg) return;
-  addAiMessage(msg, 'user');
-  input.value = '';
-  var btn = document.getElementById('ai-send-btn');
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-  try {
-    var currentCode = document.getElementById('code-input').value;
-    var sysCtx = currentCode ? 'Current code in editor:\n```lua\n' + currentCode.substring(0,2000) + '\n```\n\n' : '';
-    var fullPrompt = sysCtx + 'User request: ' + msg + '\n\nRespond with Lua code only if generating/modifying code, otherwise respond helpfully. If providing code, output ONLY the Lua code without markdown.';
-    var response = await callAI(fullPrompt);
-    var cleaned = response.replace(/^```(?:lua)?\n?/,'').replace(/\n?```$/,'').trim();
-    var looksLikeCode = cleaned.includes('local ') || cleaned.includes('function ') || cleaned.includes('end') || cleaned.includes('game:');
-    if (looksLikeCode) {
-      document.getElementById('code-input').value = cleaned;
-      highlightCode(cleaned);
-      updateLineNumbers(cleaned);
-      addAiMessage('Code generated and inserted into the editor.', 'assistant');
-    } else {
-      addAiMessage(response, 'assistant');
-    }
-  } catch(e) {
-    addAiMessage('Error: ' + (e.message || 'Failed to get AI response.'), 'assistant');
-    toast('AI error', e.message || 'Failed.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generate Code';
-  }
-}
-
-document.getElementById('ai-chat-input').addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendAiMessage();
-});
-
-function addAiMessage(text, role) {
-  var msgs = document.getElementById('ai-messages');
-  var div = document.createElement('div');
-  div.className = 'ai-msg ' + role;
-  div.innerHTML = '<div class="ai-msg-label">' + (role === 'user' ? 'You' : 'CodeEdit AI') + '</div>' + escapeHtml(text);
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-var LUA_KEYWORDS = /\b(and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while)\b/g;
-var LUA_BUILTINS = /\b(print|type|tostring|tonumber|pairs|ipairs|next|select|error|assert|pcall|xpcall|rawget|rawset|rawequal|rawlen|setmetatable|getmetatable|require|load|loadstring|dofile|unpack|table|string|math|os|io|coroutine|game|workspace|script|Instance|Vector3|Vector2|CFrame|Color3|BrickColor|Enum|UDim|UDim2|TweenInfo|Ray|Region3|NumberSequence|ColorSequence|NumberRange|Rect|wait|spawn|delay|tick|time|warn|task)\b/g;
-var LUA_SELF = /\bself\b/g;
-var LUA_STRINGS1 = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
-var LUA_STRINGS2 = /\[\[[\s\S]*?\]\]/g;
-var LUA_COMMENT1 = /--\[\[[\s\S]*?\]\]/g;
-var LUA_COMMENT2 = /--[^\n]*/g;
-var LUA_NUMBERS = /\b\d+\.?\d*(?:e[+-]?\d+)?\b|\b0x[0-9a-fA-F]+\b/g;
-var LUA_OPS = /[+\-*\/%^#&|~<>=!;:,.(){}[\]]/g;
-var LUA_FUNCCALL = /\b([a-zA-Z_]\w*)\s*(?=\()/g;
-
-function highlightLua(code) {
-  var out = '';
-  var pos = 0;
-  var tokens = [];
-  var len = code.length;
-
-  function addToken(start, end, cls) {
-    tokens.push({start:start, end:end, cls:cls});
-  }
-
-  var tmp;
-  var re;
-
-  re = new RegExp(LUA_COMMENT1.source, 'g');
-  while ((tmp = re.exec(code)) !== null) addToken(tmp.index, tmp.index + tmp[0].length, 'lua-cmt');
-  re = new RegExp(LUA_COMMENT2.source, 'g');
-  while ((tmp = re.exec(code)) !== null) addToken(tmp.index, tmp.index + tmp[0].length, 'lua-cmt');
-  re = new RegExp(LUA_STRINGS2.source, 'g');
-  while ((tmp = re.exec(code)) !== null) addToken(tmp.index, tmp.index + tmp[0].length, 'lua-str');
-  re = new RegExp(LUA_STRINGS1.source, 'g');
-  while ((tmp = re.exec(code)) !== null) addToken(tmp.index, tmp.index + tmp[0].length, 'lua-str');
-
-  tokens.sort(function(a, b) { return a.start - b.start; });
-
-  var covered = new Uint8Array(len);
-  for (var i = 0; i < tokens.length; i++) {
-    var t = tokens[i];
-    var overlap = false;
-    for (var j = t.start; j < t.end; j++) { if (covered[j]) { overlap = true; break; } }
-    if (!overlap) for (var j = t.start; j < t.end; j++) covered[j] = 1;
-    else tokens.splice(i--, 1);
-  }
-
-  function processPlain(plain) {
-    plain = plain.replace(LUA_KEYWORDS, '<span class="lua-kw">$&</span>');
-    plain = plain.replace(LUA_BUILTINS, '<span class="lua-builtin">$&</span>');
-    plain = plain.replace(LUA_SELF, '<span class="lua-self">$&</span>');
-    plain = plain.replace(LUA_NUMBERS, '<span class="lua-num">$&</span>');
-    plain = plain.replace(LUA_FUNCCALL, function(m, name) {
-      if (/\b(and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while)\b/.test(name)) return m;
-      return '<span class="lua-fn">' + name + '</span>(';
-    });
-    return plain;
-  }
-
-  var result = '';
-  var cur = 0;
-  for (var i = 0; i < tokens.length; i++) {
-    var t = tokens[i];
-    if (t.start > cur) {
-      result += processPlain(escapeHtml(code.slice(cur, t.start)));
-    }
-    result += '<span class="' + t.cls + '">' + escapeHtml(code.slice(t.start, t.end)) + '</span>';
-    cur = t.end;
-  }
-  if (cur < len) result += processPlain(escapeHtml(code.slice(cur)));
-  return result;
-}
-
-function highlightCode(code) {
-  var hl = document.getElementById('code-highlight');
-  hl.innerHTML = highlightLua(code) + '\n';
-}
-
-function updateLineNumbers(code) {
-  var lines = code.split('\n');
-  var nums = '';
-  for (var i = 1; i <= lines.length; i++) nums += i + '\n';
-  document.getElementById('code-lines').textContent = nums;
-}
-
-var codeInput = document.getElementById('code-input');
-codeInput.addEventListener('input', function() {
-  var val = this.value;
-  highlightCode(val);
-  updateLineNumbers(val);
-  syncScroll();
-  if (state.activeProject) autoSaveProject();
-});
-codeInput.addEventListener('scroll', syncScroll);
-codeInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    var s = this.selectionStart;
-    var end = this.selectionEnd;
-    this.value = this.value.substring(0, s) + '  ' + this.value.substring(end);
-    this.selectionStart = this.selectionEnd = s + 2;
-    highlightCode(this.value);
-    updateLineNumbers(this.value);
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveCode(); }
-});
-
-function syncScroll() {
-  var el = document.getElementById('code-input');
-  document.getElementById('code-highlight').scrollTop = el.scrollTop;
-  document.getElementById('code-highlight').scrollLeft = el.scrollLeft;
-  document.getElementById('code-lines').scrollTop = el.scrollTop;
-}
-
-function copyCode() {
-  var val = document.getElementById('code-input').value;
-  if (!val) { toast('Nothing to copy', '', 'warning'); return; }
-  navigator.clipboard.writeText(val).then(function() { toast('Copied!', 'Code copied to clipboard.', 'success'); }).catch(function() { toast('Copy failed', '', 'error'); });
-}
-
-function downloadCode() {
-  var val = document.getElementById('code-input').value;
-  if (!val) { toast('Nothing to download', '', 'warning'); return; }
-  var name = (state.activeProject ? state.activeProject.name : 'script').replace(/\s+/g,'_') + '.lua';
-  var blob = new Blob([val], { type: 'text/plain' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('Downloaded', name, 'success');
-}
-
-function saveCode() {
-  if (!state.activeProject) { toast('No project open', 'Create or open a project first.', 'warning'); return; }
-  state.activeProject.code = document.getElementById('code-input').value;
-  state.activeProject.updatedAt = Date.now();
-  saveProjects();
-  toast('Saved', state.activeProject.name, 'success');
-}
-
-function autoSaveProject() {
-  clearTimeout(state.autoSaveTimer);
-  state.autoSaveTimer = setTimeout(function() {
-    if (state.activeProject && document.getElementById('auto-save').checked) {
-      saveCode();
-    }
-  }, (parseInt(document.getElementById('auto-save-interval').value) || 30) * 1000);
-}
-
-function sendToStudio() {
-  if (state.wsStatus !== 'connected') { toast('Not connected', 'Connect to Roblox Studio first.', 'warning'); return; }
-  var code = document.getElementById('code-input').value;
-  try {
-    state.wsInstance.send(JSON.stringify({ type: 'code_update', code: code }));
-    toast('Sent to Studio', 'Code synced to Roblox Studio.', 'success');
-  } catch(e) {
-    toast('Send failed', e.message, 'error');
-  }
-}
-
-function togglePluginConnection() {
-  if (state.wsStatus === 'connected' || state.wsStatus === 'connecting') {
-    disconnectWebSocket();
-  } else {
-    var url = document.getElementById('ws-url').value.trim() || 'wss://codeit.rest';
-    connectWebSocket(url);
-  }
-}
-
-function testConnection() {
-  var url = document.getElementById('ws-url').value.trim();
-  if (!url) { toast('No URL', 'Enter a WebSocket server URL.', 'warning'); return; }
-  disconnectWebSocket();
-  connectWebSocket(url);
-}
-
-function updateConnectButtons(status) {
-  var configs = {
-    connected:    { label: 'Disconnect Plugin',  icon: 'M18 6L6 18M6 6l12 12', danger: true },
-    disconnected: { label: 'Connect to Plugin',  icon: 'M5 12h14M12 5l7 7-7 7', danger: false },
-    connecting:   { label: 'Cancel',             icon: 'M18 6L6 18M6 6l12 12', danger: false },
-    error:        { label: 'Retry Connection',   icon: 'M5 12h14M12 5l7 7-7 7', danger: false }
-  };
-  var cfg = configs[status] || configs.disconnected;
-  var sidebarBtn = document.getElementById('sidebar-connect-btn');
-  var editorBtn = document.getElementById('editor-connect-btn');
-  var dangerStyle = 'background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)';
-  var tealStyle = 'background:var(--teal);color:#fff;border:none';
-  var neutralStyle = 'background:var(--bg3);color:var(--text2);border:1px solid var(--border)';
-  var sidebarStyle = cfg.danger ? dangerStyle : (status === 'disconnected' || status === 'error' ? tealStyle : neutralStyle);
-  if (sidebarBtn) {
-    sidebarBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + cfg.icon + '"/></svg> ' + cfg.label;
-    sidebarBtn.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600;transition:all .15s;cursor:pointer;margin-bottom:6px;' + sidebarStyle;
-  }
-  if (editorBtn) {
-    editorBtn.innerHTML = cfg.label;
-    editorBtn.className = 'btn btn-sm ' + (cfg.danger ? 'btn-danger' : 'btn-secondary');
-  }
-}
-
-function connectWebSocket(url) {
-  if (state.wsInstance) {
-    try { state.wsInstance.close(); } catch(e) {}
-    state.wsInstance = null;
-  }
-  state.wsDisconnectFn = null;
-  setConnStatus('connecting');
-
-  var settled = false;
-  var intentionalClose = false;
-
-  function settle() {
-    settled = true;
-  }
-
-  try {
-    var ws = new WebSocket(url);
-    state.wsInstance = ws;
-
-    ws.onopen = function() {
-      settle();
-      setConnStatus('connected');
-      toast('Connected to Plugin', 'Roblox Studio plugin is now connected.', 'success');
-      loadStudioWorkspace();
-    };
-
-    ws.onerror = function() {
-      if (settled) return;
-      settle();
-      intentionalClose = true;
-      state.wsInstance = null;
-      setConnStatus('error');
-      toast('Plugin not found', 'Make sure Roblox Studio is open and the CodeEdit Copilot plugin is running.', 'error');
-    };
-
-    ws.onclose = function() {
-      state.wsInstance = null;
-      if (intentionalClose) return;
-      if (!settled) {
-        settle();
-        setConnStatus('error');
-        toast('Plugin not found', 'Make sure Roblox Studio is open and the CodeEdit Copilot plugin is running.', 'error');
-        return;
-      }
-      setConnStatus('disconnected');
-      toast('Plugin disconnected', 'Lost connection to Roblox Studio.', 'warning');
-    };
-
-    ws.onmessage = function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'workspace_data') {
-          updateStudioWorkspace(data.payload && data.payload.Children ? flattenWorkspace(data.payload) : []);
+    <script>
+        // TailwindCSS initialization (unchanged)
+        function initTailwind() {
+            return {
+                config(userConfig = {}) {
+                    return {
+                        configUser: userConfig,
+                        theme: {
+                            extend: {
+                                fontFamily: {
+                                    inter: ['Inter', 'sans-serif']
+                                }
+                            }
+                        }
+                    }
+                },
+                theme(config) {
+                    return config.theme
+                }
+            }
         }
-        if (data.type === 'studio_preview') {
-          updateStudioPreview(data.payload && data.payload.dataUrl ? data.payload.dataUrl : null);
+        
+        // Global conversation history
+        let messages = [
+            {
+                role: "system",
+                content: "You are ChatGPT-5.2, the most advanced AI model from OpenAI (released December 2025). You are helpful, witty, and highly capable. Always respond in a natural, conversational tone."
+            }
+        ]
+        
+        // Puter deep proxy constants
+        const HISTORY_FILE = 'gpt-5.2-chat-history.json'
+        
+        // DOM references
+        let chatContainer = null
+        let inputField = null
+        
+        // Render ALL messages from history (used on load and after clear)
+        function renderAllMessages() {
+            chatContainer.innerHTML = ''
+            
+            // If only system prompt exists → show welcome screen
+            if (messages.length <= 1) {
+                chatContainer.innerHTML = `
+                    <div class="max-w-3xl mx-auto text-center pt-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-3xl mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2 2 2 0 01-2-2 2 2 0 012-2 2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-4xl font-semibold mb-3">Hello, I'm ChatGPT-5.2</h2>
+                        <p class="text-gray-400 max-w-md mx-auto">Your forever chat is now powered by Puter.js Deep Proxy.<br>No limits. History saved in the cloud forever.</p>
+                        
+                        <div class="flex flex-wrap gap-3 justify-center mt-8">
+                            <button onclick="quickPrompt('Explain quantum computing like I\'m 10')" 
+                                    class="text-sm bg-gray-800 hover:bg-gray-700 transition-colors px-5 py-3 rounded-3xl">Explain quantum computing like I'm 10</button>
+                            <button onclick="quickPrompt('Write a short sci-fi story about AI')" 
+                                    class="text-sm bg-gray-800 hover:bg-gray-700 transition-colors px-5 py-3 rounded-3xl">Write a short sci-fi story about AI</button>
+                            <button onclick="quickPrompt('What are the biggest breakthroughs in 2026?')" 
+                                    class="text-sm bg-gray-800 hover:bg-gray-700 transition-colors px-5 py-3 rounded-3xl">What are the biggest breakthroughs in 2026?</button>
+                        </div>
+                    </div>
+                `
+                return
+            }
+            
+            // Render every past message
+            messages.slice(1).forEach(msg => {
+                const messageDiv = document.createElement('div')
+                messageDiv.className = `flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`
+                
+                if (msg.role === 'user') {
+                    messageDiv.innerHTML = `
+                        <div class="message-bubble user-bubble">
+                            <p class="text-sm leading-relaxed">${msg.content}</p>
+                        </div>
+                    `
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="flex gap-x-4">
+                            <div class="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">5</div>
+                            <div class="message-bubble ai-bubble">
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap">${msg.content.replace(/\n/g, '<br>')}</p>
+                            </div>
+                        </div>
+                    `
+                }
+                chatContainer.appendChild(messageDiv)
+            })
+            
+            chatContainer.scrollTop = chatContainer.scrollHeight
         }
-        if (data.type === 'workspace') updateStudioWorkspace(data.files || []);
-        if (data.type === 'preview') updateStudioPreview(data.url || data.image || null);
-        if (data.type === 'code_generated' && data.payload && data.payload.code) {
-          document.getElementById('code-input').value = data.payload.code;
-          highlightCode(data.payload.code);
-          updateLineNumbers(data.payload.code);
+        
+        // Add a single message to UI (used during live chat)
+        function addMessage(role, content, isStreaming = false) {
+            const messageDiv = document.createElement('div')
+            messageDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} group`
+            messageDiv.id = 'msg-' + Date.now()
+            
+            if (role === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-bubble user-bubble">
+                        <p class="text-sm leading-relaxed">${content}</p>
+                    </div>
+                `
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex gap-x-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">5</div>
+                        <div class="message-bubble ai-bubble">
+                            ${isStreaming ? 
+                                `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>` : 
+                                `<p class="text-sm leading-relaxed whitespace-pre-wrap">${content}</p>`
+                            }
+                        </div>
+                    </div>
+                `
+            }
+            
+            chatContainer.appendChild(messageDiv)
+            chatContainer.scrollTop = chatContainer.scrollHeight
+            return messageDiv.id
         }
-        if (data.type === 'plugin_connected') {
-          toast('Plugin handshake', 'Roblox Studio plugin confirmed connection.', 'success');
+        
+        // Update streaming message
+        function updateStreamingMessage(messageId, newText) {
+            const messageEl = document.getElementById(messageId)
+            if (!messageEl) return
+            const bubble = messageEl.querySelector('.ai-bubble')
+            if (bubble) {
+                if (bubble.innerHTML.includes('typing-indicator')) {
+                    bubble.innerHTML = `<p class="text-sm leading-relaxed whitespace-pre-wrap"></p>`
+                }
+                const p = bubble.querySelector('p')
+                if (p) p.innerHTML = newText.replace(/\n/g, '<br>')
+            }
+            chatContainer.scrollTop = chatContainer.scrollHeight
         }
-      } catch(err) {}
-    };
-
-    state.wsDisconnectFn = function() {
-      intentionalClose = true;
-      try { ws.close(); } catch(ex) {}
-      state.wsInstance = null;
-    };
-
-  } catch(e) {
-    setConnStatus('error');
-    toast('Connection failed', e.message, 'error');
-  }
-}
-
-function flattenWorkspace(obj) {
-  var result = [];
-  function walk(node) {
-    if (!node) return;
-    result.push({ name: node.Name + ' (' + node.ClassName + ')' });
-    if (node.Children) node.Children.forEach(walk);
-  }
-  if (obj.Children) obj.Children.forEach(walk);
-  return result;
-}
-
-function setConnStatus(status) {
-  state.wsStatus = status;
-  var dot = document.getElementById('conn-dot');
-  var txt = document.getElementById('conn-text');
-  dot.className = '';
-  var labels = { connected: 'Connected', disconnected: 'Disconnected', connecting: 'Connecting...', error: 'Connection Error' };
-  txt.textContent = labels[status] || status;
-  if (status === 'connected') dot.classList.add('connected');
-  else if (status === 'connecting') dot.classList.add('connecting');
-  updateConnectButtons(status);
-}
-
-function disconnectWebSocket() {
-  if (typeof state.wsDisconnectFn === 'function') {
-    state.wsDisconnectFn();
-    state.wsDisconnectFn = null;
-  } else if (state.wsInstance) {
-    try { state.wsInstance.close(); } catch(e) {}
-    state.wsInstance = null;
-  }
-  setConnStatus('disconnected');
-  toast('Disconnected', 'Plugin connection closed.', 'info');
-}
-
-function loadStudioWorkspace() {
-  if (state.wsStatus === 'connected' && state.wsInstance) {
-    try { state.wsInstance.send(JSON.stringify({ type: 'get_workspace' })); } catch(e) {}
-    try { state.wsInstance.send(JSON.stringify({ type: 'get_preview' })); } catch(e) {}
-  }
-}
-
-function updateStudioWorkspace(files) {
-  var ws = document.getElementById('studio-workspace');
-  ws.innerHTML = '';
-  if (!files || !files.length) return;
-  files.forEach(function(f) {
-    var div = document.createElement('div');
-    div.className = 'ws-item';
-    div.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + escapeHtml(f.name || f);
-    div.onclick = function() {
-      if (state.wsInstance) {
-        try { state.wsInstance.send(JSON.stringify({ type: 'open_file', file: f.name || f })); } catch(e) {}
-      }
-    };
-    ws.appendChild(div);
-  });
-}
-
-function updateStudioPreview(imgOrUrl) {
-  var prev = document.getElementById('studio-preview');
-  if (imgOrUrl) {
-    prev.innerHTML = '<img src="' + imgOrUrl + '" style="width:100%;height:100%;object-fit:contain">';
-  }
-}
-
-function switchStudioTab(tab) {
-  document.querySelectorAll('.studio-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelector('[onclick="switchStudioTab(\'' + tab + '\')"]').classList.add('active');
-  var prev = document.getElementById('studio-preview');
-  var wsEl = document.getElementById('studio-workspace');
-  if (tab === 'preview') {
-    prev.style.display = 'flex';
-    wsEl.style.display = 'none';
-  } else {
-    prev.style.display = 'none';
-    wsEl.style.display = 'flex';
-    if (state.wsStatus !== 'connected') {
-      wsEl.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text3)">Connect to Roblox Studio to see workspace files.</div>';
-    }
-  }
-}
-
-function switchSettingsTab(tab) {
-  document.querySelectorAll('.settings-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelector('[onclick="switchSettingsTab(\'' + tab + '\')"]').classList.add('active');
-  document.querySelectorAll('.settings-section').forEach(function(s) { s.classList.remove('active'); });
-  document.getElementById('settings-' + tab).classList.add('active');
-}
-
-function saveProjects() {
-  localStorage.setItem('ce_projects', JSON.stringify(state.projects));
-}
-
-function openNewProjectModal() {
-  document.getElementById('new-proj-name').value = '';
-  document.getElementById('new-proj-desc').value = '';
-  openModal('new-project-modal');
-  setTimeout(function() { document.getElementById('new-proj-name').focus(); }, 100);
-}
-
-function createProject() {
-  var name = document.getElementById('new-proj-name').value.trim() || 'Untitled Project';
-  var desc = document.getElementById('new-proj-desc').value.trim();
-  var proj = { id: 'proj_' + Date.now(), name: name, description: desc, code: '', createdAt: Date.now(), updatedAt: Date.now(), shared: false };
-  state.projects.unshift(proj);
-  saveProjects();
-  closeModal('new-project-modal');
-  openProject(proj.id);
-  renderProjects();
-  updateDashboard();
-  toast('Project created', name, 'success');
-}
-
-function openProject(id) {
-  var proj = state.projects.find(function(p) { return p.id === id; });
-  if (!proj) return;
-  state.activeProject = proj;
-  document.getElementById('editor-proj-name').textContent = proj.name;
-  var code = proj.code || '';
-  document.getElementById('code-input').value = code;
-  highlightCode(code);
-  updateLineNumbers(code);
-  navigate('editor');
-}
-
-function deleteProject(id) {
-  state.projects = state.projects.filter(function(p) { return p.id !== id; });
-  saveProjects();
-  if (state.activeProject && state.activeProject.id === id) {
-    state.activeProject = null;
-    document.getElementById('editor-proj-name').textContent = 'No Project Open';
-    document.getElementById('code-input').value = '';
-    highlightCode('');
-    updateLineNumbers('');
-  }
-  renderProjects();
-  updateDashboard();
-  toast('Project deleted', '', 'info');
-}
-
-function renderProjects() {
-  var grid = document.getElementById('projects-grid');
-  if (!state.projects.length) {
-    grid.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><h3>No projects yet</h3><p>Create a new project to get started.</p></div>';
-    return;
-  }
-  grid.innerHTML = '';
-  state.projects.forEach(function(proj) {
-    var card = document.createElement('div');
-    card.className = 'project-card';
-    card.innerHTML = '<h3>' + escapeHtml(proj.name) + '</h3><p>' + escapeHtml(proj.description || 'No description') + '</p><div class="project-card-footer"><span style="font-size:11px;color:var(--text3)">' + timeAgo(proj.updatedAt) + '</span><div class="project-actions"><button class="btn btn-secondary btn-sm" onclick="openProject(\'' + proj.id + '\')">Open</button><button class="btn btn-danger btn-sm" onclick="deleteProject(\'' + proj.id + '\')">Delete</button></div></div>' + (proj.shared ? '<span class="badge badge-teal" style="position:absolute;top:10px;right:10px">Shared</span>' : '');
-    grid.appendChild(card);
-  });
-}
-
-function updateDashboard() {
-  document.getElementById('stat-total').textContent = state.projects.length;
-  document.getElementById('stat-active').textContent = state.projects.filter(function(p) { return p.code && p.code.length > 0; }).length;
-  document.getElementById('stat-shared').textContent = state.projects.filter(function(p) { return p.shared; }).length;
-  var recent = document.getElementById('dash-recent');
-  if (!state.projects.length) {
-    recent.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">No recent projects. Create one to get started.</div>';
-    return;
-  }
-  recent.innerHTML = '';
-  var sorted = state.projects.slice().sort(function(a, b) { return b.updatedAt - a.updatedAt; }).slice(0, 5);
-  sorted.forEach(function(proj) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer';
-    row.innerHTML = '<div><div style="font-size:13px;font-weight:500">' + escapeHtml(proj.name) + '</div><div style="font-size:12px;color:var(--text3)">' + timeAgo(proj.updatedAt) + '</div></div><button class="btn btn-secondary btn-sm" onclick="openProject(\'' + proj.id + '\')">Open</button>';
-    recent.appendChild(row);
-  });
-}
-
-function timeAgo(ts) {
-  var diff = Date.now() - ts;
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
-  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
-  return Math.floor(diff/86400000) + 'd ago';
-}
-
-function openShareModal() {
-  if (!state.activeProject) { toast('No project open', 'Open a project first.', 'warning'); return; }
-  document.getElementById('share-link-input').value = '';
-  document.getElementById('pin-enabled').checked = false;
-  document.getElementById('pin-field').style.display = 'none';
-  document.getElementById('share-pin').value = '';
-  document.getElementById('perm-edit').checked = false;
-  document.getElementById('perm-run').checked = false;
-  document.getElementById('perm-share').checked = false;
-  renderCollaborators();
-  openModal('share-modal');
-}
-
-function generateShareLink() {
-  if (!state.activeProject) return;
-  var expiry = parseInt(document.getElementById('link-expiry').value);
-  var pin = document.getElementById('pin-enabled').checked ? document.getElementById('share-pin').value : '';
-  var perms = {
-    view: true,
-    edit: document.getElementById('perm-edit').checked,
-    run: document.getElementById('perm-run').checked,
-    share: document.getElementById('perm-share').checked
-  };
-  var shareObj = {
-    id: state.activeProject.id,
-    name: state.activeProject.name,
-    code: state.activeProject.code,
-    perms: perms,
-    pin: pin,
-    expiresAt: expiry ? Date.now() + expiry : 0,
-    createdAt: Date.now()
-  };
-  var encoded = btoa(encodeURIComponent(JSON.stringify(shareObj)));
-  var link = window.location.href.split('#')[0] + '#share=' + encoded;
-  document.getElementById('share-link-input').value = link;
-  state.activeProject.shared = true;
-  saveProjects();
-  toast('Link generated!', 'Share this link with your collaborators.', 'success');
-}
-
-function copyShareLink() {
-  var link = document.getElementById('share-link-input').value;
-  if (!link) { toast('Generate a link first', '', 'warning'); return; }
-  navigator.clipboard.writeText(link).then(function() { toast('Link copied!', '', 'success'); }).catch(function() { toast('Copy failed', '', 'error'); });
-}
-
-function togglePinField() {
-  document.getElementById('pin-field').style.display = document.getElementById('pin-enabled').checked ? 'block' : 'none';
-}
-
-function renderCollaborators() {
-  var list = document.getElementById('collabs-list');
-  var collabs = state.collaborators.filter(function(c) { return state.activeProject && c.projectId === state.activeProject.id; });
-  if (!collabs.length) {
-    list.innerHTML = '<div class="empty-state" style="padding:16px"><p>No collaborators yet.</p></div>';
-    return;
-  }
-  list.innerHTML = '';
-  collabs.forEach(function(c, i) {
-    var item = document.createElement('div');
-    item.className = 'collab-item';
-    item.innerHTML = '<div class="collab-avatar">' + (c.name || 'U').charAt(0).toUpperCase() + '</div><div class="collab-info"><h4>' + escapeHtml(c.name || 'Anonymous') + '</h4><p>' + escapeHtml(c.role || 'Viewer') + '</p></div><button class="btn btn-danger btn-sm" onclick="kickCollaborator(' + i + ')">Kick</button>';
-    list.appendChild(item);
-  });
-}
-
-function kickCollaborator(idx) {
-  var collabs = state.collaborators.filter(function(c) { return state.activeProject && c.projectId === state.activeProject.id; });
-  if (collabs[idx]) {
-    state.collaborators = state.collaborators.filter(function(c) { return c !== collabs[idx]; });
-    renderCollaborators();
-    toast('Collaborator removed', '', 'info');
-  }
-}
-
-function checkShareHash() {
-  var hash = window.location.hash;
-  if (!hash.startsWith('#share=')) return;
-  try {
-    var encoded = hash.substring(7);
-    var shareObj = JSON.parse(decodeURIComponent(atob(encoded)));
-    if (shareObj.expiresAt && shareObj.expiresAt < Date.now()) {
-      toast('Link expired', 'This share link has expired.', 'error');
-      return;
-    }
-    if (shareObj.pin) {
-      state.pendingShare = shareObj;
-      openModal('pin-modal');
-    } else {
-      loadSharedProject(shareObj);
-    }
-  } catch(e) {
-    toast('Invalid link', 'This share link is invalid.', 'error');
-  }
-}
-
-function loadSharedProject(shareObj) {
-  var existing = state.projects.find(function(p) { return p.id === shareObj.id; });
-  if (!existing) {
-    var proj = { id: shareObj.id, name: shareObj.name + ' (Shared)', description: 'Shared project', code: shareObj.code || '', createdAt: Date.now(), updatedAt: Date.now(), shared: true, sharedPerms: shareObj.perms };
-    state.projects.unshift(proj);
-    saveProjects();
-    openProject(proj.id);
-    toast('Project loaded!', shareObj.name, 'success');
-  } else {
-    openProject(existing.id);
-    toast('Project opened', shareObj.name, 'info');
-  }
-  window.location.hash = '';
-}
-
-function pinDigitInput(el, idx) {
-  el.value = el.value.replace(/\D/g, '').charAt(0) || '';
-  var digits = document.querySelectorAll('.pin-digit');
-  if (el.value && idx < digits.length - 1) digits[idx + 1].focus();
-}
-
-function pinDigitKey(e, idx) {
-  var digits = document.querySelectorAll('.pin-digit');
-  if (e.key === 'Backspace' && !digits[idx].value && idx > 0) digits[idx - 1].focus();
-}
-
-function submitPin() {
-  var digits = document.querySelectorAll('.pin-digit');
-  var entered = Array.from(digits).map(function(d) { return d.value; }).join('');
-  var errEl = document.getElementById('pin-error');
-  if (state.pendingShare && entered === String(state.pendingShare.pin)) {
-    errEl.style.display = 'none';
-    closeModal('pin-modal');
-    loadSharedProject(state.pendingShare);
-    state.pendingShare = null;
-  } else {
-    errEl.style.display = 'block';
-    digits.forEach(function(d) { d.value = ''; });
-    digits[0].focus();
-  }
-}
-
-function clearAllData() {
-  if (!confirm('Are you sure? This will delete all projects and settings.')) return;
-  localStorage.clear();
-  state.projects = [];
-  state.activeProject = null;
-  renderProjects();
-  updateDashboard();
-  document.getElementById('code-input').value = '';
-  highlightCode('');
-  updateLineNumbers('');
-  document.getElementById('editor-proj-name').textContent = 'No Project Open';
-  toast('Data cleared', 'All projects and settings removed.', 'info');
-}
-
-var style = document.createElement('style');
-style.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
-document.head.appendChild(style);
-
-highlightCode('');
-updateLineNumbers('');
-updateDashboard();
-renderProjects();
-checkShareHash();
-</script>
+        
+        // === DEEP PUTER.JS PROXY: Save chat to cloud forever ===
+        async function saveHistory() {
+            if (!window.puter) return
+            try {
+                // Save only user + assistant messages (exclude system prompt)
+                const historyToSave = messages.filter(m => m.role !== 'system')
+                await puter.fs.write(HISTORY_FILE, JSON.stringify(historyToSave, null, 2))
+                console.log('%c✅ Deep proxy saved chat history to Puter cloud', 'color:#10a37f;font-size:11px')
+            } catch (e) {
+                console.warn('Could not save to Puter (offline or permission issue)', e)
+            }
+        }
+        
+        // === DEEP PUTER.JS PROXY: Load forever chat from cloud ===
+        async function loadHistory() {
+            if (!window.puter) return false
+            try {
+                const blob = await puter.fs.read(HISTORY_FILE)
+                const text = await blob.text()
+                const savedMessages = JSON.parse(text)
+                
+                // Rebuild full messages array with system prompt
+                messages = [
+                    {
+                        role: "system",
+                        content: "You are ChatGPT-5.2, the most advanced AI model from OpenAI (released December 2025). You are helpful, witty, and highly capable. Always respond in a natural, conversational tone."
+                    },
+                    ...savedMessages
+                ]
+                console.log('%c✅ Deep proxy loaded forever chat from Puter cloud', 'color:#10a37f;font-size:11px')
+                return true
+            } catch (e) {
+                console.log('No previous forever chat found (first time or cleared)')
+                return false
+            }
+        }
+        
+        // Send message (unchanged logic + deep proxy save)
+        async function sendMessage() {
+            const input = inputField.value.trim()
+            if (!input || !window.puter) return
+            
+            addMessage('user', input)
+            messages.push({ role: "user", content: input })
+            inputField.value = ''
+            
+            const aiMessageId = addMessage('assistant', '', true)
+            
+            try {
+                const stream = await puter.ai.chat(messages, {
+                    model: "gpt-5.2",
+                    stream: true,
+                    max_tokens: 4096,
+                    temperature: 0.7
+                })
+                
+                let accumulatedText = ''
+                for await (const chunk of stream) {
+                    if (chunk && chunk.text) {
+                        accumulatedText += chunk.text
+                        updateStreamingMessage(aiMessageId, accumulatedText)
+                    }
+                }
+                
+                messages.push({ role: "assistant", content: accumulatedText })
+                
+                // DEEP PROXY: Save to cloud after every complete response
+                await saveHistory()
+                
+            } catch (error) {
+                console.error("Puter.js AI error:", error)
+                const errorMsg = document.getElementById(aiMessageId)
+                if (errorMsg) {
+                    errorMsg.querySelector('.ai-bubble').innerHTML = `
+                        <p class="text-sm text-red-400">⚠️ Deep proxy error. Make sure you're signed into Puter.</p>
+                    `
+                }
+            }
+        }
+        
+        function quickPrompt(prompt) {
+            inputField.value = prompt
+            sendMessage()
+        }
+        
+        // Clear chat and also wipe from cloud proxy
+        async function clearChat() {
+            if (!confirm('Clear this forever chat? This will delete the entire history from Puter cloud.')) return
+            
+            messages = [{
+                role: "system",
+                content: "You are ChatGPT-5.2, the most advanced AI model from OpenAI (released December 2025). You are helpful, witty, and highly capable. Always respond in a natural, conversational tone."
+            }]
+            
+            // Wipe from cloud
+            try {
+                if (window.puter) {
+                    await puter.fs.write(HISTORY_FILE, JSON.stringify([])) // empty history
+                }
+            } catch(e) {}
+            
+            renderAllMessages()
+        }
+        
+        function checkPuterStatus() {
+            if (window.puter) {
+                alert("✅ Deep Puter.js Proxy is ACTIVE!\n\n• All chats are saved forever in your personal Puter cloud.\n• No API keys needed.\n• History survives browser restarts, device changes, etc.\n\nYou can close this tab and come back anytime — your chat will still be here.")
+            } else {
+                alert("Puter.js is loading… Please refresh if it doesn't connect.")
+            }
+        }
+        
+        function showProxyInfo() {
+            alert("🔥 DEEP PUTER.JS PROXY\n\nThis site uses Puter.js as a full cloud proxy:\n• AI responses via puter.ai\n• Complete chat history saved automatically to your personal cloud storage (gpt-5.2-chat-history.json)\n• Unlimited, forever persistence — even across devices\n• No limits on conversation length\n\nYour chat literally lives in the Puter cloud forever.")
+        }
+        
+        // Initialize everything
+        async function initializeApp() {
+            chatContainer = document.getElementById('chat-container')
+            inputField = document.getElementById('user-input')
+            
+            // Tailwind
+            initTailwind()
+            
+            console.log('%c🚀 ChatGPT-5.2 Forever Chat ready! Deep Puter.js Proxy engaged', 'color:#10a37f; font-family:monospace; font-size:13px')
+            
+            // Wait a moment for Puter.js to fully initialize
+            await new Promise(r => setTimeout(r, 800))
+            
+            // Load forever chat from deep Puter proxy
+            await loadHistory()
+            
+            // Render either welcome or full history
+            renderAllMessages()
+            
+            // Focus input
+            setTimeout(() => inputField.focus(), 600)
+            
+            console.log('✅ Forever chat with deep cloud proxy is now live!')
+        }
+        
+        window.onload = initializeApp
+    </script>
 </body>
 </html>
