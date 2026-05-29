@@ -5,35 +5,29 @@
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #1a4d33;
+    background: #45475a;
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #27824f;
+    background: #585b70;
 }
 
-@keyframes pulse-green {
-    0% {
-        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 6px rgba(86, 214, 140, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0);
-    }
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(137, 180, 250, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(137, 180, 250, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(137, 180, 250, 0); }
 }
 
 .status-active {
-    background-color: #5ad68c !important;
-    animation: pulse-green 2s infinite ease-in-out;
+    background-color: #89b4fa !important;
+    animation: pulse-blue 2s infinite ease-in-out;
 }
 
 .humanize-active {
-    background-color: #27824f !important;
-    color: #ffffff !important;
-    border-color: #35a165 !important;
-    box-shadow: 0 0 15px rgba(39, 130, 79, 0.4);
+    background-color: #89b4fa !important;
+    color: #11111b !important;
+    border-color: #74c7ec !important;
+    box-shadow: 0 0 15px rgba(137, 180, 250, 0.4);
 }
 
 .modal-open {
@@ -46,23 +40,23 @@
 }
 
 .cb-container {
-    background: #0f2118;
-    border: 1px solid #1a4d33;
+    background: #1e1e2e;
+    border: 1px solid #313244;
     border-radius: 8px;
     margin: 10px 0;
     overflow: hidden;
 }
 
 .cb-header {
-    background: #060f0a;
+    background: #11111b;
     padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #5ad68c;
+    color: #89b4fa;
     font-size: 12px;
     font-weight: bold;
-    border-bottom: 1px solid #1a4d33;
+    border-bottom: 1px solid #313244;
 }
 
 .cb-body {
@@ -71,13 +65,13 @@
     overflow-x: auto;
     font-family: monospace;
     font-size: 13px;
-    color: #d1ebd9;
+    color: #cdd6f4;
     white-space: pre-wrap;
 }
 
 .cb-copy {
-    background: #27824f;
-    color: #fff;
+    background: #89b4fa;
+    color: #11111b;
     border: none;
     padding: 4px 12px;
     border-radius: 4px;
@@ -87,5 +81,5 @@
 }
 
 .cb-copy:hover {
-    background: #35a165;
+    background: #74c7ec;
 }
