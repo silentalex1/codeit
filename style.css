@@ -21,3 +21,10 @@
 .cb-body { padding: 12px; margin: 0; overflow-x: auto; font-family: monospace; font-size: 13px; color: #cdd6f4; white-space: pre-wrap; }
 .cb-copy { background: #89b4fa; color: #11111b; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
 .cb-copy:hover { background: #74c7ec; }
+.chat-item-active { background-color: #313244; border: 1px solid #45475a; }
+.rr-acts { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.rr-act-apply { background: #a6e3a1; color: #11111b; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; border: none; transition: .2s; }
+.rr-act-dec { background: #f38ba8; color: #11111b; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; border: none; transition: .2s; }
+.rr-act-apply:hover, .rr-act-dec:hover { transform: scale(1.05); }
+.rr-cont { position: absolute; top: -55px; right: 20px; background: #a6e3a1; color: #11111b; display: none; box-shadow: 0 4px 15px rgba(166, 227, 161, 0.4); z-index: 5; border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
+.rr-cont:hover { transform: scale(1.05); }
