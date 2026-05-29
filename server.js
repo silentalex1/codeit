@@ -39,10 +39,12 @@ app.post('/login-auth', (req, res) => {
 });
 app.post('/connect', (req, res) => {
     bookmarkletConnected = true;
-    pluginStatus = 'pending';
     res.json({ success: true });
 });
-app.post('/plugin-connect', (req, res) => { res.json({ success: true }); });
+app.post('/plugin-connect', (req, res) => { 
+    pluginStatus = 'pending';
+    res.json({ success: true }); 
+});
 app.get('/status', (req, res) => { res.json({ status: pluginStatus, bookmarklet: bookmarkletConnected, tree: studioTree }); });
 app.post('/status', (req, res) => {
     if (req.body) {
