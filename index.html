@@ -23,6 +23,7 @@
             <button id="logout-btn" class="bg-[#313244] hover:bg-[#45475a] text-[#cdd6f4] px-4 py-2 rounded-lg font-bold transition-all text-sm">Logout</button>
         </div>
     </nav>
+
     <div class="flex flex-1 overflow-hidden min-h-0">
         <div class="w-80 bg-[#181825] border-r border-[#313244] flex flex-col p-6 gap-6 z-10 shrink-0">
             <button id="new-chat-btn" class="w-full font-bold bg-[#89b4fa] text-[#11111b] px-4 py-3 rounded-lg hover:bg-[#74c7ec] transition-colors shadow-md">+ new chat</button>
@@ -53,12 +54,14 @@
                 </div>
             </div>
         </div>
+
         <div class="flex-1 flex flex-col relative bg-[#11111b] min-w-0">
             <div id="chat-area" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6 relative min-h-0"></div>
             <div class="p-6 bg-[#181825] border-t border-[#313244] shrink-0">
                 <div class="max-w-5xl mx-auto flex flex-col gap-2">
                     <div id="chat-preview" class="hidden gap-2 flex-wrap max-h-32 overflow-y-auto w-full"></div>
-                    <div class="flex gap-4 w-full">
+                    <div class="flex gap-4 w-full relative">
+                        <button class="rr-cont">Continue AI</button>
                         <textarea id="chat-input" class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-xl p-4 text-[#cdd6f4] outline-none focus:border-[#89b4fa] transition-all resize-none min-h-[60px] max-h-[150px] shadow-inner" placeholder="Ask PrysmisAI anything.."></textarea>
                         <button id="send-btn" class="bg-[#89b4fa] hover:bg-[#74c7ec] text-[#11111b] font-bold px-8 rounded-xl transition-all self-end h-[60px] shadow-md">Send</button>
                     </div>
@@ -83,7 +86,6 @@
             <button id="save-settings-btn" class="w-full bg-[#89b4fa] hover:bg-[#74c7ec] text-[#11111b] font-bold py-4 rounded-lg transition-all shadow-md">Save settings</button>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
