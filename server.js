@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
 app.use((req, res, next) => {
@@ -87,6 +87,20 @@ app.get('/poll', (req, res) => {
         res.json({ code: codeToSend });
     } else {
         res.json({});
+    }
+});
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const fetchRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=' + req.query.key, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+        const data = await fetchRes.json();
+        res.status(fetchRes.status).json(data);
+    } catch (e) {
+        res.status(500).json({ error: { message: 'Proxy Error' } });
     }
 });
 
