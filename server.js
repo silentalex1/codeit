@@ -19,6 +19,7 @@ let pendingCode = null;
 let bookmarkletConnected = false;
 let studioTree = '';
 let sharedScreen = '';
+let activeAIModel = 'gemini-2.5 pro';
 
 app.get('/bridge.html', (req, res) => {
     res.send("<!DOCTYPE html><html><head><script>window.addEventListener('message',async e=>{if(!e.data||!e.data.url)return;try{let r=await fetch(e.data.url,e.data.opts);let t=await r.text();e.source.postMessage({id:e.data.id,ok:r.ok,status:r.status,text:t},'*')}catch(err){e.source.postMessage({id:e.data.id,ok:false,error:err.message},'*')}});</script></head><body></body></html>");
@@ -67,7 +68,7 @@ app.post('/plugin-connect', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json({ status: pluginStatus, bookmarklet: bookmarkletConnected, tree: studioTree, screen: sharedScreen });
+    res.json({ status: pluginStatus, bookmarklet: bookmarkletConnected, tree: studioTree, screen: sharedScreen, model: activeAIModel });
 });
 
 app.post('/status', (req, res) => {
@@ -75,6 +76,7 @@ app.post('/status', (req, res) => {
         if (req.body.status) pluginStatus = req.body.status;
         if (req.body.tree) studioTree = req.body.tree;
         if (req.body.screen) sharedScreen = req.body.screen;
+        if (req.body.activeModel) activeAIModel = req.body.activeModel;
     }
     res.json({ success: true });
 });
@@ -90,9 +92,9 @@ app.get('/poll', (req, res) => {
     if (pendingCode) {
         const codeToSend = pendingCode;
         pendingCode = null;
-        res.json({ code: codeToSend });
+        res.json({ code: codeToSend, model: activeAIModel });
     } else {
-        res.json({});
+        res.json({ model: activeAIModel });
     }
 });
 
