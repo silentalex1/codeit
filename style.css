@@ -1,0 +1,22 @@
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(86, 214, 140, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0);
+    }
+}
+
+.status-active {
+    background-color: #5ad68c !important;
+    animation: pulse-green 2s infinite ease-in-out;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-image: radial-gradient(circle at 50% 50%, #0a1711 0%, #060f0a 100%);
+}
