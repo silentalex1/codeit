@@ -3,43 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prysmis Bridge</title>
+    <title>PrysmisAI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#060f0a] text-[#d1ebd9] min-h-screen flex items-center justify-center font-sans">
-    <div class="bg-[#0a1711] border border-[#1a4d33] rounded-2xl p-8 shadow-[0_15px_35px_rgba(26,77,51,0.4)] w-full max-w-md transition-all duration-500 hover:shadow-[0_20px_50px_rgba(39,130,79,0.3)]">
-        
-        <div class="flex items-center justify-center mb-8 gap-3">
-            <svg class="w-8 h-8 text-[#5ad68c]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            <h1 class="text-3xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#5ad68c] to-[#27824f]">Prysmis Bridge</h1>
-        </div>
-        
-        <div class="space-y-6">
-            <div class="flex items-center justify-between p-4 bg-[#0f2118] border border-[#1a4d33] rounded-xl transition-all duration-300 hover:bg-[#152e22]">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-[#a6adc8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-                    <span class="font-semibold tracking-wide">Bookmarklet</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span id="bm-dot" class="w-3 h-3 rounded-full bg-[#f38ba8]"></span>
-                    <span id="bm-text" class="text-sm font-bold text-[#f38ba8]">Disconnected</span>
-                </div>
-            </div>
+<body class="bg-[#060f0a] text-[#d1ebd9] min-h-screen font-sans overflow-hidden flex flex-col">
 
-            <div class="flex items-center justify-between p-4 bg-[#0f2118] border border-[#1a4d33] rounded-xl transition-all duration-300 hover:bg-[#152e22]">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-[#a6adc8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    <span class="font-semibold tracking-wide">Studio Plugin</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span id="st-dot" class="w-3 h-3 rounded-full bg-[#f38ba8]"></span>
-                    <span id="st-text" class="text-sm font-bold text-[#f38ba8]">Waiting</span>
-                </div>
+    <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center bg-[#060f0a] hidden">
+        <div class="bg-[#0a1711] border border-[#1a4d33] rounded-2xl p-10 shadow-[0_15px_35px_rgba(26,77,51,0.4)] w-full max-w-md flex flex-col gap-6">
+            <h1 class="text-3xl font-bold text-center text-[#5ad68c] tracking-wide">Create account</h1>
+            <div class="flex flex-col gap-4">
+                <input type="text" id="auth-user" class="w-full bg-[#0f2118] border border-[#1a4d33] rounded-lg p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all" placeholder="Enter in your desire username">
+                <input type="password" id="auth-pass" class="w-full bg-[#0f2118] border border-[#1a4d33] rounded-lg p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all" placeholder="Enter in password">
+                <button id="auth-btn" class="w-full bg-[#27824f] hover:bg-[#35a165] text-white font-bold py-4 rounded-lg transition-all mt-2">Create account</button>
             </div>
         </div>
-
     </div>
+
+    <div id="main-view" class="flex flex-col h-screen hidden">
+        <nav class="h-16 bg-[#0a1711] border-b border-[#1a4d33] flex items-center justify-between px-6 shrink-0 z-20">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold text-[#5ad68c] tracking-wide">PrysmisAI</h1>
+                <a href="bookmarklet.js" class="text-xs bg-[#0f2118] border border-[#1a4d33] px-3 py-1.5 rounded text-[#87bfa0] hover:bg-[#1a4d33] transition-colors" draggable="true">Drag Bookmarklet</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="humanize-btn" class="flex items-center gap-2 border border-[#1a4d33] bg-[#0f2118] text-[#87bfa0] px-4 py-2 rounded-lg font-bold transition-all hover:bg-[#1a4d33]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Ai Humanize
+                </button>
+                <button id="settings-open" class="text-[#a6adc8] hover:text-[#5ad68c] transition-colors p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </div>
+        </nav>
+
+        <div id="chat-area" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 relative"></div>
+
+        <div class="p-6 bg-[#0a1711] border-t border-[#1a4d33] shrink-0">
+            <div class="max-w-4xl mx-auto flex gap-4">
+                <textarea id="chat-input" class="flex-1 bg-[#0f2118] border border-[#1a4d33] rounded-xl p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all resize-none min-h-[60px] max-h-[200px]" placeholder="Ask PrysmisAI anything.."></textarea>
+                <button id="send-btn" class="bg-[#27824f] hover:bg-[#35a165] text-white font-bold px-8 rounded-xl transition-all self-end h-[60px]">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-[#0a1711] border border-[#1a4d33] rounded-2xl p-8 shadow-[0_15px_35px_rgba(26,77,51,0.6)] w-full max-w-lg transform scale-95 transition-transform duration-300 relative">
+            <button id="settings-close" class="absolute top-6 right-6 text-[#a6adc8] hover:text-[#f38ba8] transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-[#5ad68c] mb-6">Settings</h2>
+            <div class="flex flex-col gap-2 mb-6">
+                <label class="font-bold text-[#87bfa0]">Enter in your GeminiAPI key.</label>
+                <div class="flex gap-4">
+                    <input type="password" id="api-key-input" class="flex-1 bg-[#0f2118] border border-[#1a4d33] rounded-lg p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all font-mono tracking-widest">
+                    <button id="toggle-key-btn" class="bg-[#1a4d33] hover:bg-[#27824f] text-white font-bold px-6 rounded-lg transition-all">show</button>
+                </div>
+            </div>
+            <button id="save-settings-btn" class="w-full bg-[#5ad68c] hover:bg-[#6ee7a0] text-[#060f0a] font-bold py-4 rounded-lg transition-all">Save settings</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
