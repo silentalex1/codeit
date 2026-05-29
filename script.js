@@ -1,12 +1,13 @@
+if (!localStorage.getItem('prysmis_user')) {
+    window.location.href = '/login';
+} else {
+    document.getElementById('app-body').classList.remove('hidden');
+}
+
 const bmDot = document.getElementById('bm-dot');
 const bmText = document.getElementById('bm-text');
 const stDot = document.getElementById('st-dot');
 const stText = document.getElementById('st-text');
-const authView = document.getElementById('auth-view');
-const mainView = document.getElementById('main-view');
-const authUser = document.getElementById('auth-user');
-const authPass = document.getElementById('auth-pass');
-const authBtn = document.getElementById('auth-btn');
 const settingsModal = document.getElementById('settings-modal');
 const settingsOpen = document.getElementById('settings-open');
 const settingsClose = document.getElementById('settings-close');
@@ -17,6 +18,8 @@ const chatArea = document.getElementById('chat-area');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 const humanizeBtn = document.getElementById('humanize-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const newChatBtn = document.getElementById('new-chat-btn');
 
 let apiKey = localStorage.getItem('prysmis_api_key') || '';
 let isHumanizeActive = false;
@@ -31,14 +34,14 @@ async function updateStatus() {
             bmDot.classList.add('status-active');
             bmDot.classList.remove('bg-[#f38ba8]');
             bmText.textContent = 'Connected';
-            bmText.className = 'text-xs font-bold text-[#5ad68c]';
+            bmText.className = 'text-xs font-bold text-[#89b4fa]';
         }
 
         if (data.status === 'accepted') {
             stDot.classList.add('status-active');
             stDot.classList.remove('bg-[#f38ba8]', 'bg-[#f9e2af]');
             stText.textContent = 'Connected';
-            stText.className = 'text-xs font-bold text-[#5ad68c]';
+            stText.className = 'text-xs font-bold text-[#89b4fa]';
         } else if (data.status === 'pending') {
             stDot.classList.remove('status-active');
             stDot.className = 'w-2.5 h-2.5 rounded-full bg-[#f9e2af]';
@@ -66,22 +69,14 @@ async function updateStatus() {
 setInterval(updateStatus, 1000);
 updateStatus();
 
-function checkAuth() {
-    if (localStorage.getItem('prysmis_user')) {
-        authView.classList.add('hidden');
-        mainView.classList.remove('hidden');
-        renderChat();
-    } else {
-        authView.classList.remove('hidden');
-        mainView.classList.add('hidden');
-    }
-}
+logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('prysmis_user');
+    window.location.href = '/login';
+});
 
-authBtn.addEventListener('click', () => {
-    if (authUser.value.trim() && authPass.value.trim()) {
-        localStorage.setItem('prysmis_user', authUser.value.trim());
-        window.location.reload();
-    }
+newChatBtn.addEventListener('click', () => {
+    chatHistory = [];
+    renderChat();
 });
 
 settingsOpen.addEventListener('click', () => {
@@ -150,15 +145,15 @@ chatArea.addEventListener('click', (e) => {
 function renderChat() {
     chatArea.innerHTML = '';
     const defaultMsg = document.createElement('div');
-    defaultMsg.className = 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#122e20] text-[#d1ebd9] border border-[#1a4d33] shadow-md';
+    defaultMsg.className = 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md';
     defaultMsg.textContent = 'Ask PrysmisAI anything..';
     chatArea.appendChild(defaultMsg);
 
     chatHistory.forEach(msg => {
         const div = document.createElement('div');
         div.className = msg.role === 'user' 
-            ? 'max-w-[85%] p-4 rounded-xl text-[15px] self-end bg-gradient-to-br from-[#27824f] to-[#1a4d33] text-white shadow-lg'
-            : 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#122e20] text-[#d1ebd9] border border-[#1a4d33] shadow-md';
+            ? 'max-w-[85%] p-4 rounded-xl text-[15px] self-end bg-[#89b4fa] text-[#11111b] shadow-lg font-medium'
+            : 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md';
         div.innerHTML = formatText(msg.parts[0].text);
         chatArea.appendChild(div);
     });
@@ -221,4 +216,4 @@ chatInput.addEventListener('keydown', (e) => {
     }
 });
 
-checkAuth();
+renderChat();
