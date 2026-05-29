@@ -70,8 +70,12 @@
                                 <span class="truncate" id="reply-preview-text">Replying to...</span>
                                 <button id="reply-cancel" class="text-[#f38ba8] font-bold hover:text-red-400 transition-colors">Cancel</button>
                             </div>
-                            <div class="flex gap-4 p-2 w-full relative">
+                            <div class="flex gap-4 p-2 w-full relative items-end">
                                 <button class="rr-cont">Continue AI</button>
+                                <button id="mobile-image-btn" class="p-2.5 bg-[#313244] hover:bg-[#45475a] text-[#a6adc8] hover:text-[#89b4fa] rounded-lg transition-all flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <input type="file" id="mobile-image-input" accept="image/*" class="hidden">
                                 <textarea id="chat-input" class="flex-1 bg-transparent p-2 text-[#cdd6f4] outline-none resize-none min-h-[44px] max-h-[150px]" placeholder="Ask PrysmisAI anything.."></textarea>
                                 <button id="send-btn" class="bg-[#89b4fa] hover:bg-[#74c7ec] text-[#11111b] font-bold px-6 py-2 rounded-lg transition-all h-[44px] self-end shadow-md">Send</button>
                             </div>
