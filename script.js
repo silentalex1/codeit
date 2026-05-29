@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const customCMenu = document.getElementById('custom-cmenu');
         const cmenuReply = document.getElementById('cmenu-reply');
 
+        const mobileImageBtn = document.getElementById('mobile-image-btn');
+        const mobileImageInput = document.getElementById('mobile-image-input');
+
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
         let chats = [];
@@ -110,7 +113,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let selectedMsgTextForReply = '';
         let currentReplyId = null;
 
-        function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
+        function saveState() {
+            try {
+                const cleanedChats = chats.map(chat => {
+                    return {
+                        id: chat.id,
+                        title: chat.title,
+                        history: chat.history.map(msg => {
+                            return {
+                                id: msg.id,
+                                role: msg.role,
+                                replyToId: msg.replyToId,
+                                parts: msg.parts.map(p => {
+                                    if (p.inlineData) {
+                                        return { inlineData: { mimeType: p.inlineData.mimeType, data: "" } };
+                                    }
+                                    return p;
+                                })
+                            };
+                        })
+                    };
+                });
+                localStorage.setItem('prysmis_site_chats', JSON.stringify(cleanedChats));
+            } catch (e) {}
+        }
+
         function loadState() {
             const d = localStorage.getItem('prysmis_site_chats');
             if (d) { try { chats = JSON.parse(d); } catch (e) {} }
@@ -229,6 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 humanizeBtn.classList.remove('humanize-active');
             }
+            let currentModelName = isHumanizeActive ? "humanize-bypass" : "gemini-2.5 pro";
+            fetch('/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ activeModel: currentModelName })
+            }).catch(() => {});
         });
 
         function renderPreview() {
@@ -269,6 +302,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     r.readAsDataURL(b);
                 }
+            }
+        });
+
+        mobileImageBtn.addEventListener('click', () => {
+            mobileImageInput.click();
+        });
+
+        mobileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    currImgs.push({ mimeType: file.type, data: ev.target.result.split(',')[1] });
+                    renderPreview();
+                };
+                reader.readAsDataURL(file);
             }
         });
 
@@ -390,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (msg.role === 'user' && msg.replyToId) {
                         const line = document.createElement('div');
-                        line.className = 'absolute left-[-22px] top-[-18px] w-[18px] h-[28px] border-l-2 border-t-2 border-[#585b70] rounded-tl-[8px] pointer-events-none opacity-60';
+                        line.className = 'absolute left-[-28px] top-[-10px] w-[24px] h-[20px] border-l-2 border-t-2 border-[#45475a] rounded-tl-[8px] pointer-events-none opacity-60';
                         div.appendChild(line);
                     }
 
@@ -441,319 +490,4 @@ document.addEventListener('DOMContentLoaded', () => {
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        async function sendMessage(isC = false) {
-            continueBtn.style.display = 'none';
-            const text = chatInput.value.trim();
-            if ((!text && currImgs.length === 0 && !isC) || !apiKey) return;
-            const chat = chats.find(c => c.id === currentChatId);
-            if (!chat) return;
-
-            if (!isC) {
-                if (chat.history.length === 0) {
-                    chat.title = text.substring(0, 25) + '...';
-                    updateSidebar();
-                }
-                let up = [];
-                if (text) up.push({ text: text });
-                currImgs.forEach(img => {
-                    up.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-                });
-                if (activeSharedScreen) {
-                    const b64Data = activeSharedScreen.split(',')[1];
-                    up.push({ inlineData: { mimeType: 'image/jpeg', data: b64Data } });
-                }
-
-                let userMsgId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-                const newMsg = { id: userMsgId, role: 'user', parts: up };
-                if (currentReplyId) {
-                    newMsg.replyToId = currentReplyId;
-                }
-
-                chat.history.push(newMsg);
-                chatInput.value = '';
-                currImgs = [];
-                currentReplyId = null;
-                document.getElementById('reply-preview').classList.add('hidden');
-                renderPreview();
-                renderChat(true);
-                saveState();
-            }
-
-            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If there is an image attached, it represents the user\'s real-time browser/screen captured via a connected bookmarklet, meaning you CAN see their screen. Use this context to solve their math, geometry, or browser problems perfectly. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Scale coordinates strictly from 0 to 500. Compute geometric coordinates using exact trigonometric rules. (vertex typically (250, 350) inside 500x500 viewport). Supports: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
-            if (isHumanizeActive) {
-                sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
-            }
-            if (stCon) {
-                sysPrompt = 'You are PrysmisAI, the world\'s most elite Roblox Studio developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking modular UIs, ultra-fluid animations using TweenService, and intricately detailed map generation infrastructure. Write robust, error-free Luau code enclosed in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular, highly optimized, visually stunning, and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
-            }
-
-            let ah = chat.history.map(m => ({ role: m.role, parts: m.parts }));
-            if (isC) {
-                ah.push({ role: 'user', parts: [{ text: 'Continue generating exactly from the last character you outputted. Do not include any intros or headers.' }] });
-            }
-
-            const payload = {
-                systemInstruction: { parts: [{ text: sysPrompt }] },
-                contents: ah,
-                safetySettings: [
-                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-                ]
-            };
-
-            try {
-                const response = await fetch('/api/chat?key=' + apiKey, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.candidates && data.candidates[0].content) {
-                        const aiText = data.candidates[0].content.parts[0].text;
-                        let aiMsgId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-                        if (isC) {
-                            let lm = chat.history[chat.history.length - 1];
-                            if (lm && lm.role === 'model') lm.parts[0].text += aiText;
-                            else chat.history.push({ id: aiMsgId, role: 'model', parts: [{ text: aiText }] });
-                        } else {
-                            chat.history.push({ id: aiMsgId, role: 'model', parts: [{ text: aiText }] });
-                        }
-                        if (data.candidates[0].finishReason === 'MAX_TOKENS') continueBtn.style.display = 'block';
-                    } else {
-                        chat.history.push({ role: 'model', parts: [{ text: 'Generation failed.' }] });
-                    }
-                } else {
-                    chat.history.push({ role: 'model', parts: [{ text: 'API Error.' }] });
-                }
-            } catch (e) {
-                chat.history.push({ role: 'model', parts: [{ text: 'Network Error.' }] });
-            }
-            saveState();
-            renderChat(true);
-        }
-
-        wbToggle.onclick = () => {
-            if (wbPanel.classList.contains('w-0')) {
-                wbPanel.classList.remove('w-0');
-                wbPanel.classList.add('w-[500px]');
-                setTimeout(resizeCanvas, 310);
-            } else {
-                wbPanel.classList.remove('w-[500px]');
-                wbPanel.classList.add('w-0');
-            }
-        };
-
-        wbClose.onclick = () => {
-            wbPanel.classList.remove('w-[500px]');
-            wbPanel.classList.add('w-0');
-        };
-
-        function getViewport() {
-            const w = wbCanvas.width / (window.devicePixelRatio || 1);
-            const h = wbCanvas.height / (window.devicePixelRatio || 1);
-            const size = Math.min(w, h) * 0.9;
-            const offsetX = (w - size) / 2;
-            const offsetY = (h - size) / 2;
-            return { size, offsetX, offsetY };
-        }
-
-        function tx(x) {
-            const vp = getViewport();
-            return vp.offsetX + (x / 500) * vp.size;
-        }
-
-        function ty(y) {
-            const vp = getViewport();
-            return vp.offsetY + (y / 500) * vp.size;
-        }
-
-        function ts(size) {
-            const vp = getViewport();
-            return (size / 500) * vp.size;
-        }
-
-        function resizeCanvas() {
-            const rect = wbCanvas.parentElement.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            wbCanvas.width = rect.width * dpr;
-            wbCanvas.height = rect.height * dpr;
-            wbCtx.scale(dpr, dpr);
-            if (wbSteps.length > 0) renderWbStep(wbCurrentStep);
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-
-        function startStepAnimation(stepIdx) {
-            if (animFrameId) cancelAnimationFrame(animFrameId);
-            let startTime = null;
-            const duration = 1000;
-
-            function frame(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                drawProgress = progress;
-                renderWbStep(stepIdx, progress);
-                if (progress < 1) {
-                    animFrameId = requestAnimationFrame(frame);
-                }
-            }
-            animFrameId = requestAnimationFrame(frame);
-        }
-
-        function renderWbStep(stepIdx, progress = 1) {
-            if (stepIdx < 0 || stepIdx >= wbSteps.length) return;
-            const step = wbSteps[stepIdx];
-            const stepOverlay = document.getElementById('wb-step-overlay');
-            stepOverlay.classList.remove('hidden');
-            document.getElementById('wb-step-num').textContent = `Step ${stepIdx + 1} of ${wbSteps.length}`;
-            document.getElementById('wb-step-desc').textContent = step.text || '';
-
-            wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
-            wbCtx.lineCap = 'round';
-            wbCtx.lineJoin = 'round';
-
-            for (let i = 0; i <= stepIdx; i++) {
-                const s = wbSteps[i];
-                const activeProgress = (i === stepIdx) ? progress : 1;
-                if (s.draw) {
-                    s.draw.forEach(cmd => {
-                        wbCtx.beginPath();
-                        wbCtx.strokeStyle = cmd.color || '#89b4fa';
-                        wbCtx.lineWidth = ts(cmd.width || 3);
-                        wbCtx.shadowBlur = 8;
-                        wbCtx.shadowColor = cmd.color || '#89b4fa';
-                        wbCtx.globalAlpha = (i === stepIdx) ? activeProgress : 1;
-
-                        if (cmd.type === 'line') {
-                            const x1 = tx(cmd.x1);
-                            const y1 = ty(cmd.y1);
-                            const x2 = tx(cmd.x2);
-                            const y2 = ty(cmd.y2);
-                            wbCtx.moveTo(x1, y1);
-                            wbCtx.lineTo(x1 + (x2 - x1) * activeProgress, y1 + (y2 - y1) * activeProgress);
-                            wbCtx.stroke();
-                        } else if (cmd.type === 'arc') {
-                            const x = tx(cmd.x);
-                            const y = ty(cmd.y);
-                            const r = ts(cmd.r);
-                            const startRad = (cmd.start || 0) * Math.PI / 180;
-                            const endRad = (cmd.end || 360) * Math.PI / 180;
-                            wbCtx.arc(x, y, r, startRad, startRad + (endRad - startRad) * activeProgress);
-                            wbCtx.stroke();
-                        } else if (cmd.type === 'text') {
-                            wbCtx.fillStyle = cmd.color || '#cdd6f4';
-                            wbCtx.font = `bold ${ts(cmd.size || 16)}px sans-serif`;
-                            wbCtx.shadowBlur = 0;
-                            wbCtx.fillText(cmd.content, tx(cmd.x), ty(cmd.y));
-                        }
-                    });
-                }
-            }
-            wbCtx.shadowBlur = 0;
-            wbCtx.globalAlpha = 1;
-        }
-
-        stepPlay.onclick = () => {
-            isWbPlaying = !isWbPlaying;
-            if (isWbPlaying) {
-                stepPlay.textContent = 'Pause';
-                wbAnimInterval = setInterval(() => {
-                    if (wbCurrentStep < wbSteps.length - 1) {
-                        wbCurrentStep++;
-                        startStepAnimation(wbCurrentStep);
-                    } else {
-                        clearInterval(wbAnimInterval);
-                        isWbPlaying = false;
-                        stepPlay.textContent = 'Play';
-                    }
-                }, 3000);
-            } else {
-                stepPlay.textContent = 'Play';
-                clearInterval(wbAnimInterval);
-            }
-        };
-
-        stepPrev.onclick = () => {
-            if (wbCurrentStep > 0) {
-                wbCurrentStep--;
-                startStepAnimation(wbCurrentStep);
-            }
-        };
-
-        stepNext.onclick = () => {
-            if (wbCurrentStep < wbSteps.length - 1) {
-                wbCurrentStep++;
-                startStepAnimation(wbCurrentStep);
-            }
-        };
-
-        wbCanvas.addEventListener('mousedown', (e) => {
-            isWbDrawing = true;
-            const rect = wbCanvas.getBoundingClientRect();
-            wbLastX = (e.clientX - rect.left) * (wbCanvas.width / rect.width) / (window.devicePixelRatio || 1);
-            wbLastY = (e.clientY - rect.top) * (wbCanvas.height / rect.height) / (window.devicePixelRatio || 1);
-        });
-
-        wbCanvas.addEventListener('mousemove', (e) => {
-            if (!isWbDrawing) return;
-            const rect = wbCanvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (wbCanvas.width / rect.width) / (window.devicePixelRatio || 1);
-            const y = (e.clientY - rect.top) * (wbCanvas.height / rect.height) / (window.devicePixelRatio || 1);
-
-            wbCtx.beginPath();
-            wbCtx.shadowBlur = 4;
-            if (wbTool === 'pencil') {
-                wbCtx.strokeStyle = '#89b4fa';
-                wbCtx.lineWidth = 4;
-                wbCtx.shadowColor = '#89b4fa';
-            } else {
-                wbCtx.strokeStyle = '#1e1e2e';
-                wbCtx.lineWidth = 30;
-                wbCtx.shadowColor = 'transparent';
-            }
-            wbCtx.lineCap = 'round';
-            wbCtx.lineJoin = 'round';
-            wbCtx.moveTo(wbLastX, wbLastY);
-            wbCtx.lineTo(x, y);
-            wbCtx.stroke();
-            wbLastX = x;
-            wbLastY = y;
-        });
-
-        wbCanvas.addEventListener('mouseup', () => isWbDrawing = false);
-        wbCanvas.addEventListener('mouseleave', () => isWbDrawing = false);
-
-        wbClear.onclick = () => {
-            wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
-            document.getElementById('wb-step-overlay').classList.add('hidden');
-            wbSteps = [];
-            wbCurrentStep = 0;
-        };
-
-        toolPencil.onclick = () => {
-            wbTool = 'pencil';
-            toolPencil.className = 'p-2 bg-[#89b4fa] text-[#11111b] rounded-lg font-bold text-xs';
-            toolEraser.className = 'p-2 bg-[#313244] text-[#cdd6f4] rounded-lg font-bold text-xs hover:bg-[#45475a]';
-        };
-
-        toolEraser.onclick = () => {
-            wbTool = 'eraser';
-            toolEraser.className = 'p-2 bg-[#89b4fa] text-[#11111b] rounded-lg font-bold text-xs';
-            toolPencil.className = 'p-2 bg-[#313244] text-[#cdd6f4] rounded-lg font-bold text-xs hover:bg-[#45475a]';
-        };
-
-        sendBtn.addEventListener('click', () => sendMessage(false));
-        continueBtn.addEventListener('click', () => sendMessage(true));
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(false);
-            }
-        });
-    }
-});
+        async function sendM
