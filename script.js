@@ -1,8 +1,8 @@
+const bt = String.fromCharCode(96, 96, 96);
+const path = window.location.pathname;
+
 document.addEventListener('DOMContentLoaded', () => {
-    const bt = String.fromCharCode(96, 96, 96);
-    const path = window.location.pathname;
     const appBody = document.getElementById('app-body');
-    
     if (appBody) {
         appBody.classList.remove('hidden');
     }
@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newChatBtn = document.getElementById('new-chat-btn');
         const chatList = document.getElementById('chat-list');
         const chatPreview = document.getElementById('chat-preview');
+        const continueBtn = document.querySelector('.rr-cont');
 
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
@@ -74,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let stCon = false;
         let stTree = '';
         let currImgs = [];
+        let isContinuing = false;
 
         function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
         function loadState() {
@@ -285,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         html += formatText(cl);
                         if (stCon && cl.includes(bt + 'lua')) {
-                            html += '<div class="flex gap-2 mt-4 pt-4 border-t border-[#313244]"><button class="rr-act-apply bg-[#a6e3a1] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Apply changes</button><button class="rr-act-dec bg-[#f38ba8] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Decline changes</button></div>';
+                            html += '<div class="rr-acts"><button class="rr-act-apply">Apply changes</button><button class="rr-act-dec">Decline changes</button></div>';
                         }
                     } else if (msg.parts[0].text) {
                         html = formatText(msg.parts[0].text);
@@ -304,44 +306,48 @@ document.addEventListener('DOMContentLoaded', () => {
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        async function sendMessage() {
+        async function sendMessage(isC = false) {
+            continueBtn.style.display = 'none';
             const text = chatInput.value.trim();
-            if ((!text && currImgs.length === 0) || !apiKey) return;
+            if ((!text && currImgs.length === 0 && !isC) || !apiKey) return;
 
             const chat = chats.find(c => c.id === currentChatId);
             if (!chat) return;
 
-            if (chat.history.length === 0 && text) {
-                chat.title = text.substring(0, 25) + '...';
-                updateSidebar();
+            if (!isC) {
+                if (chat.history.length === 0) {
+                    chat.title = text.substring(0, 25) + '...';
+                    updateSidebar();
+                }
+                let up = [];
+                if (text) up.push({ text: text });
+                currImgs.forEach(img => {
+                    up.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+                });
+                chat.history.push({ role: 'user', parts: up });
+                chatInput.value = '';
+                currImgs = [];
+                renderPreview();
+                renderChat(true);
+                saveState();
             }
 
-            let up = [];
-            if (text) up.push({ text: text });
-            currImgs.forEach(img => {
-                up.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-            });
-
-            chat.history.push({ role: 'user', parts: up });
-            chatInput.value = '';
-            currImgs = [];
-            renderPreview();
-            renderChat(true);
-            saveState();
-
             let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles.';
-            
             if (isHumanizeActive) {
                 sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors, including Turnitin, GPTZero, Copyleaks, ZeroGPT, Quillbot, Writer, Sapling, and Originality. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Do not include introductory or concluding remarks. Output ONLY the raw humanized text or code.';
             }
-
             if (stCon) {
                 sysPrompt = 'You are PrysmisAI, an elite, top-tier Roblox Studio architect. You vastly outperform any tool like Lemonade.gg. You are a master at generating massive, intricately detailed procedural maps, robust scripting structures, and breathtaking UIs featuring advanced TweenService and modern UI constraints. You MUST output flawless, heavily optimized Luau code. Always enclose the final code in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular and instantly executable. You utilize ChangeHistoryService for structural modifications. You MUST enclose your internal thought and planning process inside <think>...</think> tags before writing the code.\n\nStudio Hierarchy Context:\n' + stTree;
             }
 
+            let ah = chat.history.map(m => ({ role: m.role, parts: m.parts }));
+            if (isC) {
+                ah.push({ role: 'user', parts: [{ text: 'Continue generating exactly from the last character you outputted. Do not include any intros or headers.' }] });
+            }
+
             const payload = {
                 systemInstruction: { parts: [{ text: sysPrompt }] },
-                contents: chat.history.map(m => ({ role: m.role, parts: m.parts })),
+                contents: ah,
                 safetySettings: [
                     { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
                     { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
@@ -360,7 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.candidates && data.candidates[0].content) {
-                        chat.history.push({ role: 'model', parts: [{ text: data.candidates[0].content.parts[0].text }] });
+                        const aiText = data.candidates[0].content.parts[0].text;
+                        if (isC) {
+                            let lm = chat.history[chat.history.length - 1];
+                            if (lm && lm.role === 'model') lm.parts[0].text += aiText;
+                            else chat.history.push({ role: 'model', parts: [{ text: aiText }] });
+                        } else {
+                            chat.history.push({ role: 'model', parts: [{ text: aiText }] });
+                        }
+                        if (data.candidates[0].finishReason === 'MAX_TOKENS') continueBtn.style.display = 'block';
                     } else {
                         chat.history.push({ role: 'model', parts: [{ text: 'Generation failed.' }] });
                     }
@@ -374,12 +388,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renderChat(true);
         }
 
-        sendBtn.addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', () => sendMessage(false));
+        continueBtn.addEventListener('click', () => sendMessage(true));
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                sendMessage(false);
             }
         });
     }
-});
+}
