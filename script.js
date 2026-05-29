@@ -70,6 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatPreview = document.getElementById('chat-preview');
         const continueBtn = document.querySelector('.rr-cont');
 
+        const wbToggle = document.getElementById('wb-toggle');
+        const wbClose = document.getElementById('wb-close');
+        const wbPanel = document.getElementById('whiteboard-panel');
+        const wbCanvas = document.getElementById('wb-canvas');
+        const wbCtx = wbCanvas.getContext('2d');
+        const wbClear = document.getElementById('wb-clear');
+        const toolPencil = document.getElementById('tool-pencil');
+        const toolEraser = document.getElementById('tool-eraser');
+        const stepPrev = document.getElementById('step-prev');
+        const stepPlay = document.getElementById('step-play');
+        const stepNext = document.getElementById('step-next');
+
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
         let chats = [];
@@ -78,6 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let stTree = '';
         let currImgs = [];
         let isContinuing = false;
+
+        let wbSteps = [];
+        let wbCurrentStep = 0;
+        let wbAnimInterval = null;
+        let isWbPlaying = false;
+        let isWbDrawing = false;
+        let wbLastX = 0;
+        let wbLastY = 0;
+        let wbTool = 'pencil';
 
         function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
         function loadState() {
@@ -116,6 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     stDot.className = 'w-2.5 h-2.5 rounded-full bg-[#f38ba8]';
                     stText.textContent = 'Disconnected';
                     stText.className = 'text-xs font-bold text-[#f38ba8]';
+                }
+                if (data.screen) {
+                    let scEl = document.getElementById('screen-preview');
+                    if (!scEl) {
+                        scEl = document.createElement('div');
+                        scEl.id = 'screen-preview';
+                        scEl.className = 'flex flex-col p-4 bg-[#1e1e2e] border border-[#313244] rounded-xl mt-4 shrink-0';
+                        scEl.innerHTML = '<span class="text-xs font-bold text-[#a6adc8] mb-2 uppercase tracking-wider">Shared Screen</span><img id="scr-img" class="rounded-lg w-full max-h-40 object-cover border border-[#313244] shadow-md">';
+                        document.getElementById('chat-list-container').parentElement.appendChild(scEl);
+                    }
+                    document.getElementById('scr-img').src = data.screen;
+                } else {
+                    const scEl = document.getElementById('screen-preview');
+                    if (scEl) scEl.remove();
                 }
             } catch (err) {}
         }
@@ -290,6 +325,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             cl = rw.replace(/<think>[\s\S]*?<\/think>/, '').trim();
                             html += '<div class="flex items-center gap-2 text-[#a6adc8] font-bold text-xs mb-2 bg-[#11111b] px-3 py-2 rounded-lg w-fit shadow-inner border border-[#313244]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Prysmis has processed this.</div>';
                         }
+                        let wbMatch = cl.match(/<whiteboard>([\s\S]*?)<\/whiteboard>/);
+                        if (wbMatch) {
+                            cl = cl.replace(/<whiteboard>[\s\S]*?<\/whiteboard>/, '').trim();
+                            try {
+                                const parsed = JSON.parse(wbMatch[1]);
+                                wbSteps = parsed.steps;
+                                document.getElementById('wb-title').textContent = parsed.title || 'Whiteboard';
+                                wbPanel.classList.remove('w-0');
+                                wbPanel.classList.add('w-[500px]');
+                                setTimeout(resizeCanvas, 310);
+                                wbCurrentStep = 0;
+                                renderWbStep(0);
+                            } catch (err) {}
+                        }
                         html += formatText(cl);
                         if (stCon && cl.includes(bt + 'lua')) {
                             html += '<div class="flex gap-2 mt-4 pt-4 border-t border-[#313244]"><button class="rr-act-apply bg-[#a6e3a1] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Apply changes</button><button class="rr-act-dec bg-[#f38ba8] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Decline changes</button></div>';
@@ -336,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
             }
 
-            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles.';
+            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Keep all coordinate values scaled between 0 and 500. Support types: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
             if (isHumanizeActive) {
                 sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
             }
@@ -391,6 +440,152 @@ document.addEventListener('DOMContentLoaded', () => {
             saveState();
             renderChat(true);
         }
+
+        wbToggle.onclick = () => {
+            if (wbPanel.classList.contains('w-0')) {
+                wbPanel.classList.remove('w-0');
+                wbPanel.classList.add('w-[500px]');
+                setTimeout(resizeCanvas, 310);
+            } else {
+                wbPanel.classList.remove('w-[500px]');
+                wbPanel.classList.add('w-0');
+            }
+        };
+
+        wbClose.onclick = () => {
+            wbPanel.classList.remove('w-[500px]');
+            wbPanel.classList.add('w-0');
+        };
+
+        function resizeCanvas() {
+            const rect = wbCanvas.parentElement.getBoundingClientRect();
+            wbCanvas.width = rect.width;
+            wbCanvas.height = rect.height;
+            if (wbSteps.length > 0) renderWbStep(wbCurrentStep);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function renderWbStep(stepIdx) {
+            if (stepIdx < 0 || stepIdx >= wbSteps.length) return;
+            const step = wbSteps[stepIdx];
+            const stepOverlay = document.getElementById('wb-step-overlay');
+            stepOverlay.classList.remove('hidden');
+            document.getElementById('wb-step-num').textContent = `Step ${stepIdx + 1} of ${wbSteps.length}`;
+            document.getElementById('wb-step-desc').textContent = step.text || '';
+
+            wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
+            for (let i = 0; i <= stepIdx; i++) {
+                const s = wbSteps[i];
+                if (s.draw) {
+                    s.draw.forEach(cmd => {
+                        wbCtx.beginPath();
+                        wbCtx.strokeStyle = cmd.color || '#89b4fa';
+                        wbCtx.lineWidth = cmd.width || 2;
+                        if (cmd.type === 'line') {
+                            wbCtx.moveTo(cmd.x1, cmd.y1);
+                            wbCtx.lineTo(cmd.x2, cmd.y2);
+                            wbCtx.stroke();
+                        } else if (cmd.type === 'arc') {
+                            const startRad = (cmd.start || 0) * Math.PI / 180;
+                            const endRad = (cmd.end || 360) * Math.PI / 180;
+                            wbCtx.arc(cmd.x, cmd.y, cmd.r, startRad, endRad);
+                            wbCtx.stroke();
+                        } else if (cmd.type === 'text') {
+                            wbCtx.fillStyle = cmd.color || '#cdd6f4';
+                            wbCtx.font = `${cmd.size || 14}px sans-serif`;
+                            wbCtx.fillText(cmd.content, cmd.x, cmd.y);
+                        }
+                    });
+                }
+            }
+        }
+
+        stepPlay.onclick = () => {
+            isWbPlaying = !isWbPlaying;
+            if (isWbPlaying) {
+                stepPlay.textContent = 'Pause';
+                wbAnimInterval = setInterval(() => {
+                    if (wbCurrentStep < wbSteps.length - 1) {
+                        wbCurrentStep++;
+                        renderWbStep(wbCurrentStep);
+                    } else {
+                        clearInterval(wbAnimInterval);
+                        isWbPlaying = false;
+                        stepPlay.textContent = 'Play';
+                    }
+                }, 2500);
+            } else {
+                stepPlay.textContent = 'Play';
+                clearInterval(wbAnimInterval);
+            }
+        };
+
+        stepPrev.onclick = () => {
+            if (wbCurrentStep > 0) {
+                wbCurrentStep--;
+                renderWbStep(wbCurrentStep);
+            }
+        };
+
+        stepNext.onclick = () => {
+            if (wbCurrentStep < wbSteps.length - 1) {
+                wbCurrentStep++;
+                renderWbStep(wbCurrentStep);
+            }
+        };
+
+        wbCanvas.addEventListener('mousedown', (e) => {
+            isWbDrawing = true;
+            const rect = wbCanvas.getBoundingClientRect();
+            wbLastX = e.clientX - rect.left;
+            wbLastY = e.clientY - rect.top;
+        });
+
+        wbCanvas.addEventListener('mousemove', (e) => {
+            if (!isWbDrawing) return;
+            const rect = wbCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            wbCtx.beginPath();
+            if (wbTool === 'pencil') {
+                wbCtx.strokeStyle = '#89b4fa';
+                wbCtx.lineWidth = 3;
+            } else {
+                wbCtx.strokeStyle = '#1e1e2e';
+                wbCtx.lineWidth = 20;
+            }
+            wbCtx.lineCap = 'round';
+            wbCtx.lineJoin = 'round';
+            wbCtx.moveTo(wbLastX, wbLastY);
+            wbCtx.lineTo(x, y);
+            wbCtx.stroke();
+            wbLastX = x;
+            wbLastY = y;
+        });
+
+        wbCanvas.addEventListener('mouseup', () => isWbDrawing = false);
+        wbCanvas.addEventListener('mouseleave', () => isWbDrawing = false);
+
+        wbClear.onclick = () => {
+            wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
+            document.getElementById('wb-step-overlay').classList.add('hidden');
+            wbSteps = [];
+            wbCurrentStep = 0;
+        };
+
+        toolPencil.onclick = () => {
+            wbTool = 'pencil';
+            toolPencil.className = 'p-2 bg-[#89b4fa] text-[#11111b] rounded-lg font-bold text-xs';
+            toolEraser.className = 'p-2 bg-[#313244] text-[#cdd6f4] rounded-lg font-bold text-xs hover:bg-[#45475a]';
+        };
+
+        toolEraser.onclick = () => {
+            wbTool = 'eraser';
+            toolEraser.className = 'p-2 bg-[#89b4fa] text-[#11111b] rounded-lg font-bold text-xs';
+            toolPencil.className = 'p-2 bg-[#313244] text-[#cdd6f4] rounded-lg font-bold text-xs hover:bg-[#45475a]';
+        };
 
         sendBtn.addEventListener('click', () => sendMessage(false));
         continueBtn.addEventListener('click', () => sendMessage(true));
