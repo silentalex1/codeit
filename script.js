@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let stTree = '';
         let currImgs = [];
         let isContinuing = false;
+        let activeSharedScreen = '';
 
         let wbSteps = [];
         let wbCurrentStep = 0;
@@ -99,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let wbLastX = 0;
         let wbLastY = 0;
         let wbTool = 'pencil';
+        let drawProgress = 0;
+        let animFrameId = null;
 
         function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
         function loadState() {
@@ -139,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     stText.className = 'text-xs font-bold text-[#f38ba8]';
                 }
                 if (data.screen) {
+                    activeSharedScreen = data.screen;
                     let scEl = document.getElementById('screen-preview');
                     if (!scEl) {
                         scEl = document.createElement('div');
@@ -149,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     document.getElementById('scr-img').src = data.screen;
                 } else {
+                    activeSharedScreen = '';
                     const scEl = document.getElementById('screen-preview');
                     if (scEl) scEl.remove();
                 }
@@ -336,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 wbPanel.classList.add('w-[500px]');
                                 setTimeout(resizeCanvas, 310);
                                 wbCurrentStep = 0;
-                                renderWbStep(0);
+                                startStepAnimation(0);
                             } catch (err) {}
                         }
                         html += formatText(cl);
@@ -377,6 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 currImgs.forEach(img => {
                     up.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
                 });
+                if (activeSharedScreen) {
+                    const b64Data = activeSharedScreen.split(',')[1];
+                    up.push({ inlineData: { mimeType: 'image/jpeg', data: b64Data } });
+                }
                 chat.history.push({ role: 'user', parts: up });
                 chatInput.value = '';
                 currImgs = [];
@@ -385,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
             }
 
-            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Keep all coordinate values scaled between 0 and 500. Support types: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
+            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If there is an image attached, it represents the user\'s live screen/browser view shared in real-time through their connected bookmarklet, meaning you CAN see their screen context. Use this visual to answer or solve their problems. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Scale coordinates strictly from 0 to 500. Compute geometric coordinates using exact trigonometric rules (vertex typically (250, 350) inside 500x500 viewport). Supports: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
             if (isHumanizeActive) {
                 sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
             }
@@ -457,16 +466,60 @@ document.addEventListener('DOMContentLoaded', () => {
             wbPanel.classList.add('w-0');
         };
 
+        function getViewport() {
+            const w = wbCanvas.width / (window.devicePixelRatio || 1);
+            const h = wbCanvas.height / (window.devicePixelRatio || 1);
+            const size = Math.min(w, h) * 0.9;
+            const offsetX = (w - size) / 2;
+            const offsetY = (h - size) / 2;
+            return { size, offsetX, offsetY };
+        }
+
+        function tx(x) {
+            const vp = getViewport();
+            return vp.offsetX + (x / 500) * vp.size;
+        }
+
+        function ty(y) {
+            const vp = getViewport();
+            return vp.offsetY + (y / 500) * vp.size;
+        }
+
+        function ts(size) {
+            const vp = getViewport();
+            return (size / 500) * vp.size;
+        }
+
         function resizeCanvas() {
             const rect = wbCanvas.parentElement.getBoundingClientRect();
-            wbCanvas.width = rect.width;
-            wbCanvas.height = rect.height;
+            const dpr = window.devicePixelRatio || 1;
+            wbCanvas.width = rect.width * dpr;
+            wbCanvas.height = rect.height * dpr;
+            wbCtx.scale(dpr, dpr);
             if (wbSteps.length > 0) renderWbStep(wbCurrentStep);
         }
 
         window.addEventListener('resize', resizeCanvas);
 
-        function renderWbStep(stepIdx) {
+        function startStepAnimation(stepIdx) {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            let startTime = null;
+            const duration = 1000;
+
+            function frame(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                drawProgress = progress;
+                renderWbStep(stepIdx, progress);
+                if (progress < 1) {
+                    animFrameId = requestAnimationFrame(frame);
+                }
+            }
+            animFrameId = requestAnimationFrame(frame);
+        }
+
+        function renderWbStep(stepIdx, progress = 1) {
             if (stepIdx < 0 || stepIdx >= wbSteps.length) return;
             const step = wbSteps[stepIdx];
             const stepOverlay = document.getElementById('wb-step-overlay');
@@ -475,30 +528,48 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('wb-step-desc').textContent = step.text || '';
 
             wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
+            wbCtx.lineCap = 'round';
+            wbCtx.lineJoin = 'round';
+
             for (let i = 0; i <= stepIdx; i++) {
                 const s = wbSteps[i];
+                const activeProgress = (i === stepIdx) ? progress : 1;
                 if (s.draw) {
                     s.draw.forEach(cmd => {
                         wbCtx.beginPath();
                         wbCtx.strokeStyle = cmd.color || '#89b4fa';
-                        wbCtx.lineWidth = cmd.width || 2;
+                        wbCtx.lineWidth = ts(cmd.width || 3);
+                        wbCtx.shadowBlur = 8;
+                        wbCtx.shadowColor = cmd.color || '#89b4fa';
+                        wbCtx.globalAlpha = (i === stepIdx) ? activeProgress : 1;
+
                         if (cmd.type === 'line') {
-                            wbCtx.moveTo(cmd.x1, cmd.y1);
-                            wbCtx.lineTo(cmd.x2, cmd.y2);
+                            const x1 = tx(cmd.x1);
+                            const y1 = ty(cmd.y1);
+                            const x2 = tx(cmd.x2);
+                            const y2 = ty(cmd.y2);
+                            wbCtx.moveTo(x1, y1);
+                            wbCtx.lineTo(x1 + (x2 - x1) * activeProgress, y1 + (y2 - y1) * activeProgress);
                             wbCtx.stroke();
                         } else if (cmd.type === 'arc') {
+                            const x = tx(cmd.x);
+                            const y = ty(cmd.y);
+                            const r = ts(cmd.r);
                             const startRad = (cmd.start || 0) * Math.PI / 180;
                             const endRad = (cmd.end || 360) * Math.PI / 180;
-                            wbCtx.arc(cmd.x, cmd.y, cmd.r, startRad, endRad);
+                            wbCtx.arc(x, y, r, startRad, startRad + (endRad - startRad) * activeProgress);
                             wbCtx.stroke();
                         } else if (cmd.type === 'text') {
                             wbCtx.fillStyle = cmd.color || '#cdd6f4';
-                            wbCtx.font = `${cmd.size || 14}px sans-serif`;
-                            wbCtx.fillText(cmd.content, cmd.x, cmd.y);
+                            wbCtx.font = `bold ${ts(cmd.size || 16)}px sans-serif`;
+                            wbCtx.shadowBlur = 0;
+                            wbCtx.fillText(cmd.content, tx(cmd.x), ty(cmd.y));
                         }
                     });
                 }
             }
+            wbCtx.shadowBlur = 0;
+            wbCtx.globalAlpha = 1;
         }
 
         stepPlay.onclick = () => {
@@ -508,13 +579,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 wbAnimInterval = setInterval(() => {
                     if (wbCurrentStep < wbSteps.length - 1) {
                         wbCurrentStep++;
-                        renderWbStep(wbCurrentStep);
+                        startStepAnimation(wbCurrentStep);
                     } else {
                         clearInterval(wbAnimInterval);
                         isWbPlaying = false;
                         stepPlay.textContent = 'Play';
                     }
-                }, 2500);
+                }, 3000);
             } else {
                 stepPlay.textContent = 'Play';
                 clearInterval(wbAnimInterval);
@@ -524,37 +595,40 @@ document.addEventListener('DOMContentLoaded', () => {
         stepPrev.onclick = () => {
             if (wbCurrentStep > 0) {
                 wbCurrentStep--;
-                renderWbStep(wbCurrentStep);
+                startStepAnimation(wbCurrentStep);
             }
         };
 
         stepNext.onclick = () => {
             if (wbCurrentStep < wbSteps.length - 1) {
                 wbCurrentStep++;
-                renderWbStep(wbCurrentStep);
+                startStepAnimation(wbCurrentStep);
             }
         };
 
         wbCanvas.addEventListener('mousedown', (e) => {
             isWbDrawing = true;
             const rect = wbCanvas.getBoundingClientRect();
-            wbLastX = e.clientX - rect.left;
-            wbLastY = e.clientY - rect.top;
+            wbLastX = (e.clientX - rect.left) * (wbCanvas.width / rect.width) / (window.devicePixelRatio || 1);
+            wbLastY = (e.clientY - rect.top) * (wbCanvas.height / rect.height) / (window.devicePixelRatio || 1);
         });
 
         wbCanvas.addEventListener('mousemove', (e) => {
             if (!isWbDrawing) return;
             const rect = wbCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const x = (e.clientX - rect.left) * (wbCanvas.width / rect.width) / (window.devicePixelRatio || 1);
+            const y = (e.clientY - rect.top) * (wbCanvas.height / rect.height) / (window.devicePixelRatio || 1);
 
             wbCtx.beginPath();
+            wbCtx.shadowBlur = 4;
             if (wbTool === 'pencil') {
                 wbCtx.strokeStyle = '#89b4fa';
-                wbCtx.lineWidth = 3;
+                wbCtx.lineWidth = 4;
+                wbCtx.shadowColor = '#89b4fa';
             } else {
                 wbCtx.strokeStyle = '#1e1e2e';
-                wbCtx.lineWidth = 20;
+                wbCtx.lineWidth = 30;
+                wbCtx.shadowColor = 'transparent';
             }
             wbCtx.lineCap = 'round';
             wbCtx.lineJoin = 'round';
