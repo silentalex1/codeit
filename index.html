@@ -23,8 +23,8 @@
     <div id="main-view" class="flex flex-col h-screen hidden">
         <nav class="h-16 bg-[#0a1711] border-b border-[#1a4d33] flex items-center justify-between px-6 shrink-0 z-20">
             <div class="flex items-center gap-4">
+                <svg class="w-6 h-6 text-[#5ad68c]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <h1 class="text-xl font-bold text-[#5ad68c] tracking-wide">PrysmisAI</h1>
-                <a href="bookmarklet.js" class="text-xs bg-[#0f2118] border border-[#1a4d33] px-3 py-1.5 rounded text-[#87bfa0] hover:bg-[#1a4d33] transition-colors" draggable="true">Drag Bookmarklet</a>
             </div>
             <div class="flex items-center gap-4">
                 <button id="humanize-btn" class="flex items-center gap-2 border border-[#1a4d33] bg-[#0f2118] text-[#87bfa0] px-4 py-2 rounded-lg font-bold transition-all hover:bg-[#1a4d33]">
@@ -37,12 +37,45 @@
             </div>
         </nav>
 
-        <div id="chat-area" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 relative"></div>
+        <div class="flex flex-1 overflow-hidden">
+            <div class="w-80 bg-[#0a1711] border-r border-[#1a4d33] flex flex-col p-6 gap-6 z-10 shrink-0">
+                <a href="bookmarklet.js" class="text-center font-bold bg-[#0f2118] border border-[#1a4d33] px-4 py-3 rounded-lg text-[#5ad68c] hover:bg-[#1a4d33] transition-colors" draggable="true">Drag Bookmarklet</a>
+                
+                <div class="flex flex-col gap-4">
+                    <h2 class="text-xs font-bold text-[#87bfa0] uppercase tracking-wider">Bridge Connections</h2>
+                    <div class="flex flex-col p-4 bg-[#0f2118] border border-[#1a4d33] rounded-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-5 h-5 text-[#a6adc8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                            <span class="font-semibold text-sm">Bookmarklet</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="bm-dot" class="w-2.5 h-2.5 rounded-full bg-[#f38ba8]"></span>
+                            <span id="bm-text" class="text-xs font-bold text-[#f38ba8]">Disconnected</span>
+                        </div>
+                    </div>
 
-        <div class="p-6 bg-[#0a1711] border-t border-[#1a4d33] shrink-0">
-            <div class="max-w-4xl mx-auto flex gap-4">
-                <textarea id="chat-input" class="flex-1 bg-[#0f2118] border border-[#1a4d33] rounded-xl p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all resize-none min-h-[60px] max-h-[200px]" placeholder="Ask PrysmisAI anything.."></textarea>
-                <button id="send-btn" class="bg-[#27824f] hover:bg-[#35a165] text-white font-bold px-8 rounded-xl transition-all self-end h-[60px]">Send</button>
+                    <div class="flex flex-col p-4 bg-[#0f2118] border border-[#1a4d33] rounded-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-5 h-5 text-[#a6adc8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            <span class="font-semibold text-sm">Studio Plugin</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="st-dot" class="w-2.5 h-2.5 rounded-full bg-[#f38ba8]"></span>
+                            <span id="st-text" class="text-xs font-bold text-[#f38ba8]">Waiting</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col relative bg-[#060f0a]">
+                <div id="chat-area" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6 relative"></div>
+
+                <div class="p-6 bg-[#0a1711] border-t border-[#1a4d33] shrink-0">
+                    <div class="max-w-5xl mx-auto flex gap-4">
+                        <textarea id="chat-input" class="flex-1 bg-[#0f2118] border border-[#1a4d33] rounded-xl p-4 text-[#d1ebd9] outline-none focus:border-[#27824f] transition-all resize-none min-h-[60px] max-h-[200px]" placeholder="Ask PrysmisAI anything.."></textarea>
+                        <button id="send-btn" class="bg-[#27824f] hover:bg-[#35a165] text-white font-bold px-8 rounded-xl transition-all self-end h-[60px]">Send</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
