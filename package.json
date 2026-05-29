@@ -1,0 +1,12 @@
+{
+  "name": "prysmis-bridge",
+  "version": "1.0.0",
+  "description": "Bridge server for PrysmisAI bookmarklet and Roblox Studio plugin",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
