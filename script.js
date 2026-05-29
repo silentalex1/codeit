@@ -54,6 +54,7 @@ function initApp() {
     const logoutBtn = document.getElementById('logout-btn');
     const newChatBtn = document.getElementById('new-chat-btn');
     const chatList = document.getElementById('chat-list');
+    const chatPreview = document.getElementById('chat-preview');
 
     let apiKey = localStorage.getItem('prysmis_api_key') || '';
     let isHumanizeActive = false;
@@ -61,6 +62,7 @@ function initApp() {
     let currentChatId = null;
     let stCon = false;
     let stTree = '';
+    let currImgs = [];
 
     function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
     function loadState() {
@@ -69,8 +71,10 @@ function initApp() {
     }
 
     async function updateStatus() {
+        if (!navigator.onLine) return;
         try {
             const res = await fetch('/status');
+            if(!res.ok) return;
             const data = await res.json();
             if (data.tree) stTree = data.tree;
             if (data.bookmarklet) {
@@ -101,7 +105,7 @@ function initApp() {
         } catch (err) {}
     }
 
-    setInterval(updateStatus, 1000);
+    setInterval(updateStatus, 1500);
     updateStatus();
     loadState();
     if (chats.length > 0) currentChatId = chats[0].id;
@@ -162,13 +166,55 @@ function initApp() {
         else humanizeBtn.classList.remove('humanize-active');
     });
 
+    function renderPreview() {
+        chatPreview.innerHTML = '';
+        if (currImgs.length === 0) {
+            chatPreview.classList.add('hidden');
+            chatPreview.classList.remove('flex');
+            return;
+        }
+        currImgs.forEach((img, idx) => {
+            const w = document.createElement('div');
+            w.className = 'relative inline-block';
+            const i = document.createElement('img');
+            i.src = 'data:' + img.mimeType + ';base64,' + img.data;
+            i.className = 'h-16 rounded-lg border-2 border-[#89b4fa] object-cover';
+            const x = document.createElement('button');
+            x.textContent = 'X';
+            x.className = 'absolute -top-2 -right-2 bg-[#f38ba8] text-[#11111b] w-5 h-5 rounded-full text-[10px] font-bold hover:scale-110 transition-transform';
+            x.onclick = () => { currImgs.splice(idx, 1); renderPreview(); };
+            w.appendChild(i);
+            w.appendChild(x);
+            chatPreview.appendChild(w);
+        });
+        chatPreview.classList.remove('hidden');
+        chatPreview.classList.add('flex');
+    }
+
+    chatInput.addEventListener('paste', e => {
+        const items = e.clipboardData.items;
+        for (let j = 0; j < items.length; j++) {
+            if (items[j].type.indexOf('image') !== -1) {
+                const b = items[j].getAsFile();
+                const t = items[j].type;
+                const r = new FileReader();
+                r.onload = ev => {
+                    currImgs.push({ mimeType: t, data: ev.target.result.split(',')[1] });
+                    renderPreview();
+                };
+                r.readAsDataURL(b);
+            }
+        }
+    });
+
+    const bt = String.fromCharCode(96, 96, 96);
     function formatText(text) {
         if (!text) return '';
         let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        let parts = escaped.split(/(```[\s\S]*?```)/g);
+        let parts = escaped.split(new RegExp('(' + bt + '[\\s\\S]*?' + bt + ')', 'g'));
         for (let i = 0; i < parts.length; i++) {
-            if (parts[i].startsWith('```') && parts[i].endsWith('```')) {
-                let match = parts[i].match(/```([^\n]*)\n?([\s\S]*?)```/);
+            if (parts[i].startsWith(bt) && parts[i].endsWith(bt)) {
+                let match = parts[i].match(new RegExp(bt + '([^\\n]*)\\n?([\\s\\S]*?)' + bt));
                 if (match) {
                     parts[i] = '<div class="cb-container"><div class="cb-header"><span>' + match[1] + '</span><button class="cb-copy" data-code="' + encodeURIComponent(match[2]) + '">Copy Code</button></div><pre class="cb-body">' + match[2] + '</pre></div>';
                 }
@@ -225,12 +271,19 @@ function initApp() {
                         html += '<div class="flex items-center gap-2 text-[#a6adc8] font-bold text-xs mb-2 bg-[#11111b] px-3 py-2 rounded-lg w-fit shadow-inner border border-[#313244]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Prysmis has processed this.</div>';
                     }
                     html += formatText(cl);
-                    if (stCon && cl.includes('```lua')) {
+                    if (stCon && cl.includes(bt + 'lua')) {
                         html += '<div class="flex gap-2 mt-4 pt-4 border-t border-[#313244]"><button class="rr-act-apply bg-[#a6e3a1] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Apply changes</button><button class="rr-act-dec bg-[#f38ba8] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Decline changes</button></div>';
                     }
-                } else {
+                } else if (msg.parts[0].text) {
                     html = formatText(msg.parts[0].text);
                 }
+                
+                msg.parts.forEach(p => {
+                    if (p.inlineData) {
+                        html += '<br><img src="data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data + '" class="mt-2 rounded-lg max-h-64 object-contain">';
+                    }
+                });
+
                 div.innerHTML = html;
                 chatArea.appendChild(div);
             });
@@ -240,28 +293,36 @@ function initApp() {
 
     async function sendMessage() {
         const text = chatInput.value.trim();
-        if (!text || !apiKey) return;
+        if ((!text && currImgs.length === 0) || !apiKey) return;
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat) return;
 
-        if (chat.history.length === 0) {
+        if (chat.history.length === 0 && text) {
             chat.title = text.substring(0, 25) + '...';
             updateSidebar();
         }
 
-        chat.history.push({ role: 'user', parts: [{ text: text }] });
+        let up = [];
+        if (text) up.push({ text: text });
+        currImgs.forEach(img => {
+            up.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+        });
+
+        chat.history.push({ role: 'user', parts: up });
         chatInput.value = '';
+        currImgs = [];
+        renderPreview();
         renderChat(true);
         saveState();
 
-        let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses.';
+        let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly.';
         
         if (isHumanizeActive) {
             sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
         }
 
         if (stCon) {
-            sysPrompt = 'You are PrysmisAI, the world\'s most advanced Roblox Studio AI developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking UIs, fluid animations using TweenService, and intricately detailed map generations. You must write robust, error-free Luau code. Always enclose the final code in ```lua ... ``` blocks. Your code must be modular and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
+            sysPrompt = 'You are PrysmisAI, the world\'s most elite Roblox Studio developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking modular UIs, ultra-fluid animations using TweenService, and intricately detailed map generation infrastructure. Write robust, error-free Luau code enclosed in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular, highly optimized, visually stunning, and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
         }
 
         const payload = {
