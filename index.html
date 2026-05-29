@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#11111b] text-[#cdd6f4] h-screen font-sans overflow-hidden flex flex-col">
+<body class="bg-[#11111b] text-[#cdd6f4] h-screen font-sans overflow-hidden flex flex-col hidden" id="app-body">
     <nav class="h-16 bg-[#181825] border-b border-[#313244] flex items-center justify-between px-6 shrink-0 z-20">
         <div class="flex items-center gap-4">
             <h1 class="text-xl font-bold text-[#89b4fa] tracking-wide">PrysmisAI</h1>
@@ -23,15 +23,12 @@
             <button id="logout-btn" class="bg-[#313244] hover:bg-[#45475a] text-[#cdd6f4] px-4 py-2 rounded-lg font-bold transition-all text-sm">Logout</button>
         </div>
     </nav>
-
     <div class="flex flex-1 overflow-hidden min-h-0">
         <div class="w-80 bg-[#181825] border-r border-[#313244] flex flex-col p-6 gap-6 z-10 shrink-0">
             <button id="new-chat-btn" class="w-full font-bold bg-[#89b4fa] text-[#11111b] px-4 py-3 rounded-lg hover:bg-[#74c7ec] transition-colors shadow-md">+ new chat</button>
-            
             <div class="flex flex-col gap-4 flex-1 overflow-y-auto" id="chat-list-container">
                 <div id="chat-list" class="flex flex-col gap-2"></div>
             </div>
-
             <div class="flex flex-col gap-4 shrink-0">
                 <h2 class="text-xs font-bold text-[#a6adc8] uppercase tracking-wider">Bridge Connections</h2>
                 <div class="flex flex-col p-4 bg-[#1e1e2e] border border-[#313244] rounded-xl">
@@ -44,7 +41,6 @@
                         <span id="bm-text" class="text-xs font-bold text-[#f38ba8]">Disconnected</span>
                     </div>
                 </div>
-
                 <div class="flex flex-col p-4 bg-[#1e1e2e] border border-[#313244] rounded-xl">
                     <div class="flex items-center gap-3 mb-2">
                         <svg class="w-5 h-5 text-[#a6adc8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
@@ -57,14 +53,15 @@
                 </div>
             </div>
         </div>
-
         <div class="flex-1 flex flex-col relative bg-[#11111b] min-w-0">
-            <div id="chat-area" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6 relative"></div>
-
+            <div id="chat-area" class="flex-1 overflow-y-auto p-8 flex flex-col gap-6 relative min-h-0"></div>
             <div class="p-6 bg-[#181825] border-t border-[#313244] shrink-0">
-                <div class="max-w-5xl mx-auto flex gap-4">
-                    <textarea id="chat-input" class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-xl p-4 text-[#cdd6f4] outline-none focus:border-[#89b4fa] transition-all resize-none min-h-[60px] max-h-[150px] shadow-inner" placeholder="Ask PrysmisAI anything.."></textarea>
-                    <button id="send-btn" class="bg-[#89b4fa] hover:bg-[#74c7ec] text-[#11111b] font-bold px-8 rounded-xl transition-all self-end h-[60px] shadow-md">Send</button>
+                <div class="max-w-5xl mx-auto flex flex-col gap-2">
+                    <div id="chat-preview" class="hidden gap-2 flex-wrap max-h-32 overflow-y-auto w-full"></div>
+                    <div class="flex gap-4 w-full">
+                        <textarea id="chat-input" class="flex-1 bg-[#1e1e2e] border border-[#313244] rounded-xl p-4 text-[#cdd6f4] outline-none focus:border-[#89b4fa] transition-all resize-none min-h-[60px] max-h-[150px] shadow-inner" placeholder="Ask PrysmisAI anything.."></textarea>
+                        <button id="send-btn" class="bg-[#89b4fa] hover:bg-[#74c7ec] text-[#11111b] font-bold px-8 rounded-xl transition-all self-end h-[60px] shadow-md">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
