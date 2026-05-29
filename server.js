@@ -18,6 +18,7 @@ let pluginStatus = 'none';
 let pendingCode = null;
 let bookmarkletConnected = false;
 let studioTree = '';
+let sharedScreen = '';
 
 app.get('/bridge.html', (req, res) => {
     res.send("<!DOCTYPE html><html><head><script>window.addEventListener('message',async e=>{if(!e.data||!e.data.url)return;try{let r=await fetch(e.data.url,e.data.opts);let t=await r.text();e.source.postMessage({id:e.data.id,ok:r.ok,status:r.status,text:t},'*')}catch(err){e.source.postMessage({id:e.data.id,ok:false,error:err.message},'*')}});</script></head><body></body></html>");
@@ -66,13 +67,14 @@ app.post('/plugin-connect', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json({ status: pluginStatus, bookmarklet: bookmarkletConnected, tree: studioTree });
+    res.json({ status: pluginStatus, bookmarklet: bookmarkletConnected, tree: studioTree, screen: sharedScreen });
 });
 
 app.post('/status', (req, res) => {
     if (req.body) {
         if (req.body.status) pluginStatus = req.body.status;
         if (req.body.tree) studioTree = req.body.tree;
+        if (req.body.screen) sharedScreen = req.body.screen;
     }
     res.json({ success: true });
 });
