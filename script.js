@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
     const bt = String.fromCharCode(96, 96, 96);
+    const path = window.location.pathname;
     const appBody = document.getElementById('app-body');
     
     if (appBody) {
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 i.className = 'h-16 rounded-lg border-2 border-[#89b4fa] object-cover';
                 const x = document.createElement('button');
                 x.textContent = 'X';
-                x.className = 'absolute -top-2 -right-2 bg-[#f38ba8] text-[#11111b] w-5 h-5 rounded-full text-[10px] font-bold hover:scale-110 transition-transform';
+                x.className = 'absolute -top-2 -right-2 bg-[#f38ba8] text-[#11111b] w-5 h-5 rounded-full text-[10px] font-bold hover:scale-110 transition-transform border-none';
                 x.onclick = () => { currImgs.splice(idx, 1); renderPreview(); };
                 w.appendChild(i);
                 w.appendChild(x);
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const chat = chats.find(c => c.id === currentChatId);
             if (!chat) return;
 
-            if (chat.history.length === 0) {
+            if (chat.history.length === 0 && text) {
                 chat.title = text.substring(0, 25) + '...';
                 updateSidebar();
             }
