@@ -82,6 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const stepPlay = document.getElementById('step-play');
         const stepNext = document.getElementById('step-next');
 
+        const replyBar = document.getElementById('reply-bar');
+        const replyText = document.getElementById('reply-text');
+        const replyCancel = document.getElementById('reply-cancel');
+        const msgCtxMenu = document.getElementById('msg-ctx-menu');
+        const ctxReply = document.getElementById('ctx-reply');
+
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
         let chats = [];
@@ -91,6 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let currImgs = [];
         let isContinuing = false;
         let activeSharedScreen = '';
+        let activeReplyId = null;
+        let contextTargetId = null;
 
         let wbSteps = [];
         let wbCurrentStep = 0;
@@ -304,6 +312,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        chatArea.addEventListener('contextmenu', (e) => {
+            const targetMsg = e.target.closest('.msg-wrapper');
+            if (targetMsg) {
+                e.preventDefault();
+                contextTargetId = targetMsg.getAttribute('data-id');
+                msgCtxMenu.style.left = e.pageX + 'px';
+                msgCtxMenu.style.top = e.pageY + 'px';
+                msgCtxMenu.classList.remove('hidden');
+            }
+        });
+
+        document.addEventListener('click', () => {
+            msgCtxMenu.classList.add('hidden');
+        });
+
+        ctxReply.onclick = () => {
+            if (contextTargetId) {
+                const chat = chats.find(c => c.id === currentChatId);
+                if (chat) {
+                    const parentMsg = chat.history.find(m => m.id === contextTargetId);
+                    if (parentMsg && parentMsg.parts[0].text) {
+                        activeReplyId = contextTargetId;
+                        replyText.textContent = parentMsg.parts[0].text.substring(0, 80) + '...';
+                        replyBar.classList.remove('hidden');
+                        chatInput.classList.remove('rounded-xl');
+                        chatInput.classList.add('rounded-b-xl', 'rounded-t-none');
+                    }
+                }
+            }
+        };
+
+        replyCancel.onclick = () => {
+            activeReplyId = null;
+            replyBar.classList.add('hidden');
+            chatInput.classList.remove('rounded-b-xl', 'rounded-t-none');
+            chatInput.classList.add('rounded-xl');
+        };
+
         function renderChat(animateLast = false) {
             chatArea.innerHTML = '';
             const defaultMsg = document.createElement('div');
@@ -314,6 +360,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const chat = chats.find(c => c.id === currentChatId);
             if (chat) {
                 chat.history.forEach((msg, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'flex flex-col gap-1 w-full msg-wrapper';
+                    wrap.setAttribute('data-id', msg.id);
+
+                    if (msg.repliedToId) {
+                        const parent = chat.history.find(m => m.id === msg.repliedToId);
+                        if (parent) {
+                            const snippet = parent.parts[0].text ? parent.parts[0].text.substring(0, 60) + '...' : 'Shared Screen';
+                            const repHeader = document.createElement('div');
+                            repHeader.className = 'flex items-center gap-2 text-xs text-[#a6adc8] ml-12 relative h-5 select-none';
+                            repHeader.innerHTML = `<div class="absolute -left-6 top-[10px] w-5 h-3 border-l-2 border-t-2 border-[#45475a] rounded-tl-md"></div><span class="font-semibold text-[#89b4fa]">Replying to:</span><span class="truncate italic max-w-md opacity-80">${snippet}</span>`;
+                            wrap.appendChild(repHeader);
+                        }
+                    }
+
                     const div = document.createElement('div');
                     div.className = msg.role === 'user' 
                         ? 'max-w-[85%] p-4 rounded-xl text-[15px] self-end bg-[#89b4fa] text-[#11111b] shadow-lg font-medium'
@@ -359,7 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     div.innerHTML = html;
-                    chatArea.appendChild(div);
+                    wrap.appendChild(div);
+                    chatArea.appendChild(wrap);
                 });
             }
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -386,15 +448,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     const b64Data = activeSharedScreen.split(',')[1];
                     up.push({ inlineData: { mimeType: 'image/jpeg', data: b64Data } });
                 }
-                chat.history.push({ role: 'user', parts: up });
+                const newMsgId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+                chat.history.push({ id: newMsgId, role: 'user', parts: up, repliedToId: activeReplyId });
                 chatInput.value = '';
                 currImgs = [];
+                activeReplyId = null;
+                replyBar.classList.add('hidden');
+                chatInput.classList.remove('rounded-b-xl', 'rounded-t-none');
+                chatInput.classList.add('rounded-xl');
                 renderPreview();
                 renderChat(true);
                 saveState();
             }
 
-            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If there is an image attached, it represents the user\'s live screen/browser view shared in real-time through their connected bookmarklet, meaning you CAN see their screen context. Use this visual to answer or solve their problems. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Scale coordinates strictly from 0 to 500. Compute geometric coordinates using exact trigonometric rules (vertex typically (250, 350) inside 500x500 viewport). Supports: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
+            let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles. If there is an image attached, it represents the user\'s real-time browser/screen captured via a connected bookmarklet, meaning you CAN see their screen. Use this context to solve their math, geometry, or browser problems perfectly. If the user asks a complex mathematical, geometric, or graphing question, you MUST include a step-by-step interactive whiteboard drawing inside an XML block format in your response: <whiteboard>{"title":"Title","steps":[{"text":"Step description","draw":[{"type":"line","x1":100,"y1":100,"x2":200,"y2":200,"color":"#89b4fa","width":3}]}]}</whiteboard>. Scale coordinates strictly from 0 to 500. Compute geometric coordinates using exact trigonometric rules. (vertex typically (250, 350) inside 500x500 viewport). Supports: line, arc (x, y, r, start, end, color, width), text (content, x, y, size, color).';
             if (isHumanizeActive) {
                 sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
             }
@@ -402,14 +469,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 sysPrompt = 'You are PrysmisAI, the world\'s most elite Roblox Studio developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking modular UIs, ultra-fluid animations using TweenService, and intricately detailed map generation infrastructure. Write robust, error-free Luau code enclosed in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular, highly optimized, visually stunning, and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
             }
 
-            let ah = chat.history.map(m => ({ role: m.role, parts: m.parts }));
+            let ah = chat.history.map(m => ({ id: m.id, role: m.role, parts: m.parts, repliedToId: m.repliedToId }));
             if (isC) {
                 ah.push({ role: 'user', parts: [{ text: 'Continue generating exactly from the last character you outputted. Do not include any intros or headers.' }] });
             }
 
             const payload = {
                 systemInstruction: { parts: [{ text: sysPrompt }] },
-                contents: ah,
+                contents: ah.map(m => ({ role: m.role, parts: m.parts })),
                 safetySettings: [
                     { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
                     { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
@@ -429,22 +496,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     if (data.candidates && data.candidates[0].content) {
                         const aiText = data.candidates[0].content.parts[0].text;
+                        const modelMsgId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
                         if (isC) {
                             let lm = chat.history[chat.history.length - 1];
                             if (lm && lm.role === 'model') lm.parts[0].text += aiText;
-                            else chat.history.push({ role: 'model', parts: [{ text: aiText }] });
+                            else chat.history.push({ id: modelMsgId, role: 'model', parts: [{ text: aiText }] });
                         } else {
-                            chat.history.push({ role: 'model', parts: [{ text: aiText }] });
+                            chat.history.push({ id: modelMsgId, role: 'model', parts: [{ text: aiText }] });
                         }
                         if (data.candidates[0].finishReason === 'MAX_TOKENS') continueBtn.style.display = 'block';
                     } else {
-                        chat.history.push({ role: 'model', parts: [{ text: 'Generation failed.' }] });
+                        const failId = Date.now().toString() + '_f';
+                        chat.history.push({ id: failId, role: 'model', parts: [{ text: 'Generation failed.' }] });
                     }
                 } else {
-                    chat.history.push({ role: 'model', parts: [{ text: 'API Error.' }] });
+                    const errId = Date.now().toString() + '_e';
+                    chat.history.push({ id: errId, role: 'model', parts: [{ text: 'API Error.' }] });
                 }
             } catch (e) {
-                chat.history.push({ role: 'model', parts: [{ text: 'Network Error.' }] });
+                const netId = Date.now().toString() + '_n';
+                chat.history.push({ id: netId, role: 'model', parts: [{ text: 'Network Error.' }] });
             }
             saveState();
             renderChat(true);
