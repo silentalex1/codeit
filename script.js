@@ -82,11 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const stepPlay = document.getElementById('step-play');
         const stepNext = document.getElementById('step-next');
 
-        const replyBar = document.getElementById('reply-bar');
-        const replyText = document.getElementById('reply-text');
-        const replyCancel = document.getElementById('reply-cancel');
-        const msgCtxMenu = document.getElementById('msg-ctx-menu');
-        const ctxReply = document.getElementById('ctx-reply');
+        const customCMenu = document.getElementById('custom-cmenu');
+        const cmenuReply = document.getElementById('cmenu-reply');
 
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
@@ -97,8 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let currImgs = [];
         let isContinuing = false;
         let activeSharedScreen = '';
-        let activeReplyId = null;
-        let contextTargetId = null;
 
         let wbSteps = [];
         let wbCurrentStep = 0;
@@ -110,6 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let wbTool = 'pencil';
         let drawProgress = 0;
         let animFrameId = null;
+
+        let selectedMsgIdForReply = null;
+        let selectedMsgTextForReply = '';
+        let currentReplyId = null;
 
         function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
         function loadState() {
@@ -313,41 +312,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         chatArea.addEventListener('contextmenu', (e) => {
-            const targetMsg = e.target.closest('.msg-wrapper');
-            if (targetMsg) {
+            const msgDiv = e.target.closest('.msg-model-type');
+            if (msgDiv) {
                 e.preventDefault();
-                contextTargetId = targetMsg.getAttribute('data-id');
-                msgCtxMenu.style.left = e.pageX + 'px';
-                msgCtxMenu.style.top = e.pageY + 'px';
-                msgCtxMenu.classList.remove('hidden');
+                selectedMsgIdForReply = msgDiv.dataset.msgId;
+                selectedMsgTextForReply = msgDiv.dataset.msgText || '';
+                customCMenu.style.left = `${e.clientX}px`;
+                customCMenu.style.top = `${e.clientY}px`;
+                customCMenu.classList.remove('hidden');
             }
         });
 
         document.addEventListener('click', () => {
-            msgCtxMenu.classList.add('hidden');
+            customCMenu.classList.add('hidden');
         });
 
-        ctxReply.onclick = () => {
-            if (contextTargetId) {
-                const chat = chats.find(c => c.id === currentChatId);
-                if (chat) {
-                    const parentMsg = chat.history.find(m => m.id === contextTargetId);
-                    if (parentMsg && parentMsg.parts[0].text) {
-                        activeReplyId = contextTargetId;
-                        replyText.textContent = parentMsg.parts[0].text.substring(0, 80) + '...';
-                        replyBar.classList.remove('hidden');
-                        chatInput.classList.remove('rounded-xl');
-                        chatInput.classList.add('rounded-b-xl', 'rounded-t-none');
-                    }
-                }
-            }
+        cmenuReply.onclick = () => {
+            currentReplyId = selectedMsgIdForReply;
+            const preview = document.getElementById('reply-preview');
+            const previewText = document.getElementById('reply-preview-text');
+            previewText.textContent = `Replying to: "${selectedMsgTextForReply.substring(0, 60)}..."`;
+            preview.classList.remove('hidden');
         };
 
-        replyCancel.onclick = () => {
-            activeReplyId = null;
-            replyBar.classList.add('hidden');
-            chatInput.classList.remove('rounded-b-xl', 'rounded-t-none');
-            chatInput.classList.add('rounded-xl');
+        document.getElementById('reply-cancel').onclick = () => {
+            currentReplyId = null;
+            document.getElementById('reply-preview').classList.add('hidden');
         };
 
         function renderChat(animateLast = false) {
@@ -360,27 +350,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const chat = chats.find(c => c.id === currentChatId);
             if (chat) {
                 chat.history.forEach((msg, idx) => {
-                    const wrap = document.createElement('div');
-                    wrap.className = 'flex flex-col gap-1 w-full msg-wrapper';
-                    wrap.setAttribute('data-id', msg.id);
+                    if (!msg.id) {
+                        msg.id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+                    }
 
-                    if (msg.repliedToId) {
-                        const parent = chat.history.find(m => m.id === msg.repliedToId);
-                        if (parent) {
-                            const snippet = parent.parts[0].text ? parent.parts[0].text.substring(0, 60) + '...' : 'Shared Screen';
-                            const repHeader = document.createElement('div');
-                            repHeader.className = 'flex items-center gap-2 text-xs text-[#a6adc8] ml-12 relative h-5 select-none';
-                            repHeader.innerHTML = `<div class="absolute -left-6 top-[10px] w-5 h-3 border-l-2 border-t-2 border-[#45475a] rounded-tl-md"></div><span class="font-semibold text-[#89b4fa]">Replying to:</span><span class="truncate italic max-w-md opacity-80">${snippet}</span>`;
-                            wrap.appendChild(repHeader);
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'w-full flex flex-col relative my-2 ' + (msg.role === 'user' ? 'items-end' : 'items-start');
+
+                    if (msg.role === 'user' && msg.replyToId) {
+                        const parentMsg = chat.history.find(m => m.id === msg.replyToId);
+                        if (parentMsg) {
+                            const parentText = parentMsg.parts[0].text || '';
+                            const replyHeader = document.createElement('div');
+                            replyHeader.className = 'flex items-center gap-2 text-xs text-[#a6adc8] mb-1 mr-2 opacity-80 select-none';
+                            replyHeader.innerHTML = `
+                                <svg class="w-3 h-3 text-[#585b70]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                <span class="italic">Replying to: "${parentText.substring(0, 50)}..."</span>
+                            `;
+                            wrapper.appendChild(replyHeader);
                         }
                     }
 
                     const div = document.createElement('div');
                     div.className = msg.role === 'user' 
-                        ? 'max-w-[85%] p-4 rounded-xl text-[15px] self-end bg-[#89b4fa] text-[#11111b] shadow-lg font-medium'
-                        : 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md';
+                        ? 'max-w-[85%] p-4 rounded-xl text-[15px] bg-[#89b4fa] text-[#11111b] shadow-lg font-medium relative'
+                        : 'max-w-[85%] p-4 rounded-xl text-[15px] bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md msg-model-type relative';
                     
+                    div.dataset.msgId = msg.id;
+                    if (msg.role === 'model' && msg.parts[0].text) {
+                        div.dataset.msgText = msg.parts[0].text;
+                    }
+
                     if (animateLast && idx === chat.history.length - 1) div.classList.add('animate-msg');
+
+                    if (msg.role === 'user' && msg.replyToId) {
+                        const line = document.createElement('div');
+                        line.className = 'absolute left-[-22px] top-[-18px] w-[18px] h-[28px] border-l-2 border-t-2 border-[#585b70] rounded-tl-[8px] pointer-events-none opacity-60';
+                        div.appendChild(line);
+                    }
 
                     let html = '';
                     if (msg.role === 'model' && msg.parts[0].text) {
@@ -419,9 +426,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
 
-                    div.innerHTML = html;
-                    wrap.appendChild(div);
-                    chatArea.appendChild(wrap);
+                    const inlineContainer = document.createElement('div');
+                    inlineContainer.innerHTML = html;
+                    div.appendChild(inlineContainer);
+                    wrapper.appendChild(div);
+                    chatArea.appendChild(wrapper);
                 });
             }
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -448,14 +457,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const b64Data = activeSharedScreen.split(',')[1];
                     up.push({ inlineData: { mimeType: 'image/jpeg', data: b64Data } });
                 }
-                const newMsgId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-                chat.history.push({ id: newMsgId, role: 'user', parts: up, repliedToId: activeReplyId });
+
+                let userMsgId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+                const newMsg = { id: userMsgId, role: 'user', parts: up };
+                if (currentReplyId) {
+                    newMsg.replyToId = currentReplyId;
+                }
+
+                chat.history.push(newMsg);
                 chatInput.value = '';
                 currImgs = [];
-                activeReplyId = null;
-                replyBar.classList.add('hidden');
-                chatInput.classList.remove('rounded-b-xl', 'rounded-t-none');
-                chatInput.classList.add('rounded-xl');
+                currentReplyId = null;
+                document.getElementById('reply-preview').classList.add('hidden');
                 renderPreview();
                 renderChat(true);
                 saveState();
@@ -469,14 +482,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 sysPrompt = 'You are PrysmisAI, the world\'s most elite Roblox Studio developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking modular UIs, ultra-fluid animations using TweenService, and intricately detailed map generation infrastructure. Write robust, error-free Luau code enclosed in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular, highly optimized, visually stunning, and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
             }
 
-            let ah = chat.history.map(m => ({ id: m.id, role: m.role, parts: m.parts, repliedToId: m.repliedToId }));
+            let ah = chat.history.map(m => ({ role: m.role, parts: m.parts }));
             if (isC) {
                 ah.push({ role: 'user', parts: [{ text: 'Continue generating exactly from the last character you outputted. Do not include any intros or headers.' }] });
             }
 
             const payload = {
                 systemInstruction: { parts: [{ text: sysPrompt }] },
-                contents: ah.map(m => ({ role: m.role, parts: m.parts })),
+                contents: ah,
                 safetySettings: [
                     { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
                     { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
@@ -496,26 +509,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     if (data.candidates && data.candidates[0].content) {
                         const aiText = data.candidates[0].content.parts[0].text;
-                        const modelMsgId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+                        let aiMsgId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
                         if (isC) {
                             let lm = chat.history[chat.history.length - 1];
                             if (lm && lm.role === 'model') lm.parts[0].text += aiText;
-                            else chat.history.push({ id: modelMsgId, role: 'model', parts: [{ text: aiText }] });
+                            else chat.history.push({ id: aiMsgId, role: 'model', parts: [{ text: aiText }] });
                         } else {
-                            chat.history.push({ id: modelMsgId, role: 'model', parts: [{ text: aiText }] });
+                            chat.history.push({ id: aiMsgId, role: 'model', parts: [{ text: aiText }] });
                         }
                         if (data.candidates[0].finishReason === 'MAX_TOKENS') continueBtn.style.display = 'block';
                     } else {
-                        const failId = Date.now().toString() + '_f';
-                        chat.history.push({ id: failId, role: 'model', parts: [{ text: 'Generation failed.' }] });
+                        chat.history.push({ role: 'model', parts: [{ text: 'Generation failed.' }] });
                     }
                 } else {
-                    const errId = Date.now().toString() + '_e';
-                    chat.history.push({ id: errId, role: 'model', parts: [{ text: 'API Error.' }] });
+                    chat.history.push({ role: 'model', parts: [{ text: 'API Error.' }] });
                 }
             } catch (e) {
-                const netId = Date.now().toString() + '_n';
-                chat.history.push({ id: netId, role: 'model', parts: [{ text: 'Network Error.' }] });
+                chat.history.push({ role: 'model', parts: [{ text: 'Network Error.' }] });
             }
             saveState();
             renderChat(true);
