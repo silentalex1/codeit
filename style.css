@@ -12,6 +12,23 @@
     background: #27824f;
 }
 
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(86, 214, 140, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(86, 214, 140, 0);
+    }
+}
+
+.status-active {
+    background-color: #5ad68c !important;
+    animation: pulse-green 2s infinite ease-in-out;
+}
+
 .humanize-active {
     background-color: #27824f !important;
     color: #ffffff !important;
