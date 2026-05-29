@@ -1,5 +1,4 @@
 const path = window.location.pathname;
-
 if (path === '/login') {
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
@@ -8,18 +7,10 @@ if (path === '/login') {
             const p = document.getElementById('login-pass').value.trim();
             if (u && p) {
                 try {
-                    const res = await fetch('/login-auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: u, password: p })
-                    });
+                    const res = await fetch('/login-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
                     const data = await res.json();
-                    if (data.success) {
-                        localStorage.setItem('prysmis_user', u);
-                        window.location.href = '/';
-                    } else {
-                        document.getElementById('err-msg').classList.remove('hidden');
-                    }
+                    if (data.success) { localStorage.setItem('prysmis_user', u); window.location.href = '/'; } 
+                    else document.getElementById('err-msg').classList.remove('hidden');
                 } catch (e) {}
             }
         });
@@ -32,28 +23,17 @@ if (path === '/login') {
             const p = document.getElementById('reg-pass').value.trim();
             if (u && p) {
                 try {
-                    const res = await fetch('/register-auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: u, password: p })
-                    });
+                    const res = await fetch('/register-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
                     const data = await res.json();
-                    if (data.success) {
-                        localStorage.setItem('prysmis_user', u);
-                        window.location.href = '/';
-                    } else {
-                        document.getElementById('reg-err').classList.remove('hidden');
-                    }
+                    if (data.success) { localStorage.setItem('prysmis_user', u); window.location.href = '/'; } 
+                    else document.getElementById('reg-err').classList.remove('hidden');
                 } catch (e) {}
             }
         });
     }
 } else {
-    if (!localStorage.getItem('prysmis_user')) {
-        window.location.href = '/login';
-    } else {
-        initApp();
-    }
+    if (!localStorage.getItem('prysmis_user')) window.location.href = '/login';
+    else initApp();
 }
 
 function initApp() {
@@ -80,32 +60,25 @@ function initApp() {
     let chats = [];
     let currentChatId = null;
     let stCon = false;
+    let stTree = '';
 
-    function saveState() {
-        localStorage.setItem('prysmis_site_chats', JSON.stringify(chats));
-    }
-
+    function saveState() { localStorage.setItem('prysmis_site_chats', JSON.stringify(chats)); }
     function loadState() {
         const d = localStorage.getItem('prysmis_site_chats');
-        if (d) {
-            try {
-                chats = JSON.parse(d);
-            } catch (e) {}
-        }
+        if (d) { try { chats = JSON.parse(d); } catch (e) {} }
     }
 
     async function updateStatus() {
         try {
             const res = await fetch('/status');
             const data = await res.json();
-
+            if (data.tree) stTree = data.tree;
             if (data.bookmarklet) {
                 bmDot.classList.add('status-active');
                 bmDot.classList.remove('bg-[#f38ba8]');
                 bmText.textContent = 'Connected';
                 bmText.className = 'text-xs font-bold text-[#89b4fa]';
             }
-
             if (data.status === 'accepted') {
                 stCon = true;
                 stDot.classList.add('status-active');
@@ -125,31 +98,16 @@ function initApp() {
                 stText.textContent = 'Disconnected';
                 stText.className = 'text-xs font-bold text-[#f38ba8]';
             }
-        } catch (err) {
-            stCon = false;
-            bmDot.classList.remove('status-active');
-            bmDot.className = 'w-2.5 h-2.5 rounded-full bg-[#f38ba8]';
-            bmText.textContent = 'Offline';
-            bmText.className = 'text-xs font-bold text-[#f38ba8]';
-
-            stDot.classList.remove('status-active');
-            stDot.className = 'w-2.5 h-2.5 rounded-full bg-[#f38ba8]';
-            stText.textContent = 'Offline';
-            stText.className = 'text-xs font-bold text-[#f38ba8]';
-        }
+        } catch (err) {}
     }
 
     setInterval(updateStatus, 1000);
     updateStatus();
-
     loadState();
-    if (chats.length > 0) {
-        currentChatId = chats[0].id;
-    } else {
-        initChat();
-    }
+    if (chats.length > 0) currentChatId = chats[0].id;
+    else initChat();
     updateSidebar();
-    renderChat();
+    renderChat(false);
 
     logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('prysmis_user');
@@ -162,9 +120,8 @@ function initApp() {
         currentChatId = id;
         saveState();
         updateSidebar();
-        renderChat();
+        renderChat(true);
     }
-
     newChatBtn.addEventListener('click', initChat);
 
     function updateSidebar() {
@@ -176,7 +133,7 @@ function initApp() {
             div.addEventListener('click', () => {
                 currentChatId = chat.id;
                 updateSidebar();
-                renderChat();
+                renderChat(false);
             });
             chatList.appendChild(div);
         });
@@ -188,21 +145,11 @@ function initApp() {
         toggleKeyBtn.textContent = 'show';
         settingsModal.classList.add('modal-open');
     });
-
-    settingsClose.addEventListener('click', () => {
-        settingsModal.classList.remove('modal-open');
-    });
-
+    settingsClose.addEventListener('click', () => settingsModal.classList.remove('modal-open'));
     toggleKeyBtn.addEventListener('click', () => {
-        if (apiKeyInput.type === 'password') {
-            apiKeyInput.type = 'text';
-            toggleKeyBtn.textContent = 'hide';
-        } else {
-            apiKeyInput.type = 'password';
-            toggleKeyBtn.textContent = 'show';
-        }
+        if (apiKeyInput.type === 'password') { apiKeyInput.type = 'text'; toggleKeyBtn.textContent = 'hide'; } 
+        else { apiKeyInput.type = 'password'; toggleKeyBtn.textContent = 'show'; }
     });
-
     saveSettingsBtn.addEventListener('click', () => {
         apiKey = apiKeyInput.value.trim();
         localStorage.setItem('prysmis_api_key', apiKey);
@@ -211,11 +158,8 @@ function initApp() {
 
     humanizeBtn.addEventListener('click', () => {
         isHumanizeActive = !isHumanizeActive;
-        if (isHumanizeActive) {
-            humanizeBtn.classList.add('humanize-active');
-        } else {
-            humanizeBtn.classList.remove('humanize-active');
-        }
+        if (isHumanizeActive) humanizeBtn.classList.add('humanize-active');
+        else humanizeBtn.classList.remove('humanize-active');
     });
 
     function formatText(text) {
@@ -237,17 +181,14 @@ function initApp() {
 
     chatArea.addEventListener('click', (e) => {
         if (e.target.classList.contains('cb-copy')) {
-            const code = decodeURIComponent(e.target.getAttribute('data-code'));
-            navigator.clipboard.writeText(code);
+            navigator.clipboard.writeText(decodeURIComponent(e.target.getAttribute('data-code')));
             const oldText = e.target.textContent;
             e.target.textContent = 'Copied!';
             setTimeout(() => e.target.textContent = oldText, 2000);
         }
         if (e.target.classList.contains('rr-act-apply')) {
             let bd = e.target.parentElement.parentElement.querySelector('.cb-body');
-            if (bd) {
-                fetch('/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: bd.textContent }) }).catch(()=>{});
-            }
+            if (bd) fetch('/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: bd.textContent }) }).catch(()=>{});
             e.target.textContent = 'Applied!';
             e.target.style.background = '#89b4fa';
             e.target.style.color = '#11111b';
@@ -257,7 +198,7 @@ function initApp() {
         }
     });
 
-    function renderChat() {
+    function renderChat(animateLast = false) {
         chatArea.innerHTML = '';
         const defaultMsg = document.createElement('div');
         defaultMsg.className = 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md';
@@ -266,18 +207,30 @@ function initApp() {
 
         const chat = chats.find(c => c.id === currentChatId);
         if (chat) {
-            chat.history.forEach(msg => {
+            chat.history.forEach((msg, idx) => {
                 const div = document.createElement('div');
                 div.className = msg.role === 'user' 
                     ? 'max-w-[85%] p-4 rounded-xl text-[15px] self-end bg-[#89b4fa] text-[#11111b] shadow-lg font-medium'
                     : 'max-w-[85%] p-4 rounded-xl text-[15px] self-start bg-[#1e1e2e] text-[#cdd6f4] border border-[#313244] shadow-md';
                 
-                let html = formatText(msg.parts[0].text);
-                
-                if (msg.role === 'model' && stCon && msg.parts[0].text.includes('```lua')) {
-                    html += '<div class="flex gap-2 mt-4 pt-4 border-t border-[#313244]"><button class="rr-act-apply bg-[#a6e3a1] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Apply changes</button><button class="rr-act-dec bg-[#f38ba8] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Decline changes</button></div>';
-                }
+                if (animateLast && idx === chat.history.length - 1) div.classList.add('animate-msg');
 
+                let html = '';
+                if (msg.role === 'model' && msg.parts[0].text) {
+                    let rw = msg.parts[0].text;
+                    let tm = rw.match(/<think>([\s\S]*?)<\/think>/);
+                    let cl = rw;
+                    if (tm) {
+                        cl = rw.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+                        html += '<div class="flex items-center gap-2 text-[#a6adc8] font-bold text-xs mb-2 bg-[#11111b] px-3 py-2 rounded-lg w-fit shadow-inner border border-[#313244]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Prysmis has processed this.</div>';
+                    }
+                    html += formatText(cl);
+                    if (stCon && cl.includes('```lua')) {
+                        html += '<div class="flex gap-2 mt-4 pt-4 border-t border-[#313244]"><button class="rr-act-apply bg-[#a6e3a1] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Apply changes</button><button class="rr-act-dec bg-[#f38ba8] text-[#11111b] px-4 py-2 rounded-lg font-bold text-xs hover:scale-105 transition-transform shadow-md border-none">Decline changes</button></div>';
+                    }
+                } else {
+                    html = formatText(msg.parts[0].text);
+                }
                 div.innerHTML = html;
                 chatArea.appendChild(div);
             });
@@ -288,7 +241,6 @@ function initApp() {
     async function sendMessage() {
         const text = chatInput.value.trim();
         if (!text || !apiKey) return;
-
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat) return;
 
@@ -299,17 +251,17 @@ function initApp() {
 
         chat.history.push({ role: 'user', parts: [{ text: text }] });
         chatInput.value = '';
-        renderChat();
+        renderChat(true);
         saveState();
 
         let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses.';
         
         if (isHumanizeActive) {
-            sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors, including Turnitin, GPTZero, Copyleaks, ZeroGPT, Quillbot, Writer, Sapling, and Originality. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Do not include introductory or concluding remarks. Output ONLY the raw humanized text or code.';
+            sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
         }
 
         if (stCon) {
-            sysPrompt = 'You are PrysmisAI, an expert Roblox Studio developer. Output the final Roblox Luau code inside ```lua ... ``` blocks to achieve the user\'s request. The code must be fully working and ready to execute.';
+            sysPrompt = 'You are PrysmisAI, the world\'s most advanced Roblox Studio AI developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking UIs, fluid animations using TweenService, and intricately detailed map generations. You must write robust, error-free Luau code. Always enclose the final code in ```lua ... ``` blocks. Your code must be modular and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
         }
 
         const payload = {
@@ -344,7 +296,7 @@ function initApp() {
             chat.history.push({ role: 'model', parts: [{ text: 'Network Error.' }] });
         }
         saveState();
-        renderChat();
+        renderChat(true);
     }
 
     sendBtn.addEventListener('click', sendMessage);
