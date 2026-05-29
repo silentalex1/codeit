@@ -1,4 +1,5 @@
-const bt = String.fromCharCode(96, 96, 96);
+window.bt = String.fromCharCode(96, 96, 96);
+var bt = window.bt;
 const path = window.location.pathname;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initApp() {
+        const bt = window.bt;
         const bmDot = document.getElementById('bm-dot');
         const bmText = document.getElementById('bm-text');
         const stDot = document.getElementById('st-dot');
@@ -372,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (isC) {
                             let lm = chat.history[chat.history.length - 1];
                             if (lm && lm.role === 'model') lm.parts[0].text += aiText;
-                            else chat.history.push({ role: 'model', parts: [{ text: at }] });
+                            else chat.history.push({ role: 'model', parts: [{ text: aiText }] });
                         } else {
                             chat.history.push({ role: 'model', parts: [{ text: aiText }] });
                         }
@@ -400,3 +402,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 }
+});
