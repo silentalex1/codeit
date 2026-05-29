@@ -13,6 +13,11 @@ app.use((req, res, next) => {
     next();
 });
 
+const users = {};
+let pluginStatus = 'none';
+let pendingCode = null;
+let bookmarkletConnected = false;
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -21,9 +26,25 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-let pluginStatus = 'none';
-let pendingCode = null;
-let bookmarkletConnected = false;
+app.post('/register', (req, res) => {
+    const u = req.body.username;
+    const p = req.body.password;
+    if (u && p) {
+        if (users[u]) return res.json({ success: false, message: 'exists' });
+        users[u] = p;
+        return res.json({ success: true });
+    }
+    res.json({ success: false });
+});
+
+app.post('/login-auth', (req, res) => {
+    const u = req.body.username;
+    const p = req.body.password;
+    if (users[u] && users[u] === p) {
+        return res.json({ success: true });
+    }
+    res.json({ success: false });
+});
 
 app.post('/connect', (req, res) => {
     bookmarkletConnected = true;
