@@ -327,12 +327,17 @@ document.addEventListener('DOMContentLoaded', () => {
             customCMenu.classList.add('hidden');
         });
 
+        customCMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
         cmenuReply.onclick = () => {
             currentReplyId = selectedMsgIdForReply;
             const preview = document.getElementById('reply-preview');
             const previewText = document.getElementById('reply-preview-text');
             previewText.textContent = `Replying to: "${selectedMsgTextForReply.substring(0, 60)}..."`;
             preview.classList.remove('hidden');
+            customCMenu.classList.add('hidden');
         };
 
         document.getElementById('reply-cancel').onclick = () => {
