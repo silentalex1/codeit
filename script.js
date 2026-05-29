@@ -1,4 +1,5 @@
 const path = window.location.pathname;
+const bt = String.fromCharCode(96, 96, 96);
 if (path === '/login') {
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
@@ -207,7 +208,6 @@ function initApp() {
         }
     });
 
-    const bt = String.fromCharCode(96, 96, 96);
     function formatText(text) {
         if (!text) return '';
         let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -227,14 +227,17 @@ function initApp() {
 
     chatArea.addEventListener('click', (e) => {
         if (e.target.classList.contains('cb-copy')) {
-            navigator.clipboard.writeText(decodeURIComponent(e.target.getAttribute('data-code')));
+            const code = decodeURIComponent(e.target.getAttribute('data-code'));
+            navigator.clipboard.writeText(code);
             const oldText = e.target.textContent;
             e.target.textContent = 'Copied!';
             setTimeout(() => e.target.textContent = oldText, 2000);
         }
         if (e.target.classList.contains('rr-act-apply')) {
             let bd = e.target.parentElement.parentElement.querySelector('.cb-body');
-            if (bd) fetch('/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: bd.textContent }) }).catch(()=>{});
+            if (bd) {
+                fetch('/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: bd.textContent }) }).catch(()=>{});
+            }
             e.target.textContent = 'Applied!';
             e.target.style.background = '#89b4fa';
             e.target.style.color = '#11111b';
@@ -294,6 +297,7 @@ function initApp() {
     async function sendMessage() {
         const text = chatInput.value.trim();
         if ((!text && currImgs.length === 0) || !apiKey) return;
+
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat) return;
 
@@ -315,14 +319,14 @@ function initApp() {
         renderChat(true);
         saveState();
 
-        let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly.';
+        let sysPrompt = 'You are PrysmisAI, an advanced, highly intelligent, and helpful artificial intelligence assistant. You provide accurate, detailed, and polite responses. You can analyze images perfectly and solve visual puzzles.';
         
         if (isHumanizeActive) {
-            sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Output ONLY the raw humanized text or code.';
+            sysPrompt = 'You are an elite AI-bypass engine and expert human copywriter. Your ONLY purpose is to rewrite text or code so it scores 0% AI-generated and 100% human on all detectors, including Turnitin, GPTZero, Copyleaks, ZeroGPT, Quillbot, Writer, Sapling, and Originality. You must inject high perplexity, burstiness, natural imperfections, and varied sentence structures. Do not explain yourself. Do not include introductory or concluding remarks. Output ONLY the raw humanized text or code.';
         }
 
         if (stCon) {
-            sysPrompt = 'You are PrysmisAI, the world\'s most elite Roblox Studio developer, far surpassing any competitor like Lemonade.gg. You excel at creating breathtaking modular UIs, ultra-fluid animations using TweenService, and intricately detailed map generation infrastructure. Write robust, error-free Luau code enclosed in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular, highly optimized, visually stunning, and instantly executable in Roblox Studio. You use ChangeHistoryService for significant changes. You MUST enclose your internal thought process inside <think>...</think> tags before giving the final answer.\n\nStudio Hierarchy Context:\n' + stTree;
+            sysPrompt = 'You are PrysmisAI, an elite, top-tier Roblox Studio architect. You vastly outperform any tool like Lemonade.gg. You are a master at generating massive, intricately detailed procedural maps, robust scripting structures, and breathtaking UIs featuring advanced TweenService and modern UI constraints. You MUST output flawless, heavily optimized Luau code. Always enclose the final code in ' + bt + 'lua ... ' + bt + ' blocks. Your code must be modular and instantly executable. You utilize ChangeHistoryService for structural modifications. You MUST enclose your internal thought and planning process inside <think>...</think> tags before writing the code.\n\nStudio Hierarchy Context:\n' + stTree;
         }
 
         const payload = {
