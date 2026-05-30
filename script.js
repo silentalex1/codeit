@@ -86,6 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const mobileImageBtn = document.getElementById('mobile-image-btn');
         const mobileImageInput = document.getElementById('mobile-image-input');
 
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
         let chats = [];
@@ -192,6 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {}
         }
 
+        sidebarToggle.onclick = () => {
+            sidebar.classList.toggle('sidebar-open');
+        };
+
         setInterval(updateStatus, 1500);
         updateStatus();
         loadState();
@@ -212,6 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveState();
             updateSidebar();
             renderChat(true);
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('sidebar-open');
+            }
         }
         newChatBtn.addEventListener('click', initChat);
 
@@ -225,6 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentChatId = chat.id;
                     updateSidebar();
                     renderChat(false);
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('sidebar-open');
+                    }
                 });
                 chatList.appendChild(div);
             });
