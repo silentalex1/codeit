@@ -3,40 +3,37 @@ var bt = window.bt;
 const path = window.location.pathname;
 
 document.addEventListener('DOMContentLoaded', () => {
-    const $ = id => document.getElementById(id);
-    const appBody = $('app-body');
-    if (appBody) {
-        appBody.classList.remove('hidden');
-    }
+    const appBody = document.getElementById('app-body');
+    if (appBody) appBody.classList.remove('hidden');
 
     if (path === '/login' || path.includes('login.html')) {
-        const loginBtn = $('login-btn');
+        const loginBtn = document.getElementById('login-btn');
         if (loginBtn) {
             loginBtn.addEventListener('click', async () => {
-                const u = $('login-user').value.trim();
-                const p = $('login-pass').value.trim();
+                const u = document.getElementById('login-user').value.trim();
+                const p = document.getElementById('login-pass').value.trim();
                 if (u && p) {
                     try {
                         const res = await fetch('/login-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
                         const data = await res.json();
                         if (data.success) { localStorage.setItem('prysmis_user', u); window.location.href = '/'; } 
-                        else $('err-msg').classList.remove('hidden');
+                        else document.getElementById('err-msg').classList.remove('hidden');
                     } catch (e) {}
                 }
             });
         }
     } else if (path === '/register' || path.includes('register.html')) {
-        const regBtn = $('reg-btn');
+        const regBtn = document.getElementById('reg-btn');
         if (regBtn) {
             regBtn.addEventListener('click', async () => {
-                const u = $('reg-user').value.trim();
-                const p = $('reg-pass').value.trim();
+                const u = document.getElementById('reg-user').value.trim();
+                const p = document.getElementById('reg-pass').value.trim();
                 if (u && p) {
                     try {
                         const res = await fetch('/register-auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
                         const data = await res.json();
                         if (data.success) { localStorage.setItem('prysmis_user', u); window.location.href = '/'; } 
-                        else $('reg-err').classList.remove('hidden');
+                        else document.getElementById('reg-err').classList.remove('hidden');
                     } catch (e) {}
                 }
             });
@@ -51,43 +48,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initApp() {
         const bt = window.bt;
-        const bmDot = $('bm-dot');
-        const bmText = $('bm-text');
-        const stDot = $('st-dot');
-        const stText = $('st-text');
-        const settingsModal = $('settings-modal');
-        const settingsOpen = $('settings-open');
-        const settingsClose = $('settings-close');
-        const apiKeyInput = $('api-key-input');
-        const toggleKeyBtn = $('toggle-key-btn');
-        const saveSettingsBtn = $('save-settings-btn');
-        const chatArea = $('chat-area');
-        const chatInput = $('chat-input');
-        const sendBtn = $('send-btn');
-        const humanizeBtn = $('humanize-btn');
-        const logoutBtn = $('logout-btn');
-        const newChatBtn = $('new-chat-btn');
-        const chatList = $('chat-list');
-        const chatPreview = $('chat-preview');
+        const bmDot = document.getElementById('bm-dot');
+        const bmText = document.getElementById('bm-text');
+        const stDot = document.getElementById('st-dot');
+        const stText = document.getElementById('st-text');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsOpen = document.getElementById('settings-open');
+        const settingsClose = document.getElementById('settings-close');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const toggleKeyBtn = document.getElementById('toggle-key-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const chatArea = document.getElementById('chat-area');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const humanizeBtn = document.getElementById('humanize-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const chatList = document.getElementById('chat-list');
+        const chatPreview = document.getElementById('chat-preview');
         const continueBtn = document.querySelector('.rr-cont');
 
-        const wbToggle = $('wb-toggle');
-        const wbClose = $('wb-close');
-        const wbPanel = $('whiteboard-panel');
-        const wbCanvas = $('wb-canvas');
+        const wbToggle = document.getElementById('wb-toggle');
+        const wbClose = document.getElementById('wb-close');
+        const wbPanel = document.getElementById('whiteboard-panel');
+        const wbCanvas = document.getElementById('wb-canvas');
         const wbCtx = wbCanvas.getContext('2d');
-        const wbClear = $('wb-clear');
-        const toolPencil = $('tool-pencil');
-        const toolEraser = $('tool-eraser');
-        const stepPrev = $('step-prev');
-        const stepPlay = $('step-play');
-        const stepNext = $('step-next');
+        const wbClear = document.getElementById('wb-clear');
+        const toolPencil = document.getElementById('tool-pencil');
+        const toolEraser = document.getElementById('tool-eraser');
+        const stepPrev = document.getElementById('step-prev');
+        const stepPlay = document.getElementById('step-play');
+        const stepNext = document.getElementById('step-next');
 
-        const customCMenu = $('custom-cmenu');
-        const cmenuReply = $('cmenu-reply');
+        const customCMenu = document.getElementById('custom-cmenu');
+        const cmenuReply = document.getElementById('cmenu-reply');
 
-        const mobileImageBtn = $('mobile-image-btn');
-        const mobileImageInput = $('mobile-image-input');
+        const mobileImageBtn = document.getElementById('mobile-image-btn');
+        const mobileImageInput = document.getElementById('mobile-image-input');
 
         let apiKey = localStorage.getItem('prysmis_api_key') || '';
         let isHumanizeActive = false;
@@ -116,21 +113,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function saveState() {
             try {
-                const cleanedChats = chats.map(chat => ({
-                    id: chat.id,
-                    title: chat.title,
-                    history: chat.history.map(msg => ({
-                        id: msg.id,
-                        role: msg.role,
-                        replyToId: msg.replyToId,
-                        parts: msg.parts.map(p => {
-                            if (p.inlineData) {
-                                return { inlineData: { mimeType: p.inlineData.mimeType, data: "" } };
-                            }
-                            return p;
+                const cleanedChats = chats.map(chat => {
+                    return {
+                        id: chat.id,
+                        title: chat.title,
+                        history: chat.history.map(msg => {
+                            return {
+                                id: msg.id,
+                                role: msg.role,
+                                replyToId: msg.replyToId,
+                                parts: msg.parts.map(p => {
+                                    if (p.inlineData) {
+                                        return { inlineData: { mimeType: p.inlineData.mimeType, data: "" } };
+                                    }
+                                    return p;
+                                })
+                            };
                         })
-                    }))
-                }));
+                    };
+                });
                 localStorage.setItem('prysmis_site_chats', JSON.stringify(cleanedChats));
             } catch (e) {}
         }
@@ -174,18 +175,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (data.screen) {
                     activeSharedScreen = data.screen;
-                    let scEl = $('screen-preview');
+                    let scEl = document.getElementById('screen-preview');
                     if (!scEl) {
                         scEl = document.createElement('div');
                         scEl.id = 'screen-preview';
                         scEl.className = 'flex flex-col p-4 bg-[#1e1e2e] border border-[#313244] rounded-xl mt-4 shrink-0';
                         scEl.innerHTML = '<span class="text-xs font-bold text-[#a6adc8] mb-2 uppercase tracking-wider">Shared Screen</span><img id="scr-img" class="rounded-lg w-full max-h-40 object-cover border border-[#313244] shadow-md">';
-                        $('chat-list-container').parentElement.appendChild(scEl);
+                        document.getElementById('chat-list-container').parentElement.appendChild(scEl);
                     }
-                    $('scr-img').src = data.screen;
+                    document.getElementById('scr-img').src = data.screen;
                 } else {
                     activeSharedScreen = '';
-                    const scEl = $('screen-preview');
+                    const scEl = document.getElementById('screen-preview');
                     if (scEl) scEl.remove();
                 }
             } catch (err) {}
@@ -379,16 +380,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cmenuReply.onclick = () => {
             currentReplyId = selectedMsgIdForReply;
-            const preview = $('reply-preview');
-            const previewText = $('reply-preview-text');
+            const preview = document.getElementById('reply-preview');
+            const previewText = document.getElementById('reply-preview-text');
             previewText.textContent = `Replying to: "${selectedMsgTextForReply.substring(0, 60)}..."`;
             preview.classList.remove('hidden');
             customCMenu.classList.add('hidden');
         };
 
-        $('reply-cancel').onclick = () => {
+        document.getElementById('reply-cancel').onclick = () => {
             currentReplyId = null;
-            $('reply-preview').classList.add('hidden');
+            document.getElementById('reply-preview').classList.add('hidden');
         };
 
         function renderChat(animateLast = false) {
@@ -455,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             try {
                                 const parsed = JSON.parse(wbMatch[1]);
                                 wbSteps = parsed.steps;
-                                $('wb-title').textContent = parsed.title || 'Whiteboard';
+                                document.getElementById('wb-title').textContent = parsed.title || 'Whiteboard';
                                 wbPanel.classList.remove('w-0');
                                 wbPanel.classList.add('w-[500px]');
                                 setTimeout(resizeCanvas, 310);
@@ -519,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatInput.value = '';
                 currImgs = [];
                 currentReplyId = null;
-                $('reply-preview').classList.add('hidden');
+                document.getElementById('reply-preview').classList.add('hidden');
                 renderPreview();
                 renderChat(true);
                 saveState();
@@ -631,8 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wbSteps.length > 0) renderWbStep(wbCurrentStep);
         }
 
-        window.addEventListener('resize', resizeCanvas);
-
         function startStepAnimation(stepIdx) {
             if (animFrameId) cancelAnimationFrame(animFrameId);
             let startTime = null;
@@ -654,10 +653,10 @@ document.addEventListener('DOMContentLoaded', () => {
         function renderWbStep(stepIdx, progress = 1) {
             if (stepIdx < 0 || stepIdx >= wbSteps.length) return;
             const step = wbSteps[stepIdx];
-            const stepOverlay = $('wb-step-overlay');
+            const stepOverlay = document.getElementById('wb-step-overlay');
             stepOverlay.classList.remove('hidden');
-            $('wb-step-num').textContent = `Step ${stepIdx + 1} of ${wbSteps.length}`;
-            $('wb-step-desc').textContent = step.text || '';
+            document.getElementById('wb-step-num').textContent = `Step ${stepIdx + 1} of ${wbSteps.length}`;
+            document.getElementById('wb-step-desc').textContent = step.text || '';
 
             wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
             wbCtx.lineCap = 'round';
@@ -771,12 +770,12 @@ document.addEventListener('DOMContentLoaded', () => {
             wbLastY = y;
         });
 
-        wbCanvas.addEventListener('mouseup', () => isWbDrawing = false);
-        wbCanvas.addEventListener('mouseleave', () => isWbDrawing = false);
+        wbCanvas.addEventListener('mouseup', () => { isWbDrawing = false; });
+        wbCanvas.addEventListener('mouseleave', () => { isWbDrawing = false; });
 
         wbClear.onclick = () => {
             wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
-            $('wb-step-overlay').classList.add('hidden');
+            document.getElementById('wb-step-overlay').classList.add('hidden');
             wbSteps = [];
             wbCurrentStep = 0;
         };
@@ -802,5 +801,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-}
 });
