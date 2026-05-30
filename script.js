@@ -114,7 +114,29 @@ document.addEventListener('DOMContentLoaded', () => {
         let selectedMsgTextForReply = '';
         let currentReplyId = null;
 
-        function saveState() {
+        async function syncUserDataFromServer() {
+            const username = localStorage.getItem('prysmis_user');
+            if (!username) return;
+            try {
+                const res = await fetch(`/api/userdata?username=${encodeURIComponent(username)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.apiKey) {
+                        apiKey = data.apiKey;
+                        localStorage.setItem('prysmis_api_key', apiKey);
+                    }
+                    if (data.chats && data.chats.length > 0) {
+                        chats = data.chats;
+                        localStorage.setItem('prysmis_site_chats', JSON.stringify(chats));
+                        updateSidebar();
+                        renderChat(false);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function saveState() {
+            const username = localStorage.getItem('prysmis_user');
             try {
                 const cleanedChats = chats.map(chat => {
                     return {
@@ -136,6 +158,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 });
                 localStorage.setItem('prysmis_site_chats', JSON.stringify(cleanedChats));
+
+                if (username) {
+                    await fetch('/api/userdata', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: username,
+                            apiKey: apiKey,
+                            chats: cleanedChats
+                        })
+                    });
+                }
             } catch (e) {}
         }
 
@@ -202,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(updateStatus, 1500);
         updateStatus();
         loadState();
+        syncUserDataFromServer();
         if (chats.length > 0) currentChatId = chats[0].id;
         else initChat();
         updateSidebar();
@@ -256,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         saveSettingsBtn.addEventListener('click', () => {
             apiKey = apiKeyInput.value.trim();
-            localStorage.setItem('prysmis_api_key', apiKey);
+            saveState();
             settingsModal.classList.remove('modal-open');
         });
 
@@ -470,8 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const parsed = JSON.parse(wbMatch[1]);
                                 wbSteps = parsed.steps;
                                 document.getElementById('wb-title').textContent = parsed.title || 'Whiteboard';
-                                wbPanel.classList.remove('w-0');
-                                wbPanel.classList.add('w-[500px]');
+                                wbPanel.classList.add('wb-open');
                                 setTimeout(resizeCanvas, 310);
                                 wbCurrentStep = 0;
                                 startStepAnimation(0);
@@ -597,19 +631,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         wbToggle.onclick = () => {
-            if (wbPanel.classList.contains('w-0')) {
-                wbPanel.classList.remove('w-0');
-                wbPanel.classList.add('w-[500px]');
-                setTimeout(resizeCanvas, 310);
+            if (wbPanel.classList.contains('wb-open')) {
+                wbPanel.classList.remove('wb-open');
             } else {
-                wbPanel.classList.remove('w-[500px]');
-                wbPanel.classList.add('w-0');
+                wbPanel.classList.add('wb-open');
+                setTimeout(resizeCanvas, 310);
             }
         };
 
         wbClose.onclick = () => {
-            wbPanel.classList.remove('w-[500px]');
-            wbPanel.classList.add('w-0');
+            wbPanel.classList.remove('wb-open');
         };
 
         function getViewport() {
@@ -644,6 +675,8 @@ document.addEventListener('DOMContentLoaded', () => {
             wbCtx.scale(dpr, dpr);
             if (wbSteps.length > 0) renderWbStep(wbCurrentStep);
         }
+
+        window.addEventListener('resize', resizeCanvas);
 
         function startStepAnimation(stepIdx) {
             if (animFrameId) cancelAnimationFrame(animFrameId);
