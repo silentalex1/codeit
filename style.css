@@ -29,6 +29,21 @@
 .rr-cont { position: absolute; top: -55px; right: 20px; background: #a6e3a1; color: #11111b; display: none; box-shadow: 0 4px 15px rgba(166, 227, 161, 0.4); z-index: 5; border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
 .rr-cont:hover { transform: scale(1.05); }
 
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.pb-safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
+
+#sidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#whiteboard-panel {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
+}
+
 @media (max-width: 768px) {
     #sidebar {
         position: absolute;
@@ -37,11 +52,12 @@
         height: calc(100% - 64px);
         width: 280px;
         z-index: 40;
-        transition: transform 0.3s ease;
         transform: translateX(-100%);
+        visibility: hidden;
     }
     #sidebar.sidebar-open {
         transform: translateX(0);
+        visibility: visible;
     }
     #whiteboard-panel {
         position: absolute;
@@ -50,5 +66,17 @@
         height: calc(100% - 64px);
         width: 100% !important;
         z-index: 45;
+        transform: translateX(100%);
+        visibility: hidden;
+    }
+    #whiteboard-panel.wb-open {
+        transform: translateX(0);
+        visibility: visible;
+    }
+}
+
+@media (min-width: 769px) {
+    #whiteboard-panel.wb-open {
+        width: 500px !important;
     }
 }
