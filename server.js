@@ -14,6 +14,7 @@ app.use((req, res, next) => {
 });
 
 const users = {};
+const userPersistedData = {};
 let pluginStatus = 'none';
 let pendingCode = null;
 let bookmarkletConnected = false;
@@ -43,6 +44,7 @@ app.post('/register-auth', (req, res) => {
     if (u && p) {
         if (users[u]) return res.json({ success: false });
         users[u] = p;
+        userPersistedData[u] = { apiKey: '', chats: [] };
         return res.json({ success: true });
     }
     res.json({ success: false });
@@ -52,6 +54,24 @@ app.post('/login-auth', (req, res) => {
     const u = req.body.username;
     const p = req.body.password;
     if (users[u] && users[u] === p) {
+        return res.json({ success: true });
+    }
+    res.json({ success: false });
+});
+
+app.get('/api/userdata', (req, res) => {
+    const u = req.query.username;
+    if (u && userPersistedData[u]) {
+        return res.json(userPersistedData[u]);
+    }
+    res.json({ apiKey: '', chats: [] });
+});
+
+app.post('/api/userdata', (req, res) => {
+    const u = req.body.username;
+    if (u && userPersistedData[u]) {
+        userPersistedData[u].apiKey = req.body.apiKey || '';
+        userPersistedData[u].chats = req.body.chats || [];
         return res.json({ success: true });
     }
     res.json({ success: false });
