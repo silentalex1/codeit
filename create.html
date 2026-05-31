@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrysmisAI • Access</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+:root{--bg:#0d0d0d;--surface:#161616;--border:#262626;--text:#e8e8e8;--accent:#ff6b35}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;background:#0d0d0d;color:#e8e8e8;font-family:Inter,system-ui;display:flex;align-items:center;justify-content:center}
+.card{width:420px;background:#161616;border:1px solid #262626;border-radius:14px;padding:32px 28px}
+h1{margin:0 0 6px;font-size:22px;letter-spacing:.5px}
+h1 span{color:#ff6b35}
+p{margin:0 0 22px;color:#666;font-size:13px}
+.tabs{display:flex;border-bottom:1px solid #262626;margin-bottom:20px}
+.tab{flex:1;padding:10px 0;text-align:center;font-size:13px;cursor:pointer;color:#888;border-bottom:3px solid transparent}
+.tab.active{color:#fff;border-bottom-color:#ff6b35;font-weight:600}
+input{width:100%;background:#0f0f0f;border:1px solid #262626;color:#e8e8e8;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:14px;outline:none}
+input:focus{border-color:#444}
+button{width:100%;background:#ff6b35;border:none;color:#fff;padding:13px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+button:hover{background:#e55a28}
+button:disabled{opacity:.6;cursor:not-allowed}
+#msg{min-height:18px;font-size:12px;color:#c33;margin-top:6px}
+a{color:#ff6b35;text-decoration:none;font-size:12px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Prysmis<span>AI</span></h1>
+  <p>Sign in or create your account to use Gemini 2.5 Pro</p>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)">Create account</div>
+    <div class="tab" onclick="switchTab(1)">Login</div>
+  </div>
+  <div id="create-form">
+    <input id="c-user" placeholder="Choose username (e.g. builder42)" autocomplete="off">
+    <button onclick="doCreate()">Create & Continue</button>
+  </div>
+  <div id="login-form" style="display:none">
+    <input id="l-user" placeholder="Your username" autocomplete="off">
+    <button onclick="doLogin()">Login & Continue</button>
+  </div>
+  <div id="msg"></div>
+  <div style="margin-top:18px;text-align:center"><a href="/">Back to chat</a></div>
+</div>
+<script>
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.getElementById('create-form').style.display = n===0?'block':'none';
+  document.getElementById('login-form').style.display = n===1?'block':'none';
+  document.getElementById('msg').textContent='';
+}
+async function doCreate(){
+  const u = document.getElementById('c-user').value.trim();
+  if(!u) return;
+  const btns = document.querySelectorAll('button'); btns.forEach(b=>b.disabled=true);
+  try{
+    const r = await fetch('/api/auth/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u})});
+    const d = await r.json();
+    if(d.ok){
+      localStorage.setItem('prysmisai_user', d.username);
+      location.href = '/';
+    }else{
+      document.getElementById('msg').textContent = d.error || 'Error';
+    }
+  }catch(e){ document.getElementById('msg').textContent = 'Network error'; }
+  btns.forEach(b=>b.disabled=false);
+}
+async function doLogin(){
+  const u = document.getElementById('l-user').value.trim();
+  if(!u) return;
+  const btns = document.querySelectorAll('button'); btns.forEach(b=>b.disabled=true);
+  try{
+    const r = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u})});
+    const d = await r.json();
+    if(d.ok){
+      localStorage.setItem('prysmisai_user', d.username);
+      location.href = '/';
+    }else{
+      document.getElementById('msg').textContent = d.error || 'Error';
+    }
+  }catch(e){ document.getElementById('msg').textContent = 'Network error'; }
+  btns.forEach(b=>b.disabled=false);
+}
+</script>
+</body>
+</html>
