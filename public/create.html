@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrysmisAI • Account</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at 30% 10%, #111113 0%, #0a0a0c 65%); background-attachment: fixed; }
+    .tab-active { border-bottom: 2px solid #a855f7; color: white; }
+    .auth-card { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4); }
+  </style>
+</head>
+<body class="bg-[#0a0a0c] text-zinc-200 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-md px-4">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-semibold tracking-tighter">PrysmisAI</h1>
+      <p class="text-zinc-400 text-sm mt-1">Sign in or create an account</p>
+    </div>
+
+    <div class="bg-[#111113] border border-zinc-800 rounded-3xl p-1 auth-card">
+      <!-- Tabs -->
+      <div class="flex border-b border-zinc-800">
+        <button onclick="switchTab('login')" id="tab-login"
+                class="flex-1 py-3 text-sm font-medium tab-active">Login</button>
+        <button onclick="switchTab('create')" id="tab-create"
+                class="flex-1 py-3 text-sm font-medium text-zinc-400 hover:text-white">Create Account</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="form-login" class="p-6">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1.5">Username</label>
+            <input id="login-username" type="text" 
+                   class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500"
+                   placeholder="your username">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1.5">Password</label>
+            <input id="login-password" type="password" 
+                   class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500"
+                   placeholder="your password">
+          </div>
+          <button onclick="handleLogin()"
+                  class="w-full mt-2 bg-white text-black font-medium py-3 rounded-2xl hover:bg-zinc-200 active:bg-white transition">
+            Login to account
+          </button>
+        </div>
+      </div>
+
+      <!-- Create Form -->
+      <div id="form-create" class="p-6 hidden">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1.5">Username</label>
+            <input id="create-username" type="text" 
+                   class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500"
+                   placeholder="choose a username">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1.5">Password</label>
+            <input id="create-password" type="password" 
+                   class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500"
+                   placeholder="create a password">
+          </div>
+          <button onclick="handleCreate()"
+                  class="w-full mt-2 bg-white text-black font-medium py-3 rounded-2xl hover:bg-zinc-200 active:bg-white transition">
+            Create account
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-zinc-500 mt-6">
+      Your chats will be saved to your account.
+    </p>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      const loginTab = document.getElementById('tab-login');
+      const createTab = document.getElementById('tab-create');
+      const loginForm = document.getElementById('form-login');
+      const createForm = document.getElementById('form-create');
+
+      if (tab === 'login') {
+        loginTab.classList.add('tab-active', 'text-white');
+        loginTab.classList.remove('text-zinc-400');
+        createTab.classList.remove('tab-active', 'text-white');
+        createTab.classList.add('text-zinc-400');
+        loginForm.classList.remove('hidden');
+        createForm.classList.add('hidden');
+      } else {
+        createTab.classList.add('tab-active', 'text-white');
+        createTab.classList.remove('text-zinc-400');
+        loginTab.classList.remove('tab-active', 'text-white');
+        loginTab.classList.add('text-zinc-400');
+        createForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+      }
+    }
+
+    async function handleCreate() {
+      const username = document.getElementById('create-username').value.trim();
+      const password = document.getElementById('create-password').value;
+
+      if (!username || !password) {
+        alert('Please fill in both fields');
+        return;
+      }
+
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('prysmisai_user', username);
+        window.location.href = '/chat/';
+      } else {
+        alert(data.error || 'Failed to create account');
+      }
+    }
+
+    async function handleLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        alert('Please fill in both fields');
+        return;
+      }
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('prysmisai_user', username);
+        window.location.href = '/chat/';
+      } else {
+        alert(data.error || 'Login failed');
+      }
+    }
+
+    // Default to login tab
+    window.onload = () => {
+      switchTab('login');
+    };
+  </script>
+</body>
+</html>
