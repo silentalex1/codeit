@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrysmisAI Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="bg-[#0a0a0c] text-zinc-200">
+  <div class="max-w-4xl mx-auto px-6 py-10">
+    <div class="flex items-center justify-between mb-10">
+      <div>
+        <div class="font-semibold text-2xl tracking-tighter">PrysmisAI</div>
+        <div class="text-xs text-zinc-500 -mt-1">Platform</div>
+      </div>
+      <a href="/" class="text-sm text-zinc-400 hover:text-white transition">← Back to Chat</a>
+    </div>
+
+    <div class="mb-8">
+      <h1 class="text-3xl font-semibold tracking-tighter">API Console</h1>
+      <p class="text-zinc-400 mt-1">Generate API keys to use PrysmisAI in your own applications.</p>
+    </div>
+
+    <div class="bg-[#111113] border border-zinc-800 rounded-3xl p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="font-medium">Your API Keys</div>
+          <div class="text-xs text-zinc-500">Keys are stored locally in your browser</div>
+        </div>
+        <button onclick="generateApiKey()" 
+                class="px-5 py-2 bg-white text-black text-sm font-medium rounded-2xl hover:bg-zinc-200 active:bg-white transition">
+          Generate New Key
+        </button>
+      </div>
+
+      <div id="keys-list" class="space-y-3">
+        <!-- Populated by JS -->
+      </div>
+
+      <div id="empty-state" class="text-center py-8 text-zinc-500 text-sm hidden">
+        No API keys yet. Generate your first one above.
+      </div>
+    </div>
+
+    <div class="mt-8 bg-[#111113] border border-zinc-800 rounded-3xl p-6">
+      <div class="font-medium mb-3">How to use your API key (Fast Responses)</div>
+      <div class="text-sm text-zinc-400 space-y-3">
+        <p>Use the standard OpenAI-compatible endpoint:</p>
+        <pre class="bg-zinc-900 p-4 rounded-2xl text-xs overflow-auto">POST https://codeit-7u2k.onrender.com/v1/chat/completions
+
+Headers:
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+Body:
+{
+  "model": "prysmisai",
+  "messages": [{"role": "user", "content": "Hello!"}],
+  "stream": true
+}</pre>
+
+        <p class="text-emerald-400 text-xs font-medium">For fast responses on Render:</p>
+        <p class="text-xs">Set these environment variables on your Render service:</p>
+        <pre class="bg-zinc-900 p-4 rounded-2xl text-xs overflow-auto">FAST_INFERENCE_URL=https://api.together.xyz/v1
+FAST_INFERENCE_API_KEY=your_fast_provider_key</pre>
+        <p class="text-xs">The web chat UI will still use the embedded model. The public API will use your fast provider.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'prysmisai_api_keys';
+
+    function getKeys() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }
+
+    function saveKeys(keys) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+    }
+
+    function generateRandomKey() {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = 'PrysmisAI_';
+      for (let i = 0; i < 8; i++) result += chars[Math.floor(Math.random() * chars.length)];
+      result += '_';
+      for (let i = 0; i < 12; i++) result += chars[Math.floor(Math.random() * chars.length)];
+      return result;
+    }
+
+    function renderKeys() {
+      const container = document.getElementById('keys-list');
+      const empty = document.getElementById('empty-state');
+      const keys = getKeys();
+
+      container.innerHTML = '';
+
+      if (keys.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      } else {
+        empty.classList.add('hidden');
+      }
+
+      keys.forEach((keyObj, index) => {
+        const div = document.createElement('div');
+        div.className = 'bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 flex items-center justify-between gap-4';
+
+        div.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="text-xs text-zinc-500 mb-1">API Key</div>
+            <div class="font-mono text-sm text-zinc-300 truncate key-display" data-key="${keyObj.key}">
+              ${keyObj.hidden ? keyObj.key.substring(0, 12) + '••••••••••••' : keyObj.key}
+            </div>
+            <div class="text-[10px] text-zinc-600 mt-1">${new Date(keyObj.created).toLocaleDateString()}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="show-btn px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 rounded-xl transition">
+              ${keyObj.hidden ? 'Show' : 'Hide'}
+            </button>
+            <button class="copy-btn px-4 py-1.5 text-xs bg-white text-black font-medium rounded-xl hover:bg-zinc-200 active:bg-white transition">
+              Copy
+            </button>
+            <button class="delete-btn px-3 py-1.5 text-xs bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-xl transition">
+              Delete
+            </button>
+          </div>
+        `;
+
+        const showBtn = div.querySelector('.show-btn');
+        const copyBtn = div.querySelector('.copy-btn');
+        const deleteBtn = div.querySelector('.delete-btn');
+        const display = div.querySelector('.key-display');
+
+        showBtn.onclick = () => {
+          keyObj.hidden = !keyObj.hidden;
+          saveKeys(keys);
+          renderKeys();
+        };
+
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(keyObj.key);
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 1500);
+        };
+
+        deleteBtn.onclick = () => {
+          if (confirm('Delete this API key?')) {
+            keys.splice(index, 1);
+            saveKeys(keys);
+            renderKeys();
+          }
+        };
+
+        container.appendChild(div);
+      });
+    }
+
+    function generateApiKey() {
+      const keys = getKeys();
+      const newKey = generateRandomKey();
+      keys.unshift({
+        key: newKey,
+        created: Date.now(),
+        hidden: true
+      });
+      saveKeys(keys);
+      renderKeys();
+    }
+
+    // Initial render
+    renderKeys();
+  </script>
+</body>
+</html>
