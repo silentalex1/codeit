@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrysmisAI</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{--bg:#0d0d0d;--surface:#161616;--border:#262626;--text:#e8e8e8;--muted:#5a5a5a;--accent:#6366f1;--accent-soft:rgba(99,102,241,0.12);}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;overflow:hidden;}
+    #app{display:flex;height:100vh;}
+    #sidebar{width:260px;background:#0f0f0f;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+    #sidebar-top{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+    .logo{font-size:16px;font-weight:600;letter-spacing:0.02em;}
+    .logo span{color:var(--accent);}
+    #new-chat-btn{margin:12px 16px 8px;width:calc(100% - 32px);padding:9px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;}
+    #new-chat-btn:hover{background:#5558e0;}
+    #history-label{padding:8px 16px 4px;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+    #chat-history{flex:1;overflow-y:auto;padding:0 8px 8px;}
+    #chat-history::-webkit-scrollbar{width:3px;}
+    #chat-history::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    .history-item{padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12.5px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.1s;}
+    .history-item:hover{background:#1a1a1a;color:var(--text);}
+    .history-item.active{background:#1e1e1e;color:var(--text);}
+    #sidebar-footer{padding:10px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
+    #main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+    #topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    #mode-label{font-size:12px;color:var(--muted);}
+    .agent-badge{background:var(--accent-soft);color:var(--accent);border:1px solid rgba(255,107,53,0.2);border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600;}
+    #user-badge{display:flex;align-items:center;gap:8px;}
+    #username-el{font-size:11px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+    #avatar-el{width:26px;height:26px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+    #messages{flex:1;overflow-y:auto;padding:28px 0;}
+    #messages::-webkit-scrollbar{width:4px;}
+    #messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    .msg-row{display:flex;align-items:flex-start;gap:12px;padding:8px 22px;transition:background 0.1s;}
+    .msg-row:hover{background:rgba(255,255,255,0.015);}
+    .msg-av{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
+    .msg-av.ai{background:var(--accent);color:#fff;}
+    .msg-av.user{background:#222;color:var(--text);}
+    .msg-body{flex:1;min-width:0;}
+    .msg-name{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;color:var(--muted);}
+    .msg-name.ai{color:var(--accent);}
+    .msg-text{font-size:13.5px;line-height:1.65;color:var(--text);word-break:break-word;}
+    .msg-text pre{background:#111;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:8px 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:12px;line-height:1.55;color:#c9d1d9;}
+    .msg-text code{background:#1e1e1e;border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:12px;color:#e0a96d;font-family:'Courier New',monospace;}
+    .msg-text pre code{background:none;border:none;padding:0;color:#c9d1d9;}
+    .code-wrap{position:relative;margin:8px 0;}
+    .copy-btn{position:absolute;top:8px;right:8px;background:#1e1e1e;border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;transition:all 0.15s;}
+    .copy-btn:hover{color:var(--text);background:#2a2a2a;}
+    .msg-img{max-width:240px;max-height:200px;border-radius:8px;margin-top:6px;object-fit:cover;border:1px solid var(--border);}
+    .ai-img{max-width:360px;border-radius:10px;margin-top:8px;border:1px solid var(--border);}
+    .thinking{display:flex;align-items:center;gap:4px;padding:2px 0;}
+    .t-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:tb 1.2s infinite ease-in-out;}
+    .t-dot:nth-child(2){animation-delay:0.2s;}
+    .t-dot:nth-child(3){animation-delay:0.4s;}
+    @keyframes tb{0%,60%,100%{transform:translateY(0);opacity:0.4;}30%{transform:translateY(-4px);opacity:1;}}
+    #input-area{padding:14px 22px 18px;border-top:1px solid var(--border);flex-shrink:0;}
+    #active-agent-bar{display:none;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--muted);}
+    #active-agent-bar.show{display:flex;}
+    #clear-agent-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;}
+    #clear-agent-btn:hover{color:var(--text);}
+    #img-preview-bar{display:none;align-items:center;gap:8px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:6px 10px;}
+    #img-preview-bar.show{display:flex;}
+    #preview-thumb{width:34px;height:34px;border-radius:5px;object-fit:cover;border:1px solid var(--border);}
+    #preview-fname{font-size:11px;color:var(--muted);flex:1;}
+    #rm-img-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
+    #rm-img-btn:hover{color:#e05555;}
+    #input-box{display:flex;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 10px 10px 14px;gap:8px;transition:border-color 0.15s;}
+    #input-box:focus-within{border-color:#333;}
+    #chat-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.5;resize:none;max-height:120px;min-height:22px;}
+    #chat-input::placeholder{color:var(--muted);}
+    .iaction{width:28px;height:28px;border:none;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all 0.15s;}
+    .iaction:hover{background:var(--accent-soft);color:var(--accent);}
+    #send-btn{width:32px;height:32px;border:none;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+    #send-btn:hover{background:#5558e0;}
+    #send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+    #agent-menu{position:absolute;bottom:100px;left:22px;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;padding:6px;display:none;z-index:100;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+    #agent-menu.open{display:block;}
+    .ag-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text);transition:background 0.1s;}
+    .ag-opt:hover{background:rgba(255,255,255,0.05);}
+    .ag-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+    .ag-icon.ui{background:#2a1f4a;color:#9b7ff0;}
+    .ag-icon.map{background:#1a2f1e;color:#5fb86a;}
+    .ag-icon.sc{background:#1a2435;color:#5a9fd4;}
+    #file-input{display:none;}
+    @keyframes msgIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+    .msg-row{animation:msgIn 0.15s ease-out;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-top">
+      <div class="logo">Prysmis<span>AI</span></div>
+    </div>
+    <button id="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
+    <div id="history-label">History</div>
+    <div id="chat-history"></div>
+    <div id="sidebar-footer">All chats saved locally</div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <div id="mode-label">General Mode</div>
+      <div id="user-badge">
+        <span id="username-el">USER</span>
+        <div id="avatar-el">U</div>
+      </div>
+    </div>
+
+    <div id="messages"></div>
+
+    <div id="agent-menu">
+      <div class="ag-opt" onclick="selectAgent('UI Designing','ui')">
+        <div class="ag-icon ui">✦</div>
+        @UI Designing
+      </div>
+      <div class="ag-opt" onclick="selectAgent('Map Designing','map')">
+        <div class="ag-icon map">◈</div>
+        @Map Designing
+      </div>
+      <div class="ag-opt" onclick="selectAgent('Scripting','sc')">
+        <div class="ag-icon sc">&lt;/&gt;</div>
+        @Scripting
+      </div>
+    </div>
+
+    <div id="input-area">
+      <div id="active-agent-bar">
+        <span id="agent-label-el"></span>
+        <button id="clear-agent-btn" onclick="clearAgent()">✕</button>
+      </div>
+      <div id="img-preview-bar">
+        <img id="preview-thumb" src="" alt="">
+        <span id="preview-fname">Image</span>
+        <button id="rm-img-btn" onclick="removeImg()">✕</button>
+      </div>
+      <div id="input-box">
+        <textarea id="chat-input" placeholder="Ask PrysmisAI anything.." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+          <button class="iaction" onclick="document.getElementById('file-input').click()" title="Attach image">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21,15 16,10 5,21"/>
+            </svg>
+          </button>
+          <button class="iaction" id="at-btn" onclick="toggleAgentMenu()" title="Agent">@</button>
+          <button id="send-btn" onclick="sendMessage()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
+    </div>
+  </div>
+</div>
+
+<div id="key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#161616;border:1px solid #262626;border-radius:12px;padding:28px;width:420px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">Enter your Gemini 2.5 Pro API key</div>
+    <div style="font-size:12px;color:#666;margin-bottom:14px">PrysmisAI uses your key server-side only. It is saved to your account and never leaves our servers. Get a key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#6366f1">Google AI Studio</a>.</div>
+    <input id="gemini-key-input" type="password" placeholder="AIzaSy..." style="width:100%;background:#0f0f0f;border:1px solid #262626;color:#e8e8e8;border-radius:8px;padding:11px 13px;font-size:13px;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button id="save-key-btn" style="flex:1;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:11px;font-weight:600;cursor:pointer">Save & Start Chatting</button>
+      <button id="skip-key-btn" style="background:#222;color:#aaa;border:1px solid #333;border-radius:8px;padding:11px 14px;cursor:pointer">Later</button>
+    </div>
+    <div id="key-modal-err" style="color:#c33;font-size:12px;margin-top:8px;height:14px"></div>
+  </div>
+</div>
+
+<script>
+let chats = JSON.parse(localStorage.getItem('prysmisai_chats') || '[]');
+let currentChatId = null;
+let currentAgent = null;
+let messages = [];
+let pendingImgB64 = null;
+let pendingImgType = null;
+
+const msgsEl = document.getElementById('messages');
+const inputEl = document.getElementById('chat-input');
+const agentMenu = document.getElementById('agent-menu');
+
+function saveChats() {
+  localStorage.setItem('prysmisai_chats', JSON.stringify(chats));
+}
+
+function renderHistory() {
+  const hc = document.getElementById('chat-history');
+  hc.innerHTML = '';
+  chats.slice().reverse().forEach(chat => {
+    const d = document.createElement('div');
+    d.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
+    d.textContent = chat.title || 'New chat';
+    d.onclick = () => loadChat(chat.id);
+    hc.appendChild(d);
+  });
+}
+
+function updateModeDisplay() {
+  const ml = document.getElementById('mode-label');
+  if (currentAgent) {
+    ml.innerHTML = '<span class="agent-badge">@' + currentAgent + '</span>';
+  } else {
+    ml.textContent = 'General Mode';
+  }
+  const bar = document.getElementById('active-agent-bar');
+  const lbl = document.getElementById('agent-label-el');
+  if (currentAgent) {
+    lbl.innerHTML = '<span class="agent-badge">@' + currentAgent + '</span>';
+    bar.classList.add('show');
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function clearAgent() {
+  currentAgent = null;
+  updateModeDisplay();
+}
+
+function selectAgent(name, type) {
+  currentAgent = name;
+  agentMenu.classList.remove('open');
+  updateModeDisplay();
+  inputEl.focus();
+}
+
+function toggleAgentMenu() {
+  agentMenu.classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!agentMenu.contains(e.target) && e.target !== document.getElementById('at-btn')) {
+    agentMenu.classList.remove('open');
+  }
+});
+
+function autoResize(el) {
+  el.style.height = '22px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    pendingImgB64 = result.split(',')[1];
+    pendingImgType = file.type;
+    document.getElementById('preview-thumb').src = result;
+    document.getElementById('preview-fname').textContent = file.name;
+    document.getElementById('img-preview-bar').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removeImg() {
+  pendingImgB64 = null;
+  pendingImgType = null;
+  document.getElementById('img-preview-bar').classList.remove('show');
+  document.getElementById('preview-thumb').src = '';
+}
+
+inputEl.addEventListener('paste', e => {
+  const items = e.clipboardData.items;
+  for (let item of items) {
+    if (item.type.indexOf('image') !== -1) {
+      const blob = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const result = ev.target.result;
+        pendingImgB64 = result.split(',')[1];
+        pendingImgType = item.type;
+        document.getElementById('preview-thumb').src = result;
+        document.getElementById('preview-fname').textContent = 'Pasted image';
+        document.getElementById('img-preview-bar').classList.add('show');
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
+});
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatMsg(text) {
+  let html = escHtml(text);
+  html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const id = 'c' + Math.random().toString(36).slice(2,8);
+    const l = lang || 'lua';
+    const ec = escHtml(code.trim());
+    return '<div class="code-wrap"><div style="display:flex;align-items:center;justify-content:space-between;background:#0f0f0f;border:1px solid #262626;border-bottom:none;border-radius:8px 8px 0 0;padding:6px 12px;">'
+      + '<span style="font-size:11px;color:#5a5a5a;">' + l + '</span>'
+      + '<button class="copy-btn" onclick="copyCode(\'' + id + '\',this)">Copy</button></div>'
+      + '<pre style="border-radius:0 0 8px 8px;margin:0;border-top:none;"><code id="' + id + '">' + ec + '</code></pre></div>';
+  });
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function copyCode(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+function addMsg(role, text, imgSrc) {
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  const isAI = role === 'assistant';
+  const av = document.createElement('div');
+  av.className = 'msg-av ' + (isAI ? 'ai' : 'user');
+  av.textContent = isAI ? 'P' : 'U';
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  const name = document.createElement('div');
+  name.className = 'msg-name' + (isAI ? ' ai' : '');
+  name.textContent = isAI ? 'PRYSMISAI' : 'USER';
+  const textEl = document.createElement('div');
+  textEl.className = 'msg-text';
+  textEl.innerHTML = formatMsg(text);
+  body.appendChild(name);
+  if (imgSrc) {
+    const img = document.createElement('img');
+    img.className = 'msg-img';
+    img.src = imgSrc;
+    body.appendChild(img);
+  }
+  body.appendChild(textEl);
+  row.appendChild(av);
+  row.appendChild(body);
+  msgsEl.appendChild(row);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return textEl;
+}
+
+function addThinking() {
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'thinking-row';
+  const av = document.createElement('div');
+  av.className = 'msg-av ai';
+  av.textContent = 'P';
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  const name = document.createElement('div');
+  name.className = 'msg-name ai';
+  name.textContent = 'PRYSMIS';
+  const dots = document.createElement('div');
+  dots.className = 'thinking';
+  dots.innerHTML = '<div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>';
+  body.appendChild(name);
+  body.appendChild(dots);
+  row.appendChild(av);
+  row.appendChild(body);
+  msgsEl.appendChild(row);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById('thinking-row');
+  if (t) t.remove();
+}
+
+function saveCurrentChat() {
+  if (!currentChatId) return;
+  const idx = chats.findIndex(c => c.id === currentChatId);
+  if (idx !== -1) {
+    chats[idx].messages = [...messages];
+    chats[idx].agent = currentAgent;
+    if (messages.length > 0) chats[idx].title = messages[0].content.substring(0, 42);
+  }
+  saveChats();
+  renderHistory();
+}
+
+function createNewChat() {
+  if (currentChatId && messages.length > 0) saveCurrentChat();
+  currentChatId = 'chat_' + Date.now();
+  currentAgent = null;
+  messages = [];
+  const chat = { id: currentChatId, title: 'New chat', messages: [], agent: null, createdAt: Date.now() };
+  chats.push(chat);
+  msgsEl.innerHTML = '';
+  addMsg('assistant', 'Hey. What are you building right now (genre + core loop), and what do you want help with first\u2014systems (datastore, round/matchmaking, combat), UI, or performance/anti-cheat?');
+  updateModeDisplay();
+  renderHistory();
+  saveChats();
+  inputEl.focus();
+}
+
+function loadChat(chatId) {
+  saveCurrentChat();
+  const chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  currentChatId = chat.id;
+  currentAgent = chat.agent || null;
+  messages = [...(chat.messages || [])];
+  msgsEl.innerHTML = '';
+  messages.forEach(m => addMsg(m.isUser ? 'user' : 'assistant', m.content, m.imgSrc));
+  updateModeDisplay();
+  renderHistory();
+}
+
+let currentUsername = localStorage.getItem('prysmisai_user') || '';
+let pendingContinue = null;
+
+function getAuthHeaders(extra = {}) {
+  const h = { 'Content-Type': 'application/json', ...extra };
+  if (currentUsername) h['X-Prysmis-User'] = currentUsername;
+  return h;
+}
+
+function showKeyModal(onSaved) {
+  const m = document.getElementById('key-modal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('gemini-key-input');
+  const err = document.getElementById('key-modal-err');
+  document.getElementById('save-key-btn').onclick = async () => {
+    const k = inp.value.trim();
+    if (!k || !currentUsername) { err.textContent = 'Enter key and login first'; return; }
+    err.textContent = '';
+    const btn = document.getElementById('save-key-btn'); btn.disabled = true;
+    try {
+      const r = await fetch('/api/user/gemini-key', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: currentUsername, key: k }) });
+      const d = await r.json();
+      if (d.ok) { m.style.display = 'none'; if (onSaved) onSaved(); }
+      else err.textContent = d.error || 'Save failed';
+    } catch { err.textContent = 'Network error'; }
+    btn.disabled = false;
+  };
+  document.getElementById('skip-key-btn').onclick = () => { m.style.display = 'none'; };
+}
+
+async function ensureKey() {
+  if (!currentUsername) return false;
+  try {
+    const r = await fetch('/api/user/gemini-key', { headers: getAuthHeaders() });
+    const d = await r.json();
+    return !!d.hasKey;
+  } catch { return false; }
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text && !pendingImgB64) return;
+  if (!currentUsername) { location.href = '/create'; return; }
+  const hasKey = await ensureKey();
+  if (!hasKey) { showKeyModal(() => sendMessage()); return; }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  if (!currentChatId) createNewChat();
+  const imgDataUrl = pendingImgB64 ? ('data:' + (pendingImgType || 'image/png') + ';base64,' + pendingImgB64) : null;
+  const userMsg = { content: text || 'Analyze this image.', isUser: true, agentTag: currentAgent, imgSrc: imgDataUrl };
+  messages.push(userMsg);
+  addMsg('user', userMsg.content, imgDataUrl);
+  const imgs = pendingImgB64 ? [pendingImgB64] : [];
+  inputEl.value = '';
+  autoResize(inputEl);
+  removeImg();
+  addThinking();
+
+  let fullText = '';
+  let responseEl = null;
+  let lastTokenAt = Date.now();
+  let stalledTimer = null;
+
+  function startStallWatch() {
+    if (stalledTimer) clearInterval(stalledTimer);
+    stalledTimer = setInterval(() => {
+      if (Date.now() - lastTokenAt > 8500 && responseEl && !pendingContinue) {
+        pendingContinue = { history: messages.slice(), agent: currentAgent, images: imgs, partial: fullText };
+        const cont = document.createElement('button');
+        cont.textContent = 'Continue';
+        cont.style.cssText = 'margin-top:6px;background:#222;color:#6366f1;border:1px solid #333;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer';
+        cont.onclick = () => { cont.remove(); continueGeneration(); };
+        responseEl.parentNode.appendChild(cont);
+      }
+    }, 1200);
+  }
+
+  try {
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ message: userMsg.content, history: messages.slice(0, -1), agent: currentAgent, images: imgs })
+    });
+    if (!res.ok) {
+      removeThinking();
+      const t = await res.text();
+      addMsg('assistant', 'Error: ' + (t || res.status));
+      btn.disabled = false;
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    startStallWatch();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      chunk.split('\n').forEach(line => {
+        if (!line.startsWith('data:')) return;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === '[DONE]') return;
+        try {
+          const data = JSON.parse(payload);
+          if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+            if (!responseEl) { removeThinking(); responseEl = addMsg('assistant', ''); }
+            const t = data.choices[0].delta.content;
+            fullText += t;
+            lastTokenAt = Date.now();
+            responseEl.innerHTML = formatMsg(fullText);
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+          } else if (data.type === 'token') {
+            if (!responseEl) { removeThinking(); responseEl = addMsg('assistant', ''); }
+            fullText += data.content;
+            lastTokenAt = Date.now();
+            responseEl.innerHTML = formatMsg(fullText);
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+          } else if (data.type === 'image') {
+            const imgEl = document.createElement('img');
+            imgEl.className = 'ai-img';
+            imgEl.src = data.imageDataUrl;
+            if (responseEl) responseEl.parentNode.appendChild(imgEl);
+          } else if (data.type === 'done') {
+            messages.push({ content: fullText, isUser: false, agentTag: currentAgent });
+            saveCurrentChat();
+          }
+        } catch {}
+      });
+    }
+    if (stalledTimer) clearInterval(stalledTimer);
+    if (!responseEl) { removeThinking(); addMsg('assistant', 'No response.'); }
+  } catch {
+    if (stalledTimer) clearInterval(stalledTimer);
+    removeThinking();
+    addMsg('assistant', 'Failed to reach server.');
+  }
+  btn.disabled = false;
+  inputEl.focus();
+}
+
+async function continueGeneration() {
+  if (!pendingContinue || !currentUsername) return;
+  const pc = pendingContinue;
+  pendingContinue = null;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  addThinking();
+  try {
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ message: 'Continue exactly from where you left off. Complete the previous response without repeating what was already written.', history: pc.history, agent: pc.agent, images: pc.images })
+    });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let extra = '';
+    let el = null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      chunk.split('\n').forEach(line => {
+        if (!line.startsWith('data:')) return;
+        try {
+          const data = JSON.parse(line.slice(5).trim());
+          const t = (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) || data.content;
+          if (t) {
+            if (!el) { removeThinking(); el = addMsg('assistant', ''); }
+            extra += t;
+            el.innerHTML = formatMsg((pc.partial || '') + extra);
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+          }
+        } catch {}
+      });
+    }
+    if (el) messages.push({ content: (pc.partial || '') + extra, isUser: false, agentTag: pc.agent });
+    saveCurrentChat();
+  } catch {
+    removeThinking();
+  }
+  btn.disabled = false;
+}
+
+function init() {
+  if (!currentUsername) {
+    location.href = '/create';
+    return;
+  }
+  const top = document.getElementById('username-el');
+  if (top) top.textContent = currentUsername.toUpperCase().slice(0, 8);
+
+  if (chats.length === 0) {
+    createNewChat();
+  } else {
+    const latest = chats[chats.length - 1];
+    loadChat(latest.id);
+    if (messages.length === 0) {
+      addMsg('assistant', 'Hey. What are you building right now (genre + core loop), and what do you want help with first—systems (datastore, round/matchmaking, combat), UI, or performance/anti-cheat?');
+    }
+  }
+  renderHistory();
+
+  ensureKey().then(has => {
+    if (!has) setTimeout(() => showKeyModal(), 420);
+  });
+
+  const dashLink = document.createElement('a');
+  dashLink.textContent = 'API Keys';
+  dashLink.href = '/dashboard';
+  dashLink.style.cssText = 'margin-left:12px;font-size:11px;color:#888';
+  const mode = document.getElementById('mode-label');
+  if (mode) mode.parentNode.appendChild(dashLink);
+}
+
+init();
+</script>
+</body>
+</html>

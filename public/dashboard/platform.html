@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrysmisAI Platform</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+:root{--bg:#0d0d0d;--surface:#161616;--border:#262626;--text:#e8e8e8;--accent:#6366f1;--muted:#666}
+*{box-sizing:border-box}
+body{margin:0;background:#0d0d0d;color:#e8e8e8;font-family:Inter,system-ui;line-height:1.5}
+.wrap{max-width:980px;margin:40px auto;padding:0 20px}
+h1{margin:0 0 4px;font-size:26px}
+h1 span{color:#6366f1}
+nav{margin:16px 0 28px;display:flex;gap:16px;font-size:13px}
+a{color:#6366f1;text-decoration:none}
+.card{background:#161616;border:1px solid #262626;border-radius:12px;padding:22px;margin-bottom:18px}
+h2{font-size:15px;margin:0 0 12px;color:#ddd}
+label{font-size:12px;color:#888;display:block;margin:10px 0 4px}
+input,select{width:100%;background:#0f0f0f;border:1px solid #262626;color:#e8e8e8;border-radius:8px;padding:10px 12px;font-size:13px}
+button{background:#6366f1;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer}
+button:hover{background:#5558e0}
+pre{background:#0a0a0a;border:1px solid #262626;border-radius:8px;padding:14px;overflow:auto;font-size:12.5px;color:#c9d1d9}
+.k{display:inline-block;background:#0f0f0f;border:1px solid #262626;padding:2px 7px;border-radius:4px;font-family:monospace;font-size:12px;margin:2px 0}
+.warn{color:#c33;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Prysmis<span>AI</span> Platform</h1>
+<nav><a href="/">Chat</a><a href="/create">Account</a><a href="#keys">API Keys</a></nav>
+
+<div class="card">
+  <h2>Your PrysmisAI API Keys</h2>
+  <p style="margin:0 0 12px;font-size:13px;color:#888">These keys let any app call Gemini 2.5 Pro through PrysmisAI without exposing your Gemini key.</p>
+  <label>Current account</label>
+  <input id="user" placeholder="your-username (from chat or /create)">
+  <button onclick="loadKeys()" style="margin-top:8px">Load Keys</button>
+  <button onclick="genKey()" style="margin-left:8px">Generate New PrysmisAI Key</button>
+  <div id="keylist" style="margin-top:14px;font-size:13px"></div>
+</div>
+
+<div class="card">
+  <h2>/v1/chat/completions (OpenAI compatible)</h2>
+  <pre>curl https://YOUR-SITE/v1/chat/completions \
+  -H "Authorization: Bearer PrysmisAI_xxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini-2.5-pro",
+    "messages": [{"role":"user","content":"Write a Roblox round system in Luau"}],
+    "stream": true
+  }'</pre>
+</div>
+
+<div class="card">
+  <h2>/v1/messages (Anthropic compatible)</h2>
+  <pre>curl https://YOUR-SITE/v1/messages \
+  -H "Authorization: Bearer PrysmisAI_xxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini-2.5-pro",
+    "messages": [{"role":"user","content":"Build a clean datastore wrapper"}],
+    "max_tokens": 4096
+  }'</pre>
+</div>
+
+<div class="card">
+  <h2>Using from code (Python example)</h2>
+  <pre>from openai import OpenAI
+client = OpenAI(base_url="https://YOUR-SITE/v1", api_key="PrysmisAI_xxx")
+r = client.chat.completions.create(model="gemini-2.5-pro", messages=[{"role":"user","content":"..."}])
+print(r.choices[0].message.content)</pre>
+</div>
+
+<div class="card">
+  <p class="warn">Important: You must first visit the chat, log in with the same username, and save your personal Gemini 2.5 Pro API key in the modal. Only then will PrysmisAI_ keys work.</p>
+</div>
+</div>
+<script>
+async function loadKeys(){
+  const u = document.getElementById('user').value.trim();
+  if(!u) return alert('Enter username');
+  const r = await fetch('/api/keys', {headers: {'X-Prysmis-User': u}});
+  const d = await r.json();
+  const el = document.getElementById('keylist');
+  el.innerHTML = (d.keys||[]).length ? d.keys.map(k=>'<div class="k">'+k+'</div>').join('<br>') : 'No keys yet. Generate one.';
+}
+async function genKey(){
+  const u = document.getElementById('user').value.trim();
+  if(!u) return alert('Enter username first (same as in chat)');
+  const r = await fetch('/api/keys/generate', {method:'POST', headers:{'Content-Type':'application/json','X-Prysmis-User':u}});
+  const d = await r.json();
+  if(d.key){
+    alert('New key created: ' + d.key + '\n\nCopy it now. It will not be shown again.');
+    loadKeys();
+  }else{
+    alert(d.error || 'Failed. Make sure you saved a Gemini key in the chat UI first.');
+  }
+}
+</script>
+</body>
+</html>
