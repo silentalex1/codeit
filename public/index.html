@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrysmisAI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .chat-scroll { scrollbar-width: thin; scrollbar-color: #27272a #0a0a0c; }
+    .agent-tag { background-color: #6b21a8; color: #f3e8ff; padding: 1px 9px; border-radius: 9999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #a855f7; }
+    .message { animation: fadeIn 0.15s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .sidebar-chat-item { transition: background-color 0.1s ease; }
+    .sidebar-chat-item:hover { background-color: #18181b; }
+  </style>
+</head>
+<body class="bg-[#0a0a0c] text-zinc-200">
+  <div class="flex h-screen overflow-hidden">
+    <div class="w-72 bg-[#111113] border-r border-zinc-800 flex flex-col">
+      <div class="p-5 border-b border-zinc-800">
+        <div class="font-semibold text-2xl tracking-tighter">PrysmisAI</div>
+      </div>
+
+      <div class="p-4">
+        <button onclick="createNewChat()" 
+                class="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-2.5 rounded-2xl hover:bg-zinc-200 active:bg-white transition">
+          <span class="text-lg leading-none">+</span>
+          <span>New Chat</span>
+        </button>
+      </div>
+
+      <div class="px-4 text-xs text-zinc-500 font-medium tracking-wider mb-2">HISTORY</div>
+      
+      <div id="chat-history" class="flex-1 overflow-y-auto px-2 space-y-1">
+      </div>
+
+      <div class="p-4 border-t border-zinc-800 text-[11px] text-zinc-500">
+        Chats saved in browser
+      </div>
+    </div>
+
+    <div class="flex-1 flex flex-col">
+      <div class="h-14 border-b border-zinc-800 flex items-center justify-between px-6 bg-[#0a0a0c]">
+        <div id="current-mode" class="text-sm text-zinc-400">
+          General Mode
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="window.location.href='/dashboard/platform'" 
+                  class="px-4 py-1.5 text-sm bg-white text-black rounded-2xl font-medium hover:bg-zinc-200 transition">
+            Console
+          </button>
+          <button onclick="window.location.href='/create'" 
+                  class="px-4 py-1.5 text-sm bg-zinc-800 text-white rounded-2xl hover:bg-zinc-700 transition">
+            Logout
+          </button>
+        </div>
+
+      </div>
+
+      <div id="messages" class="flex-1 overflow-y-auto chat-scroll p-6 space-y-6 bg-[#0a0a0c]">
+      </div>
+
+      <div class="p-5 border-t border-zinc-800 bg-[#0a0a0c] relative">
+        <div id="image-preview" class="hidden mb-3 flex gap-2 flex-wrap"></div>
+        
+        <div class="max-w-4xl mx-auto">
+          <div class="flex gap-3 items-end">
+            <div id="input-wrapper" class="flex-1 relative">
+              <div id="agent-dropdown" class="hidden absolute left-0 bottom-full mb-2 w-72 bg-[#111113] border border-zinc-700 rounded-2xl shadow-xl overflow-hidden z-50">
+                <div class="py-1 text-sm">
+                  <div class="agent-option flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800 cursor-pointer" onclick="selectAgent('UI Build')">
+                    <div class="w-5 h-5 rounded-xl bg-violet-500 flex-shrink-0"></div>
+                    <span class="font-medium">@UI Build</span>
+                  </div>
+                  <div class="agent-option flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800 cursor-pointer" onclick="selectAgent('Map Build')">
+                    <div class="w-5 h-5 rounded-xl bg-emerald-500 flex-shrink-0"></div>
+                    <span class="font-medium">@Map Build</span>
+                  </div>
+                  <div class="agent-option flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800 cursor-pointer" onclick="selectAgent('scripting')">
+                    <div class="w-5 h-5 rounded-xl bg-orange-500 flex-shrink-0"></div>
+                    <span class="font-medium">@scripting</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 focus-within:border-violet-500/60 rounded-3xl px-4 py-2.5 text-[15px]">
+                <div id="agent-pill" class="hidden items-center gap-1.5 bg-violet-600/30 text-violet-200 font-medium text-sm pl-3 pr-1.5 py-1 rounded-2xl border border-violet-500/30">
+                  <span id="pill-text"></span>
+                  <button id="clear-agent-btn" class="w-5 h-5 flex items-center justify-center text-violet-300 hover:text-white hover:bg-violet-500/30 rounded-full ml-1">×</button>
+                </div>
+                <textarea id="input" rows="1" 
+                  class="flex-1 resize-none bg-transparent focus:outline-none placeholder:text-zinc-500 min-h-[24px]"
+                  placeholder="Ask PrysmisAI anything.. Or use @ to use one of our agents."></textarea>
+              </div>
+            </div>
+            
+            <button onclick="sendMessage()" 
+                    class="h-[52px] w-[52px] rounded-3xl bg-white text-black hover:bg-zinc-100 active:bg-white transition flex items-center justify-center shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <script>
+    // Simple auth gate - redirect if not logged in
+    const currentUser = localStorage.getItem('prysmisai_user');
+    if (!currentUser) {
+      window.location.href = '/create';
+    }
+
+    let chats = JSON.parse(localStorage.getItem('prysmisai_chats_' + (currentUser || 'guest')) || '[]');
+    let currentChatId = null;
+    let currentAgent = null;
+    let messages = [];
+    let pendingImages = [];
+    let lastSentMessage = null;
+
+    const input = document.getElementById('input');
+    const messagesEl = document.getElementById('messages');
+    const dropdown = document.getElementById('agent-dropdown');
+    const currentModeEl = document.getElementById('current-mode');
+    const historyContainer = document.getElementById('chat-history');
+    const pill = document.getElementById('agent-pill');
+    const pillText = document.getElementById('pill-text');
+    const clearBtn = document.getElementById('clear-agent-btn');
+
+    function saveChats() {
+      localStorage.setItem('prysmisai_chats_' + currentUser, JSON.stringify(chats));
+      fetch(`/api/chats/${currentUser}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chats })
+      }).catch(() => {});
+    }
+
+    function deleteChat(chatId) {
+      chats = chats.filter(c => c.id !== chatId);
+      saveChats();
+      if (currentChatId === chatId) {
+        messagesEl.innerHTML = '';
+        currentChatId = null;
+        messages = [];
+        currentAgent = null;
+        if (chats.length > 0) {
+          loadChat(chats[chats.length - 1].id);
+        } else {
+          createNewChat();
+        }
+      }
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyContainer.innerHTML = '';
+      chats.slice().reverse().forEach(chat => {
+        const div = document.createElement('div');
+        div.className = `sidebar-chat-item px-3 py-2 rounded-2xl text-sm cursor-pointer flex items-center gap-2 ${chat.id === currentChatId ? 'bg-zinc-800' : ''}`;
+        div.innerHTML = `<div class="flex-1 truncate">${chat.title || 'New chat'}</div>`;
+        div.onclick = () => loadChat(chat.id);
+        div.oncontextmenu = (e) => {
+          e.preventDefault();
+          const menu = document.createElement('div');
+          menu.className = 'absolute bg-[#111113] border border-zinc-700 rounded-xl py-1 text-sm shadow-xl z-[100]';
+          menu.style.left = `${e.pageX}px`;
+          menu.style.top = `${e.pageY}px`;
+          menu.innerHTML = `<div class="px-4 py-2 hover:bg-zinc-800 cursor-pointer text-red-400">Delete chat</div>`;
+          menu.querySelector('div').onclick = () => {
+            document.body.removeChild(menu);
+            deleteChat(chat.id);
+          };
+          document.body.appendChild(menu);
+          const removeMenu = () => {
+            if (menu.parentNode) menu.parentNode.removeChild(menu);
+            document.removeEventListener('click', removeMenu);
+            document.removeEventListener('contextmenu', removeMenu);
+          };
+          setTimeout(() => {
+            document.addEventListener('click', removeMenu, { once: true });
+            document.addEventListener('contextmenu', removeMenu, { once: true });
+          }, 0);
+        };
+        historyContainer.appendChild(div);
+      });
+    }
+
+    function updateAgentPill() {
+      if (!pill || !pillText) return;
+      if (currentAgent) {
+        pillText.textContent = '@' + currentAgent;
+        pill.classList.remove('hidden');
+        pill.classList.add('flex');
+      } else {
+        pill.classList.remove('flex');
+        pill.classList.add('hidden');
+      }
+    }
+
+    function clearAgent() {
+      currentAgent = null;
+      updateAgentPill();
+      updateModeDisplay();
+    }
+
+    if (clearBtn) clearBtn.onclick = clearAgent;
+
+    function createNewChat() {
+      if (currentChatId && messages.length > 0) {
+        saveCurrentChat();
+      }
+      currentChatId = 'chat_' + Date.now();
+      currentAgent = null;
+      messages = [];
+      const newChat = {
+        id: currentChatId,
+        title: 'New chat',
+        messages: [],
+        agent: null,
+        createdAt: Date.now()
+      };
+      chats.push(newChat);
+      messagesEl.innerHTML = '';
+      const greetingDiv = document.createElement('div');
+      greetingDiv.className = 'message max-w-[82%]';
+      greetingDiv.innerHTML = `
+        <div class="flex gap-3">
+          <div class="w-7 h-7 mt-0.5 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex-shrink-0 flex items-center justify-center text-xs font-bold">P</div>
+          <div class="flex-1">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl rounded-bl-lg px-5 py-4 text-[15px]">
+              Hey i'm PrysmisAI how may i help you?
+            </div>
+          </div>
+        </div>`;
+      messagesEl.appendChild(greetingDiv);
+      updateModeDisplay();
+      updateAgentPill();
+      renderHistory();
+      saveChats();
+      input.focus();
+    }
+
+    function saveCurrentChat() {
+      if (!currentChatId) return;
+      const chatIndex = chats.findIndex(c => c.id === currentChatId);
+      if (chatIndex !== -1) {
+        chats[chatIndex].messages = [...messages];
+        chats[chatIndex].agent = currentAgent;
+        if (messages.length > 0) {
+          chats[chatIndex].title = messages[0].content.substring(0, 40);
+        }
+      }
+      saveChats();
+      renderHistory();
+    }
+
+    function loadChat(chatId) {
+      saveCurrentChat();
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+      currentChatId = chat.id;
+      currentAgent = chat.agent || null;
+      messages = [...(chat.messages || [])];
+      messagesEl.innerHTML = '';
+      messages.forEach(msg => renderMessage(msg.content, msg.isUser, msg.agentTag));
+      updateModeDisplay();
+      updateAgentPill();
+      renderHistory();
+    }
+
+    function updateModeDisplay() {
+      if (currentAgent) {
+        currentModeEl.innerHTML = `<span class="agent-tag">@${currentAgent}</span>`;
+      } else {
+        currentModeEl.textContent = 'General Mode';
+      }
+    }
+
+    function renderMessage(content, isUser, agentTag = null, images = []) {
+      const div = document.createElement('div');
+      div.className = `message max-w-[82%] ${isUser ? 'ml-auto' : ''}`;
+      let imagesHtml = '';
+      if (images && images.length > 0) {
+        imagesHtml = '<div class="flex gap-2 mt-2 flex-wrap">';
+        images.forEach(img => {
+          imagesHtml += `<img src="${img}" class="max-w-[180px] max-h-[180px] rounded-2xl border border-zinc-700 object-cover">`;
+        });
+        imagesHtml += '</div>';
+      }
+      let prefixTag = '';
+      if (agentTag) {
+        prefixTag = `<div class="mb-1.5"><span class="agent-tag">@${agentTag}</span></div>`;
+      }
+      let html = '';
+      if (isUser) {
+        html = `<div class="bg-zinc-800 border border-zinc-700 rounded-3xl rounded-br-lg px-5 py-3.5 text-[15px]">${prefixTag}${formatMessageContent(content)}${imagesHtml}</div>`;
+      } else {
+        html = `
+          <div class="flex gap-3">
+            <div class="w-7 h-7 mt-0.5 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex-shrink-0 flex items-center justify-center text-xs font-bold">P</div>
+            <div class="flex-1">
+              <div class="bg-zinc-900 border border-zinc-800 rounded-3xl rounded-bl-lg px-5 py-4 text-[15px] leading-relaxed">${prefixTag}${formatMessageContent(content)}</div>
+            </div>
+          </div>`;
+      }
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function formatMessageContent(text) {
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      html = html.replace(/@(UI Build|Map Build|scripting)/gi, '<span class="agent-tag">@$1</span>');
+      html = html.replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-3 mb-1">$1</h3>');
+      html = html.replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-3 mb-1">$1</h2>');
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        const codeId = 'code-' + Math.random().toString(36).substring(2, 9);
+        const language = lang || 'lua';
+        const escapedCode = code.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `
+          <div class="my-3 rounded-2xl overflow-hidden border border-zinc-700 bg-[#0f0f11]">
+            <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-950 text-xs text-zinc-400">
+              <span>${language}</span>
+              <button onclick="copyCode('${codeId}', this)" class="px-3 py-0.5 text-[11px] rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 transition">Copy code</button>
+            </div>
+            <pre class="p-3 text-sm overflow-auto"><code id="${codeId}">${escapedCode}</code></pre>
+          </div>`;
+      });
+      html = html.replace(/`([^`]+)`/g, '<code class="bg-zinc-800 px-1.5 py-0.5 rounded text-sm">$1</code>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function copyCode(codeId, btn) {
+      const codeEl = document.getElementById(codeId);
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.textContent).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      });
+    }
+
+    function selectAgent(agentName) {
+      currentAgent = agentName;
+      dropdown.classList.add('hidden');
+      const val = input.value;
+      const atIndex = val.lastIndexOf('@');
+      if (atIndex !== -1 && atIndex >= val.length - 8) {
+        input.value = val.substring(0, atIndex).trimEnd();
+      }
+      updateAgentPill();
+      updateModeDisplay();
+      input.focus();
+    }
+
+    function detectAtSymbol() {
+      const val = input.value;
+      const lastChar = val.slice(-1);
+      if (lastChar === '@') {
+        dropdown.classList.remove('hidden');
+      } else if (!val.includes('@')) {
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    input.addEventListener('input', detectAtSymbol);
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && e.target !== input && !pill.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    async function sendMessage() {
+      const text = input.value;
+      if (!text.trim()) return;
+      lastSentMessage = text;
+      if (!currentChatId) {
+        createNewChat();
+      }
+      let effectiveAgent = currentAgent;
+      const match = text.match(/@(UI Build|Map Build|scripting)/i);
+      if (match) {
+        effectiveAgent = match[1];
+        currentAgent = effectiveAgent;
+        updateAgentPill();
+        updateModeDisplay();
+      }
+      const userMsg = { content: text, isUser: true, agentTag: effectiveAgent, images: [...pendingImages] };
+      messages.push(userMsg);
+      renderMessage(text, true, effectiveAgent, [...pendingImages]);
+      pendingImages = [];
+      document.getElementById('image-preview').innerHTML = '';
+      document.getElementById('image-preview').classList.add('hidden');
+      input.value = '';
+      dropdown.classList.add('hidden');
+      const aiDiv = document.createElement('div');
+      aiDiv.className = 'message max-w-[82%]';
+      aiDiv.innerHTML = `
+        <div class="flex gap-3">
+          <div class="w-7 h-7 mt-0.5 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex-shrink-0 flex items-center justify-center text-xs font-bold">P</div>
+          <div class="flex-1">
+            <div class="ai-response bg-zinc-900 border border-zinc-800 rounded-3xl rounded-bl-lg px-5 py-4 text-[15px]">
+              <div class="thinking-animation flex items-center gap-1.5 text-zinc-400">
+                <span>Generating response...</span>
+                <span class="thinking-dots flex gap-0.5">
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      messagesEl.appendChild(aiDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      const responseEl = aiDiv.querySelector('.ai-response');
+      try {
+        const res = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: messages.slice(0, -1),
+            agent: effectiveAgent || 'homework',
+            images: userMsg.images || [],
+            username: currentUser
+          })
+        });
+        if (!res.ok) {
+          responseEl.innerHTML = `<div class="text-red-400 text-sm">Failed to connect to the server.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline text-red-400 hover:text-red-300">Retry</button></div>`;
+          return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          chunk.split('\n').forEach(line => {
+            if (line.startsWith('data:')) {
+              try {
+                const data = JSON.parse(line.slice(5).trim());
+                if (data.type === 'token') {
+                  fullText += data.content;
+                  // Clear thinking animation on first content
+                  const thinking = responseEl.querySelector('.thinking-animation');
+                  if (thinking) thinking.remove();
+                  responseEl.innerHTML = formatMessageContent(fullText);
+                } else if (data.type === 'image') {
+                  const imgHtml = `<div class="mt-3"><img src="${data.imageDataUrl}" class="rounded-2xl max-w-full border border-zinc-700" style="max-height: 420px;"></div>`;
+                  responseEl.innerHTML = formatMessageContent(fullText) + imgHtml;
+                } else if (data.type === 'error') {
+                  responseEl.innerHTML = `<div class="text-red-400 text-sm">The model had trouble generating a response.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline text-red-400 hover:text-red-300">Retry</button></div>`;
+                } else if (data.type === 'done') {
+                  if (!fullText || fullText.trim() === '') {
+                    fullText = "Got it. Let me know how else I can help!";
+                  }
+                  // Always ensure the bubble has visible content
+                  const thinking = responseEl.querySelector('.thinking-animation');
+                  if (thinking) thinking.remove();
+                  responseEl.innerHTML = formatMessageContent(fullText);
+                  messages.push({ content: fullText, isUser: false, agentTag: effectiveAgent });
+                  saveCurrentChat();
+                }
+              } catch {}
+            }
+          });
+        }
+      } catch (e) {
+        responseEl.innerHTML = `<div class="text-red-400 text-sm">Cannot reach the AI model.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline text-red-400 hover:text-red-300">Retry</button></div>`;
+      }
+    }
+
+    function retryLastMessage(btn) {
+      if (!lastSentMessage) return;
+      btn.closest('.ai-response').innerHTML = `<div class="thinking-animation flex items-center gap-1.5 text-zinc-400"><span>Retrying...</span></div>`;
+      sendRetryMessage(lastSentMessage);
+    }
+
+    async function sendRetryMessage(text) {
+      // Simplified resend path for retry
+      const aiDiv = document.createElement('div');
+      aiDiv.className = 'message max-w-[82%]';
+      aiDiv.innerHTML = `
+        <div class="flex gap-3">
+          <div class="w-7 h-7 mt-0.5 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex-shrink-0 flex items-center justify-center text-xs font-bold">P</div>
+          <div class="flex-1">
+            <div class="ai-response bg-zinc-900 border border-zinc-800 rounded-3xl rounded-bl-lg px-5 py-4 text-[15px]">
+              <div class="thinking-animation flex items-center gap-1.5 text-zinc-400">
+                <span>Generating response...</span>
+                <span class="thinking-dots flex gap-0.5">
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                  <span class="w-1 h-1 bg-current rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      messagesEl.appendChild(aiDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      const responseEl = aiDiv.querySelector('.ai-response');
+
+      try {
+        const res = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: messages.slice(0, -1),
+            agent: currentAgent || 'homework',
+            images: []
+          })
+        });
+
+        if (!res.ok) {
+          responseEl.innerHTML = `<div class="text-red-400 text-sm">Failed to connect.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline">Retry</button></div>`;
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          chunk.split('\n').forEach(line => {
+            if (line.startsWith('data:')) {
+              try {
+                const data = JSON.parse(line.slice(5).trim());
+                if (data.type === 'token') {
+                  fullText += data.content;
+                  responseEl.innerHTML = formatMessageContent(fullText);
+                } else if (data.type === 'error') {
+                  responseEl.innerHTML = `<div class="text-red-400 text-sm">The model had trouble generating a response.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline">Retry</button></div>`;
+                } else if (data.type === 'done') {
+                  messages.push({ content: fullText, isUser: false, agentTag: currentAgent });
+                  saveCurrentChat();
+                }
+              } catch {}
+            }
+          });
+        }
+      } catch (e) {
+        responseEl.innerHTML = `<div class="text-red-400 text-sm">Still cannot connect.<br><button onclick="retryLastMessage(this)" class="mt-2 text-xs underline">Retry</button></div>`;
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function addImagePreview(base64) {
+      pendingImages.push(base64);
+      const previewContainer = document.getElementById('image-preview');
+      previewContainer.classList.remove('hidden');
+      previewContainer.innerHTML = `<div class="text-[11px] text-amber-400 w-full mb-1">Image attached</div>`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'relative';
+      wrapper.innerHTML = `
+        <img src="${base64}" class="w-16 h-16 object-cover rounded-xl border border-zinc-700">
+        <button class="absolute -top-1 -right-1 bg-zinc-900 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border border-zinc-700">×</button>
+      `;
+      wrapper.querySelector('button').onclick = () => {
+        const index = pendingImages.indexOf(base64);
+        if (index > -1) pendingImages.splice(index, 1);
+        wrapper.remove();
+        if (pendingImages.length === 0) {
+          previewContainer.classList.add('hidden');
+          previewContainer.innerHTML = '';
+        }
+      };
+      previewContainer.appendChild(wrapper);
+    }
+
+    input.addEventListener('paste', (e) => {
+      const items = e.clipboardData.items;
+      for (let item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            addImagePreview(event.target.result);
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    });
+
+    function init() {
+      fetch(`/api/chats/${currentUser}`)
+        .then(r => r.json())
+        .then(serverChats => {
+          if (serverChats && serverChats.length > 0) {
+            chats = serverChats;
+            localStorage.setItem('prysmisai_chats_' + currentUser, JSON.stringify(chats));
+          }
+          if (chats.length === 0) {
+            createNewChat();
+          } else {
+            const latest = chats[chats.length - 1];
+            loadChat(latest.id);
+          }
+          renderHistory();
+        })
+        .catch(() => {
+          // fallback to local
+          if (chats.length === 0) {
+            createNewChat();
+          } else {
+            const latest = chats[chats.length - 1];
+            loadChat(latest.id);
+          }
+          renderHistory();
+        });
+    }
+
+    init();
+  </script>
+</body>
+</html>
