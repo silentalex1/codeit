@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrysmisAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a24] via-[#0f0f13] to-[#050505] text-gray-100 h-screen flex overflow-hidden relative font-sans">
+
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none flex justify-center items-center opacity-20">
+        <div class="floating-shape w-[30rem] h-[30rem] border-[1px] border-[#445] rounded-[3rem] absolute -top-20 -left-20" style="--rot: 12deg; animation-delay: 0s;"></div>
+        <div class="floating-shape w-[20rem] h-[20rem] border-[1px] border-[#556] rounded-[2rem] absolute bottom-10 right-10" style="--rot: -12deg; animation-delay: -2s;"></div>
+        <div class="floating-shape w-[40rem] h-[40rem] border-[1px] border-[#334] rounded-[4rem] absolute top-1/4 left-1/3" style="--rot: 45deg; animation-delay: -4s;"></div>
+        <div class="absolute w-[60rem] h-[60rem] bg-indigo-900/10 rounded-full blur-[120px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+    </div>
+
+    <div class="fixed top-5 left-5 z-50 flex items-center bg-[#141419]/60 backdrop-blur-xl border border-[#2a2a35] rounded-2xl shadow-lg overflow-hidden">
+        <button id="newChatBtn" class="px-5 py-3.5 text-sm font-semibold hover:bg-[#20202a] transition-all flex items-center gap-2 text-gray-200">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            New chat
+        </button>
+        <div class="w-[1px] h-8 bg-[#2a2a35]"></div>
+        <button id="sidebarToggleBtn" class="px-3 py-3.5 text-gray-400 hover:text-white hover:bg-[#20202a] transition-all flex items-center justify-center w-12">
+            <svg id="toggleIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+    </div>
+
+    <div class="fixed top-5 right-5 z-50 flex items-center gap-3">
+        <div class="relative">
+            <button id="modelDropdownBtn" class="flex items-center gap-2 bg-[#141419]/60 backdrop-blur-xl border border-[#2a2a35] rounded-2xl shadow-lg px-4 py-3.5 text-gray-300 hover:text-white hover:bg-[#20202a] transition-all">
+                <span class="text-sm font-medium">PSAI-v1.0</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6 6-6"/></svg>
+            </button>
+            <div id="modelDropdown" class="hidden absolute right-0 top-full mt-2 w-64 bg-[#141419]/95 backdrop-blur-xl border border-[#2a2a35] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 z-50">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-white">PSAI-v1.0</span>
+                    <span class="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full">Active</span>
+                </div>
+                <div class="text-xs text-gray-500 text-center py-2">More models coming soon..</div>
+            </div>
+        </div>
+        <button id="settingsBtn" class="p-3.5 bg-[#141419]/60 backdrop-blur-xl border border-[#2a2a35] rounded-2xl shadow-lg text-gray-400 hover:text-white hover:bg-[#20202a] transition-all">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed top-0 left-0 h-screen w-72 bg-[#0c0c10]/80 backdrop-blur-2xl border-r border-[#22222c] z-40 flex flex-col pt-28 px-5 shadow-2xl">
+        <div id="history" class="flex-1 overflow-y-auto space-y-2 hidden-scrollbar pb-10">
+            <p class="text-[10px] text-gray-500 font-bold mb-4 tracking-widest uppercase px-2">History</p>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative z-10 w-full h-full">
+        <div id="imagePreviewContainer" class="hidden absolute top-20 left-1/2 -translate-x-1/2 z-20 flex gap-2 px-6"></div>
+        <div id="chatArea" class="flex-1 overflow-y-auto p-8 pt-28 pb-32 space-y-6 max-w-4xl mx-auto w-full hidden-scrollbar"></div>
+
+        <div id="inputContainer" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl px-6 flex flex-col items-center">
+            <div class="relative w-full">
+                <input id="chatInput" type="text" placeholder="Ask PrysmisAI anything.." 
+                    class="w-full bg-[#16161d]/80 backdrop-blur-xl border border-[#2d2d3a] text-gray-100 p-4 pr-24 rounded-2xl focus:outline-none focus:border-[#5a5a75] focus:ring-1 focus:ring-[#5a5a75] shadow-2xl transition-all text-base placeholder-gray-500 z-10">
+                <button id="imageUploadBtn" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white hover:bg-[#252532] rounded-xl transition-all">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </button>
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+            </div>
+            
+            <div id="suggestions" class="flex flex-wrap gap-2 justify-center mt-6 w-full max-w-xl transition-all duration-300">
+                <button class="sugg-btn bg-[#16161d]/60 backdrop-blur-md border border-[#2d2d3a] text-gray-300 px-4 py-2 rounded-xl text-sm hover:bg-[#242430] hover:text-white transition-all cursor-pointer">fix my roblox code error</button>
+                <button class="sugg-btn bg-[#16161d]/60 backdrop-blur-md border border-[#2d2d3a] text-gray-300 px-4 py-2 rounded-xl text-sm hover:bg-[#242430] hover:text-white transition-all cursor-pointer">Create me a lua code that does..</button>
+                <button class="sugg-btn bg-[#16161d]/60 backdrop-blur-md border border-[#2d2d3a] text-gray-300 px-4 py-2 rounded-xl text-sm hover:bg-[#242430] hover:text-white transition-all cursor-pointer">Give me a map suggestion on to improve this map..</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="contextMenu" class="hidden absolute z-[100] bg-[#1a1a24] border border-[#2d2d3a] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 w-44 transform scale-95 opacity-0 transition-all duration-150 origin-top-left">
+        <button id="renameBtn" class="text-left px-3 py-2 text-sm text-white bg-indigo-600/90 hover:bg-indigo-500 rounded-lg transition-colors w-full flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Rename chat
+        </button>
+        <button id="deleteBtn" class="text-left px-3 py-2 text-sm text-white bg-rose-600/90 hover:bg-rose-500 rounded-lg transition-colors w-full flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete
+        </button>
+    </div>
+
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] items-center justify-center">
+        <div class="bg-[#0f0f13] w-full max-w-4xl h-[600px] rounded-3xl border border-[#2a2a35] shadow-2xl flex overflow-hidden">
+            <div class="w-64 bg-[#0a0a0d]/80 border-r border-[#22222c] flex flex-col p-4 gap-2 relative">
+                <div class="px-3 mb-4 mt-2 flex items-center h-8">
+                    <span class="text-[11px] font-bold text-gray-500 tracking-widest uppercase">Settings</span>
+                </div>
+                <button id="tabAiBtn" class="text-left px-4 py-3 bg-[#1e1e28] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">AI</button>
+                <button id="tabConfigBtn" class="text-left px-4 py-3 text-gray-400 hover:bg-[#15151c] hover:text-white rounded-xl text-sm font-semibold transition-colors">AI config</button>
+                <button id="tabUserBtn" class="text-left px-4 py-3 text-gray-400 hover:bg-[#15151c] hover:text-white rounded-xl text-sm font-semibold transition-colors">User account</button>
+                
+                <div class="mt-auto pt-4 border-t border-[#22222c]">
+                    <button id="saveAllBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.25)] px-4 py-3 rounded-xl text-sm font-semibold transition-all">Save all</button>
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col bg-[#121217]">
+                <div class="h-20 border-b border-[#22222c] flex items-center justify-between px-8">
+                    <h2 class="text-xl font-semibold text-white">Settings</h2>
+                    <button id="closeSettingsBtn" class="text-gray-400 hover:text-white bg-[#1a1a24] p-2.5 rounded-full hover:bg-[#252532] transition-colors border border-[#2d2d3a]">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="p-8 flex-1 overflow-y-auto hidden-scrollbar">
+                    <div id="tabAiContent" class="space-y-8">
+                        
+                        <div class="space-y-3 bg-[#16161d] p-6 rounded-2xl border border-[#252530]">
+                            <label class="block text-sm font-medium text-gray-200">Custom instructions</label>
+                            <p class="text-xs text-gray-500 mb-2">What would you like PrysmisAI to know about you to provide better responses?</p>
+                            <textarea id="customInstructions" class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-100 p-4 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors resize-none h-28 hidden-scrollbar" placeholder="Enter your custom instructions here..."></textarea>
+                        </div>
+
+                        <hr class="border-[#22222c]">
+
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-medium text-white">API Keys</h3>
+                                    <p class="text-xs text-gray-500 mt-1">Manage your integration keys</p>
+                                </div>
+                                <button id="openCreateKeyBtn" class="bg-[#1e1e28] hover:bg-[#252532] border border-[#353545] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                    Create new API key
+                                </button>
+                            </div>
+                            <div id="apiKeyList" class="flex flex-col gap-3"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="tabConfigContent" class="hidden space-y-6">
+                        <div class="bg-[#16161d] p-6 rounded-2xl border border-[#252530] space-y-4">
+                            <h3 class="text-base font-medium text-white">API Configuration</h3>
+                            <p class="text-xs text-gray-400">Use your PrysmisAI API key to connect to the service</p>
+                            
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-300">API Endpoint</label>
+                                <input type="text" id="apiEndpoint" value="https://api.prysmisai.com/v1/chat/completions" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed">
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-300">API Key</label>
+                                <input type="password" id="apiKeyInput" placeholder="sk-prysmis-prod-..." class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-100 p-3 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-300">Authorization Header</label>
+                                <input type="text" id="authHeader" value="Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed font-mono">
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-300">Content-Type</label>
+                                <input type="text" id="contentType" value="application/json" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed">
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-300">Model</label>
+                                <input type="text" id="apiModel" value="prysmis-1" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed">
+                            </div>
+
+                            <div class="flex gap-3">
+                                <div class="flex-1 space-y-3">
+                                    <label class="block text-sm font-medium text-gray-300">Temperature</label>
+                                    <input type="number" id="apiTemperature" value="0.7" step="0.1" min="0" max="2" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed">
+                                </div>
+                                <div class="flex-1 space-y-3">
+                                    <label class="block text-sm font-medium text-gray-300">Max Tokens</label>
+                                    <input type="number" id="apiMaxTokens" value="1024" readonly class="w-full bg-[#0d0d12] border border-[#2d2d3a] text-gray-400 p-3 rounded-xl text-sm focus:outline-none cursor-not-allowed">
+                                </div>
+                            </div>
+
+                            <button id="testApiBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all">Test Connection</button>
+                        </div>
+
+                        <div class="bg-[#16161d] p-6 rounded-2xl border border-[#252530]">
+                            <h3 class="text-base font-medium text-white mb-4">Request Body Example</h3>
+                            <pre class="bg-[#0d0d12] p-4 rounded-xl text-xs text-gray-300 overflow-x-auto hidden-scrollbar"><code>{
+  "model": "prysmis-1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello PrysmisAI"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 1024
+}</code></pre>
+                        </div>
+
+                        <div class="bg-[#16161d] p-6 rounded-2xl border border-[#252530]">
+                            <h3 class="text-base font-medium text-white mb-4">Response Example</h3>
+                            <pre class="bg-[#0d0d12] p-4 rounded-xl text-xs text-gray-300 overflow-x-auto hidden-scrollbar"><code>{
+  "id": "chatcmpl_prysmis_01H8K2",
+  "object": "chat.completion",
+  "created": 1783471200,
+  "model": "prysmis-1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you today?"
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 20,
+    "total_tokens": 32
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div id="tabUserContent" class="hidden space-y-6">
+                        <div id="loggedOutState" class="flex flex-col items-center justify-center py-12 px-6 bg-[#16161d] rounded-2xl border border-[#252530] text-center">
+                            <h3 class="text-lg font-medium text-white mb-2">Sign in to sync</h3>
+                            <p class="text-sm text-gray-400 mb-8 max-w-md">Connect your Google account to sync your settings and chat history across all your devices.</p>
+                            <button id="googleSignInBtn" class="bg-white hover:bg-gray-100 text-black px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center gap-3">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                </svg>
+                                Create account with Google
+                            </button>
+                        </div>
+
+                        <div id="loggedInState" class="hidden bg-[#16161d] p-6 rounded-2xl border border-[#252530] space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-200 mb-3">Account Username:</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="text" id="usernameInput" value="UlesRamirez" class="flex-1 bg-[#0d0d12] border border-[#2d2d3a] text-white p-3 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                                    <button id="saveUsernameBtn" class="bg-emerald-600/90 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="createKeyModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md z-[110] items-center justify-center">
+        <div class="bg-[#121217] w-full max-w-md rounded-3xl border border-[#2a2a35] p-7 shadow-2xl flex flex-col relative">
+            <h3 class="text-xl font-semibold text-white mb-5">Create new API key</h3>
+            <div class="mb-4">
+                <span class="bg-[#1e1e28] text-gray-200 px-3 py-1 text-xs rounded-md border border-[#353545] inline-block font-medium">You</span>
+            </div>
+            <p class="text-xs text-gray-400 mb-6 leading-relaxed">This API key is tied to your user and can make requests against the selected project. If you are removed from the organization or project, this key will be disabled.</p>
+            <div class="mb-8 space-y-2">
+                <label class="block text-sm font-medium text-gray-300">Name <span class="text-gray-600 font-normal ml-1">Optional</span></label>
+                <input type="text" id="newKeyName" placeholder="My Test Key" class="w-full bg-[#0a0a0d] border border-[#2d2d3a] text-white p-3.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="cancelCreateKeyBtn" class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#1e1e28] hover:text-white rounded-xl transition-colors">Cancel</button>
+                <button id="confirmCreateKeyBtn" class="px-5 py-2.5 text-sm bg-white text-black font-semibold hover:bg-gray-200 rounded-xl transition-colors shadow-lg">Create API key</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="showKeyModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md z-[110] items-center justify-center">
+        <div class="bg-[#121217] w-full max-w-md rounded-3xl border border-[#2a2a35] p-7 shadow-2xl flex flex-col relative">
+            <h3 class="text-xl font-semibold text-white mb-3">Save your key</h3>
+            <p class="text-xs text-gray-400 mb-6 leading-relaxed">Please save your secret key in a safe place since <span class="text-white font-medium">you won't be able to view it again</span>. Keep it secure, as anyone with your API key can make requests on your behalf.</p>
+            <div class="bg-[#0a0a0d] border border-[#2d2d3a] p-1.5 flex items-center justify-between rounded-xl mb-8 overflow-hidden">
+                <input type="text" id="generatedKeyDisplayModal" class="bg-transparent border-none outline-none text-sm px-3 w-full text-indigo-200 font-mono" readonly>
+                <button id="copyModalKeyBtn" class="bg-[#1e1e28] hover:bg-[#2a2a35] text-white text-sm font-medium px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap ml-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy
+                </button>
+            </div>
+            <div class="flex justify-end">
+                <button id="doneKeyBtn" class="px-6 py-2.5 text-sm bg-white text-black font-semibold hover:bg-gray-200 rounded-xl transition-colors shadow-lg">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
