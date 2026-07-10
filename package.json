@@ -1,0 +1,11 @@
+{
+  "name": "prysmisai-website",
+  "version": "2.0.0",
+  "description": "Static web client for PrysmisAI",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step required for static site'",
+    "start": "echo 'Serve index.html directly'"
+  },
+  "dependencies": {}
+}
