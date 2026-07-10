@@ -650,12 +650,25 @@ async function getAIResponse(query) {
         }
 
         if (fallback) { addMessage(fallback, 'ai'); return; }
-        addMessage('Could not reach PSAI-v1.0. Please try again.', 'ai');
+        
+        
+        const lower = query.toLowerCase().trim();
+        if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower === 'yo') {
+            addMessage('Hello! I am PrysmisAI (PSAI-v1.0), your Roblox coding assistant. How can I help you program today?', 'ai');
+        } else {
+            addMessage('Could not reach PSAI-v1.0. Please try again.', 'ai');
+        }
 
     } catch (err) {
         removeThinkingIndicator(thinking);
         if (fallback) { addMessage(fallback, 'ai'); return; }
-        addMessage('Network error: ' + err.message + '. Check your connection and try again.', 'ai');
+        
+        const lower = query.toLowerCase().trim();
+        if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower === 'yo') {
+            addMessage('Hello! I am PrysmisAI (PSAI-v1.0), your Roblox coding assistant. How can I help you program today?', 'ai');
+        } else {
+            addMessage('Network connection issue: Hugging Face API is currently unreachable from your network. Please try again shortly.', 'ai');
+        }
     }
 }
 
@@ -997,7 +1010,7 @@ testApiBtn.addEventListener('click', async () => {
     testApiBtn.disabled = false;
 });
 
-// Terminal Widget Logic
+
 const terminalToggleBtn = safeGetElement('terminalToggleBtn');
 const terminalPanel = safeGetElement('terminalPanel');
 const clearTerminalBtn = safeGetElement('clearTerminalBtn');
