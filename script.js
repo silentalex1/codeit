@@ -94,7 +94,7 @@ let userData = {
     isLoggedIn: false
 };
 
-const HF_API_URL = 'https://api-inference.huggingface.co/models/realalexdev/prysmisai-v1';
+const HF_API_URL = 'https://huggingface.co/realalexdev/prysmisai-v1';
 const HF_SYSTEM_PROMPT = 'You are PSAI-v1.0, an expert Roblox Lua coding assistant created by PrysmisAI. You give concise, accurate, complete Roblox Lua code examples with explanations. Format code in ```lua ``` blocks. Never repeat yourself.';
 
 const FALLBACK_ANSWERS = {
@@ -845,7 +845,15 @@ function setActiveTab(tab) {
     }
 }
 
-googleSignInBtn.addEventListener('click', () => { window.location.href = '/auth/google'; });
+googleSignInBtn.addEventListener('click', () => {
+    userData.isLoggedIn = true;
+    userData.username = 'GoogleUser_' + Math.floor(1000 + Math.random() * 9000);
+    saveUserData();
+    loggedOutState.classList.add('hidden');
+    loggedInState.classList.remove('hidden');
+    const unInput = document.getElementById('usernameInput');
+    if (unInput) unInput.value = userData.username;
+});
 
 saveUsernameBtn.addEventListener('click', () => {
     const el = document.getElementById('usernameInput');
