@@ -94,8 +94,16 @@ let userData = {
     isLoggedIn: false
 };
 
-const HF_API_URL = '/api/chat';
-const HF_SYSTEM_PROMPT = 'You are PSAI-v1.0, an expert Roblox Lua coding assistant created by PrysmisAI. You give concise, accurate, complete Roblox Lua code examples with explanations. Format code in ```lua ``` blocks. Never repeat yourself.';
+const psaiClient = PrysmisAI.createClient({
+    endpoint: userData.apiConfig?.endpoint || PrysmisAI.defaultEndpoint,
+    auth: userData.apiConfig?.authHeader || ('Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI'),
+    model: userData.apiConfig?.model || PrysmisAI.modelId,
+    temperature: parseFloat(userData.apiConfig?.temperature || 0.7),
+    maxTokens: parseInt(userData.apiConfig?.maxTokens || 1024),
+    systemPrompt: PrysmisAI.systemPrompt
+});
+
+const HF_SYSTEM_PROMPT = PrysmisAI.systemPrompt;
 
 const FALLBACK_ANSWERS = {
     'tween': 'To tween a part in Roblox:\n```lua\nlocal TweenService = game:GetService("TweenService")\nlocal part = workspace.Part\nlocal goal = {Position = Vector3.new(0, 10, 0)}\nlocal info = TweenInfo.new(2, Enum.EasingStyle.Quad)\nlocal tween = TweenService:Create(part, info, goal)\ntween:Play()\n```',
@@ -611,63 +619,38 @@ async function handleMessage(query) {
 
 async function getAIResponse(query) {
     const thinking = showThinkingIndicator();
-
     const fallback = getSmartFallback(query);
 
+    psaiClient.configure({
+        endpoint: userData.apiConfig?.endpoint || PrysmisAI.defaultEndpoint,
+        auth: userData.apiConfig?.authHeader || ('Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI'),
+        model: userData.apiConfig?.model || PrysmisAI.modelId,
+        temperature: parseFloat(userData.apiConfig?.temperature || 0.7),
+        maxTokens: parseInt(userData.apiConfig?.maxTokens || 1024),
+        systemPrompt: userData.customInstructions || PrysmisAI.systemPrompt
+    });
+
     try {
-        const fullPrompt = `<|system|>\n${HF_SYSTEM_PROMPT}\n<|user|>\n${query}\n<|assistant|>\n`;
-        const payload = {
-            inputs: fullPrompt,
-            parameters: { max_new_tokens: 550, temperature: 0.65, top_p: 0.92, repetition_penalty: 1.25, return_full_text: false }
-        };
-
-        const resp = await fetch(HF_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
+        const result = await psaiClient.chat(query);
         removeThinkingIndicator(thinking);
-
-        if (resp.ok) {
-            const data = await resp.json();
-            let text = '';
-            if (Array.isArray(data) && data.length) text = data[0].generated_text || '';
-            else if (data.generated_text) text = data.generated_text;
-            else text = JSON.stringify(data);
-
-            for (const tok of ['<|system|>', '<|user|>', '<|assistant|>', HF_SYSTEM_PROMPT, query]) {
-                text = text.replaceAll(tok, '').trim();
-            }
-
-            if (text) { addMessage(text, 'ai'); return; }
-        }
-
-        if (resp.status === 503) {
-            if (fallback) { addMessage(fallback, 'ai'); return; }
-            addMessage('The model is loading on HuggingFace (cold start). Please try again in ~20 seconds.', 'ai');
-            return;
-        }
-
-        if (fallback) { addMessage(fallback, 'ai'); return; }
-        
-        
-        const lower = query.toLowerCase().trim();
-        if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower === 'yo') {
-            addMessage('Hello! I am PrysmisAI (PSAI-v1.0), your Roblox coding assistant. How can I help you program today?', 'ai');
+        if (result && result.text) {
+            addMessage(result.text, 'ai');
+        } else if (fallback) {
+            addMessage(fallback, 'ai');
         } else {
-            addMessage('Could not reach PSAI-v1.0. Please try again.', 'ai');
+            addMessage('PSAI-v1.0 returned an empty response. Please try again.', 'ai');
         }
-
     } catch (err) {
         removeThinkingIndicator(thinking);
-        if (fallback) { addMessage(fallback, 'ai'); return; }
-        
+        if (fallback) {
+            addMessage(fallback, 'ai');
+            return;
+        }
         const lower = query.toLowerCase().trim();
         if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower === 'yo') {
             addMessage('Hello! I am PrysmisAI (PSAI-v1.0), your Roblox coding assistant. How can I help you program today?', 'ai');
         } else {
-            addMessage('Network connection issue: Hugging Face API is currently unreachable from your network. Please try again shortly.', 'ai');
+            addMessage(`PSAI-v1.0 is temporarily unavailable. Error: ${err.message || 'connection failed'}`, 'ai');
         }
     }
 }
@@ -903,7 +886,7 @@ function loadUserData() {
         userData.isLoggedIn = true;
         userData.username = loginName;
         saveUserData();
-        // Clean the URL without reloading
+
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -1028,7 +1011,6 @@ testApiBtn.addEventListener('click', async () => {
     }
     testApiBtn.disabled = false;
 });
-
 
 const terminalToggleBtn = safeGetElement('terminalToggleBtn');
 const terminalPanel = safeGetElement('terminalPanel');
