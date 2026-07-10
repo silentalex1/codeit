@@ -1,0 +1,8 @@
+{
+  "name": "@prysmisai/sdk",
+  "version": "1.0.0",
+  "description": "Official PrysmisAI SDK",
+  "main": "index.js",
+  "license": "MIT",
+  "author": "PrysmisAI"
+}
