@@ -85,7 +85,7 @@ let userData = {
     customInstructions: '',
     apiKeys: [],
     apiConfig: {
-        endpoint: 'https://api.prysmisai.com/v1/chat/completions',
+        endpoint: 'https://codeit.rest/v1/chat/completions',
         apiKey: '',
         model: 'prysmis-1',
         temperature: 0.7,
@@ -880,7 +880,7 @@ function loadUserData() {
     userData = JSON.parse(saved);
     const ci = document.getElementById('customInstructions'); if (ci) ci.value = userData.customInstructions || '';
     const un = document.getElementById('usernameInput'); if (un) un.value = userData.username || 'UlesRamirez';
-    const ae = document.getElementById('apiEndpoint'); if (ae) ae.value = userData.apiConfig?.endpoint || 'https://api.prysmisai.com/v1/chat/completions';
+    const ae = document.getElementById('apiEndpoint'); if (ae) ae.value = userData.apiConfig?.endpoint || 'https://codeit.rest/v1/chat/completions';
     const ak = document.getElementById('apiKeyInput'); if (ak) ak.value = userData.apiConfig?.apiKey || '';
     const am = document.getElementById('apiModel'); if (am) am.value = userData.apiConfig?.model || 'prysmis-1';
     const at = document.getElementById('apiTemperature'); if (at) at.value = userData.apiConfig?.temperature || 0.7;
