@@ -4,9 +4,9 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-const GOOGLE_CLIENT_ID = '730413840136-d2fsk5u4nh1bt8jpk685vjhn6eot46k6.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = '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';
-const REDIRECT_URI = process.env.REDIRECT_URI || 'https://codeit.rest/auth/callback';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:10000/auth/callback';
 
 app.use(express.static(__dirname));
 app.use(express.json());
