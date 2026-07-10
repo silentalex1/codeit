@@ -95,8 +95,8 @@ let userData = {
 };
 
 const psaiClient = PrysmisAI.createClient({
-    endpoint: userData.apiConfig?.endpoint || PrysmisAI.defaultEndpoint,
-    auth: userData.apiConfig?.authHeader || ('Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI'),
+    endpoint: '/api/chat',
+    auth: userData.apiConfig?.authHeader || 'Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI',
     model: userData.apiConfig?.model || PrysmisAI.modelId,
     temperature: parseFloat(userData.apiConfig?.temperature || 0.7),
     maxTokens: parseInt(userData.apiConfig?.maxTokens || 1024),
@@ -622,8 +622,8 @@ async function getAIResponse(query) {
     const fallback = getSmartFallback(query);
 
     psaiClient.configure({
-        endpoint: userData.apiConfig?.endpoint || PrysmisAI.defaultEndpoint,
-        auth: userData.apiConfig?.authHeader || ('Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI'),
+        endpoint: '/api/chat',
+        auth: userData.apiConfig?.authHeader || 'Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI',
         model: userData.apiConfig?.model || PrysmisAI.modelId,
         temperature: parseFloat(userData.apiConfig?.temperature || 0.7),
         maxTokens: parseInt(userData.apiConfig?.maxTokens || 1024),
