@@ -13,14 +13,14 @@ app.use(express.json());
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const hfResponse = await axios.post(
-      'https://api-inference.huggingface.co/models/realalexdev/prysmisai-v1',
-      req.body,
-      { headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization || '' } }
-    );
-    res.json(hfResponse.data);
+    const endpoint = 'https://codeit.rest/v1/chat/completions';
+    const auth = req.headers.authorization || 'Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI';
+    const apiRes = await axios.post(endpoint, req.body, {
+      headers: { 'Content-Type': 'application/json', 'Authorization': auth }
+    });
+    res.json(apiRes.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Failed to connect to AI' });
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'AI request failed' });
   }
 });
 
