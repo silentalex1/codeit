@@ -94,7 +94,7 @@ let userData = {
     isLoggedIn: false
 };
 
-const HF_API_URL = 'https://huggingface.co/realalexdev/prysmisai-v1';
+const HF_API_URL = '/api/chat';
 const HF_SYSTEM_PROMPT = 'You are PSAI-v1.0, an expert Roblox Lua coding assistant created by PrysmisAI. You give concise, accurate, complete Roblox Lua code examples with explanations. Format code in ```lua ``` blocks. Never repeat yourself.';
 
 const FALLBACK_ANSWERS = {
@@ -846,13 +846,7 @@ function setActiveTab(tab) {
 }
 
 googleSignInBtn.addEventListener('click', () => {
-    userData.isLoggedIn = true;
-    userData.username = 'GoogleUser_' + Math.floor(1000 + Math.random() * 9000);
-    saveUserData();
-    loggedOutState.classList.add('hidden');
-    loggedInState.classList.remove('hidden');
-    const unInput = document.getElementById('usernameInput');
-    if (unInput) unInput.value = userData.username;
+    window.location.href = '/auth/google';
 });
 
 saveUsernameBtn.addEventListener('click', () => {
@@ -896,9 +890,23 @@ saveAllBtn.addEventListener('click', () => {
 });
 
 function loadUserData() {
-    const saved = localStorage.getItem('prysmisUserData');
-    if (!saved) return;
-    userData = JSON.parse(saved);
+    const urlParams = new URLSearchParams(window.location.search);
+    const loginStatus = urlParams.get('login');
+    const loginName = urlParams.get('name');
+    
+    let saved = localStorage.getItem('prysmisUserData');
+    if (saved) {
+        userData = JSON.parse(saved);
+    }
+
+    if (loginStatus === 'success' && loginName) {
+        userData.isLoggedIn = true;
+        userData.username = loginName;
+        saveUserData();
+        // Clean the URL without reloading
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const ci = document.getElementById('customInstructions'); if (ci) ci.value = userData.customInstructions || '';
     const un = document.getElementById('usernameInput'); if (un) un.value = userData.username || 'UlesRamirez';
     const ae = document.getElementById('apiEndpoint'); if (ae) ae.value = userData.apiConfig?.endpoint || 'https://codeit.rest/v1/chat/completions';
@@ -908,7 +916,10 @@ function loadUserData() {
     const ax = document.getElementById('apiMaxTokens'); if (ax) ax.value = userData.apiConfig?.maxTokens || 1024;
     const ah = document.getElementById('authHeader'); if (ah) ah.value = userData.apiConfig?.authHeader || 'Bearer sk-prysmis-prod-95fZe5PBGA7ErrKSL9dW3OjweOtioFQI';
     if (userData.isLoggedIn) { loggedOutState.classList.add('hidden'); loggedInState.classList.remove('hidden'); }
-    if (userData.apiKeys) userData.apiKeys.forEach(key => appendKeyToList(key));
+    if (userData.apiKeys) {
+        apiKeyList.innerHTML = '';
+        userData.apiKeys.forEach(key => appendKeyToList(key));
+    }
 }
 
 function saveUserData() {
